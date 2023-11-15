@@ -1,0 +1,19 @@
+# Default values for dance.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+openshift-pipelines:
+  enabled: true
+
+
+openshift-gitops:
+  enabled: true 
+  argocd-namespace: developer-argocd
+  workload-namespaces:
+    - default
+
+quay:
+  enabled: true
+  registry: quay.io
+  username: admin
+  password: admin
