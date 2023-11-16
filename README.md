@@ -13,18 +13,41 @@ This helm chart installs and configures the following projects/products :
 | Trusted Profile Signer | (TODO) Helm Dependecy   |    |
 
 
-# Usage
+# Try it
 
 ## CLI
 
-1. Download/Clone this Git Repository
-2. `./bin/make.sh apply`
-3. After installation completes, run a `helm list`
+0. Login to an OpenShift 4.14 cluster and create a new Project.
 
-```
-NAME                    NAMESPACE       REVISION        UPDATED                                 STATUS  CHART           APP VERSION
-dance-1700077145        default         1               2023-11-15 14:39:11.764822 -0500 EST    failed  dance-0.1.0     1.16.0   
-```
+1. Add the helm repository to your local system 
+
+    `helm repo add rhtap-dance https://redhat-appstudio.github.io/helm-repository`
+    
+    If you've already added this, run a `helm repo update` time to time to pull the latest packages.
+
+2. Install Dance
+
+    `helm install dance --generate-name`
+
+    Sample output:
+    
+    ```
+    NAME: dance-1700107222
+    LAST DEPLOYED: Wed Nov 15 23:00:25 2023
+    NAMESPACE: my-namespace
+    STATUS: deployed
+    REVISION: 1
+    TEST SUITE: None
+    ```
+
+
+3. Uninstall Dance
+
+    `helm uninstall dance-1700107222`
+
+4. Upgrade an existing installation of Dance
+
+    `TODO`
 
 ## UI ( a.k.a OpenShift Console )
 
@@ -46,8 +69,36 @@ spec:
 <img width="1365" alt="image" src="https://user-images.githubusercontent.com/545280/283235252-c3dfc4d7-c11b-43ff-8a52-8b1321727b3e.png">
 
 
-## References
+
+## Development
+
+### "Inner loop"
+
+1. Download/Clone this Git Repository.
+2. ./bin/make.sh apply
+
+### Tests
+
+TODO
+
+### Release a new version of Dance
+
+#### Generate a tarball of the chart
 
 
-1. Helm Chart Repository https://github.com/redhat-appstudio/helm-repository 
+```
+$ git clone https://github.com/redhat-appstudio/dance
+$ helm package dance
+$ mv dance-0.2.0.tgz /tmp/
+```
 
+#### Push the tarball into the helm chart repository
+
+
+```
+$ git clone https://github.com/redhat-appstudio/helm-repository
+$ cd helm-repository
+$ mv /tmp/dance-0.2.0.tgz
+$ rm -rf /tmp/dance-0.1.0.tgz
+$ helm repo index --url https://redhat-appstudio.github.io/helm-repository/ .
+```
