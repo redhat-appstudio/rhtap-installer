@@ -7,7 +7,7 @@ This helm chart installs and configures the following projects/products :
 | :---:   | :---: | :---: |
 | OpenShift GitOps | Operator `Subscription`   | Sets up an Argo CD in the `developer-argo` namespace for developer teams   |
 | OpenShift Pipelines | Operator  `Subscription` | (TODO) Enables Tekton Chains & sets up signing keys   |
-| Quay | (TODO) Operator `Subscription`  | 283   |
+| Quay | (TODO) Operator `Subscription`  |    |
 | ACS | (TODO)   |    |
 | Trusted Application Signer | (TODO) Helm Dependency   |    |
 | Trusted Profile Signer | (TODO) Helm Dependecy   |    |
@@ -75,7 +75,7 @@ spec:
 ### "Inner loop"
 
 1. Download/Clone this Git Repository.
-2. ./bin/make.sh apply
+2. `./bin/make.sh apply`
 
 ### Tests
 
