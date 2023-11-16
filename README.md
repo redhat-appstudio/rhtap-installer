@@ -18,7 +18,7 @@ This helm chart installs and configures the following projects/products :
 ## CLI
 
 1. Download/Clone this Git Repository
-2. `helm install dance`
+2. `./bin/make.sh apply`
 3. After installation completes, run a `helm list`
 
 ```
