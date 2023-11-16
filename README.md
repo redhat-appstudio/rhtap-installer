@@ -13,8 +13,6 @@ This helm chart installs and configures the following projects/products :
 | Trusted Profile Signer | (TODO) Helm Dependecy   |    |
 
 
-
-
 # Usage
 
 ## CLI
