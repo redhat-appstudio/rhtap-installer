@@ -1,0 +1,294 @@
+---
+# Source: dance/templates/openshift-gitops/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: developer-argocd
+---
+# Source: dance/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: helm-manager
+  namespace: redhat-dance
+---
+# Source: dance/templates/serviceaccount.yaml
+# The ServiceAccount needs to be able to manage resources that
+# might not be declated until after Subscriptions have been
+# deployed (e.g. TektonConfig).
+#
+# If the ServiceAccount did not have admin privilegers, it
+# would need the permission to edit roles. An attacker
+# getting access to this ServiceAccount would be able
+# to grant any role to any account.
+# Therefore the attack surface is not increased by giving
+# the admin role to the ServiceAccount.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: helm-manager-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: helm-manager
+    namespace: redhat-dance
+---
+# Source: dance/templates/openshift-gitops/subscription.yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-gitops-operator
+  namespace: openshift-operators
+spec:
+  channel: gitops-1.10
+  installPlanApproval: Automatic
+  name: openshift-gitops-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: openshift-gitops-operator.v1.10.1
+---
+# Source: dance/templates/openshift-pipelines/subscription.yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-pipelines-operator
+  namespace: openshift-operators
+spec:
+  channel: pipelines-1.12
+  installPlanApproval: Automatic
+  name: openshift-pipelines-operator-rh
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: openshift-pipelines-operator-rh.v1.12.2
+---
+# Source: dance/templates/configure.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "installer-configure"
+  labels:
+    app.kubernetes.io/managed-by: "Helm"
+    app.kubernetes.io/instance: "installer"
+    app.kubernetes.io/version: 1.0.0
+    helm.sh/chart: "dance-0.2.0"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      name: "installer-configure"
+      labels:
+        app.kubernetes.io/managed-by: "Helm"
+        app.kubernetes.io/instance: "installer"
+        helm.sh/chart: "dance-0.2.0"
+    spec:
+      containers:
+                
+        - name: configure-gitops
+          image: "k8s.gcr.io/hyperkube:v1.12.1"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+              
+              CRD="argocds"
+              echo -n "Waiting for '$CRD' CRD: "
+              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                echo -n "."
+                sleep 3
+              done
+              echo "OK"
+        
+              echo -n "Waiting for gitops operator deployment: "
+              until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
+                echo -n "."
+                sleep 3
+              done
+              echo "OK"
+        
+              #
+              # All actions must be idempotent
+              #
+              cat << EOF | kubectl apply -n developer-argocd -f -
+                              
+                        apiVersion: argoproj.io/v1beta1
+                        kind: ArgoCD
+                        metadata:
+                          name: developer-argocd
+                        spec:
+                          server:
+                            autoscale:
+                              enabled: false
+                            grpc:
+                              ingress:
+                                enabled: false
+                            ingress:
+                              enabled: false
+                            resources:
+                              limits:
+                                cpu: 500m
+                                memory: 256Mi
+                              requests:
+                                cpu: 125m
+                                memory: 128Mi
+                            route:
+                              enabled: true
+                            service:
+                              type: ''
+                          grafana:
+                            enabled: false
+                            ingress:
+                              enabled: false
+                            resources:
+                              limits:
+                                cpu: 500m
+                                memory: 256Mi
+                              requests:
+                                cpu: 250m
+                                memory: 128Mi
+                            route:
+                              enabled: false
+                          monitoring:
+                            enabled: false
+                          notifications:
+                            enabled: false
+                          prometheus:
+                            enabled: false
+                            ingress:
+                              enabled: false
+                            route:
+                              enabled: false
+                          initialSSHKnownHosts: {}
+                          sso:
+                            dex:
+                              openShiftOAuth: true
+                              resources:
+                                limits:
+                                  cpu: 500m
+                                  memory: 256Mi
+                                requests:
+                                  cpu: 250m
+                                  memory: 128Mi
+                            provider: dex
+                          applicationSet:
+                            resources:
+                              limits:
+                                cpu: '2'
+                                memory: 1Gi
+                              requests:
+                                cpu: 250m
+                                memory: 512Mi
+                            webhookServer:
+                              ingress:
+                                enabled: false
+                              route:
+                                enabled: false
+                          rbac:
+                            defaultPolicy: ''
+                            policy: |
+                              g, system:cluster-admins, role:admin
+                              g, cluster-admins, role:admin
+                            scopes: '[groups]'
+                          repo:
+                            resources:
+                              limits:
+                                cpu: '1'
+                                memory: 1Gi
+                              requests:
+                                cpu: 250m
+                                memory: 256Mi
+                          resourceExclusions: |
+                            - apiGroups:
+                              - tekton.dev
+                              clusters:
+                              - '*'
+                              kinds:
+                              - TaskRun
+                              - PipelineRun
+                          ha:
+                            enabled: false
+                            resources:
+                              limits:
+                                cpu: 500m
+                                memory: 256Mi
+                              requests:
+                                cpu: 250m
+                                memory: 128Mi
+                          tls:
+                            ca: {}
+                          redis:
+                            resources:
+                              limits:
+                                cpu: 500m
+                                memory: 256Mi
+                              requests:
+                                cpu: 250m
+                                memory: 128Mi
+                          controller:
+                            processors: {}
+                            resources:
+                              limits:
+                                cpu: '2'
+                                memory: 2Gi
+                              requests:
+                                cpu: 250m
+                                memory: 1Gi
+                        
+              EOF
+        
+                
+        - name: configure-pipelines
+          image: "k8s.gcr.io/hyperkube:v1.12.1"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              CRD="tektonconfigs"
+              echo -n "Waiting for '$CRD' CRD: "
+              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                echo -n "."
+                sleep 3
+              done
+              echo
+              echo "OK"
+        
+              echo -n "Waiting for pipelines operator deployment: "
+              until kubectl get "$CRD" config -n openshift-pipelines >/dev/null 2>&1; do
+                echo -n "."
+                sleep 3
+              done
+              echo
+              echo "OK"
+        
+              # All actions must be idempotent
+              echo "Updating the TektonConfig"
+              kubectl patch "$CRD" config --type 'merge' --patch '      
+              {
+                "spec": {
+                  "pipeline": {
+                    "enable-bundles-resolver": true,
+                    "enable-cluster-resolver": true,
+                    "enable-custom-tasks": true,
+                    "enable-git-resolver": true,
+                    "enable-hub-resolver": true,
+                    "enable-tekton-oci-bundles": true
+                  }
+                }
+              }
+              '
+        
+      restartPolicy: Never
+      serviceAccountName: helm-manager

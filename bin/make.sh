@@ -17,13 +17,19 @@ Manage the Helm chart in '$NAMESPACE' as '$APP_NAME'.
 
 Commands:
     apply
-        Deploy (install/update) the helm chart.
+        Apply (install/update) the helm chart.
     delete
         Delete the helm chart.
     template
         Render the helm chart.
 
 Optional arguments:
+    -a, --app-name
+        Name of the application.
+        Default: $APP_NAME
+    -n, --namespace
+        Namespace where the application will be deployed.
+        Default: $NAMESPACE
     -d, --debug
         Activate tracing/debug mode.
     -h, --help
@@ -48,6 +54,14 @@ parse_args() {
     case $1 in
     apply | delete | template)
       ACTION="$1"
+      ;;
+    -a | --app-name)
+      APP_NAME="$2"
+      shift
+      ;;
+    -n | --namespace)
+      NAMESPACE="$2"
+      shift
       ;;
     -d | --debug)
       set -x
