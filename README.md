@@ -1,11 +1,18 @@
 # Project Dance
 
-This helm chart installs and configures the following projects :
+This helm chart installs and configures the following projects/products :
 
-* Red Hat OpenShift GitOps
-* Red Hat OpenShift Pipelines
-* Red Hat Quay
-* Red Hat ACS
+
+| Product | Installation    | Configuration   |
+| :---:   | :---: | :---: |
+| OpenShift GitOps | Operator `Subscription`   | Sets up an Argo CD in the `developer-argo` namespace for developer teams   |
+| OpenShift Pipelines | Operator  `Subscription` | (TODO) Enables Tekton Chains & sets up signing keys   |
+| Quay | (TODO) Operator `Subscription`  | 283   |
+| ACS | (TODO)   |    |
+| Trusted Application Signer | (TODO) Helm Dependency   |    |
+| Trusted Profile Signer | (TODO) Helm Dependecy   |    |
+
+
 
 
 # Usage
