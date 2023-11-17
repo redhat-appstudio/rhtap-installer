@@ -24,12 +24,18 @@ Commands:
         Render the helm chart.
 
 Optional arguments:
-    -a, --app-name
+    -a, --app-name APP_NAME
         Name of the application.
         Default: $APP_NAME
-    -n, --namespace
+    -n, --namespace NAMESPACE
         Namespace where the application will be deployed.
         Default: $NAMESPACE
+    --version VERSION
+        Version of the helm chart to install.
+        The version can end with 'x' to install the latest
+        version (1.2.x to install the latest patch version,
+        1.x to install the latest minor version).
+        Default: current repository
     -d, --debug
         Activate tracing/debug mode.
     -h, --help
@@ -47,6 +53,7 @@ set_defaults() {
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
   )"
+  VERSION="$HELM_CHART"
 }
 
 parse_args() {
@@ -56,12 +63,23 @@ parse_args() {
       ACTION="$1"
       ;;
     -a | --app-name)
-      APP_NAME="$2"
       shift
+      APP_NAME="$1"
       ;;
     -n | --namespace)
-      NAMESPACE="$2"
       shift
+      NAMESPACE="$1"
+      ;;
+    --version)
+      shift
+      VERSION="$(echo "$1" | cut -dx -f1)"
+      VERSION=$(
+        git ls-remote --tags https://github.com/redhat-appstudio/helm-repository.git "$VERSION*" |
+          sed 's:.*refs/tags/::' |
+          sort --version-sort |
+          tail -1
+      )
+      VERSION="https://redhat-appstudio.github.io/helm-repository/dance-$VERSION.tgz"
       ;;
     -d | --debug)
       set -x
@@ -90,23 +108,29 @@ parse_args() {
   helm="helm -n $NAMESPACE"
 }
 
+init() {
+  helm repo add dance https://redhat-appstudio.github.io/helm-repository/
+  helm repo update dance
+}
+
 delete() {
   $helm uninstall "$APP_NAME"
   $helm list
 }
 
 apply() {
-  $helm upgrade --install --create-namespace "$APP_NAME" "$HELM_CHART"
+  $helm upgrade --install --create-namespace "$APP_NAME" "$VERSION"
   $helm list
 }
 
 template() {
-  $helm template "$APP_NAME" "$HELM_CHART"
+  $helm template "$APP_NAME" "$VERSION"
 }
 
 main() {
   set_defaults
   parse_args "$@"
+  init
   $ACTION
 }
 
