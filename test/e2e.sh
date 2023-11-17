@@ -18,7 +18,7 @@ Test the Helm chart.
 Optional arguments:
     -t, --test TEST_NAME
         Name of the test(s) to run. Must be one of:
-          apply, template
+          apply, version, template
         By default all tests are run.
     -d, --debug
         Activate tracing/debug mode.
@@ -84,6 +84,14 @@ template() {
       echo "FAIL"
       exit 1
     }
+}
+
+version() {
+  VERSION="$(cat "$HELM_CHART/Chart.yaml" | grep "^version:" | sed 's:.* ::')"
+  if [ "$(git ls-remote --tags https://github.com/redhat-appstudio/helm-repository.git "$VERSION")" != "0" ]; then
+    echo "Version '$VERSION' already exists. You must update 'version' in 'Chart.yaml'."
+    exit 1
+  fi
 }
 
 main() {
