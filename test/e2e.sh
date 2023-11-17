@@ -43,8 +43,8 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
     -t | --test)
-      ACTIONS+=("$2")
       shift
+      ACTIONS+=("$1")
       ;;
     -d | --debug)
       set -x
@@ -82,14 +82,16 @@ template() {
     echo "OK" ||
     {
       echo "FAIL"
+      echo "You must update '$SCRIPT_DIR/data/helm-chart/template.yaml'." >&2
       exit 1
     }
 }
 
 version() {
   VERSION="$(cat "$HELM_CHART/Chart.yaml" | grep "^version:" | sed 's:.* ::')"
-  if [ "$(git ls-remote --tags https://github.com/redhat-appstudio/helm-repository.git "$VERSION")" != "0" ]; then
-    echo "Version '$VERSION' already exists. You must update 'version' in 'Chart.yaml'."
+  if [ "$(git ls-remote --tags https://github.com/redhat-appstudio/helm-repository.git "$VERSION" | wc -l)" != "0" ]; then
+    echo "Version '$VERSION' already exists."
+    echo "You must update 'version' in 'Chart.yaml'." >&2
     exit 1
   fi
 }
