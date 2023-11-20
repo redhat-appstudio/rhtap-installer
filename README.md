@@ -27,7 +27,7 @@ This helm chart installs and configures the following projects/products :
 
 2. Install Dance
 
-    `helm install dance --generate-name`
+    `helm install rhtap-dance/dance --generate-name`
 
     Sample output:
     
