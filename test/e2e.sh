@@ -32,7 +32,7 @@ Example:
 
 set_defaults() {
   ACTIONS=()
-  DEFAULT_ACTIONS=(template apply)
+  DEFAULT_ACTIONS=(version template apply)
   HELM_CHART="$(
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
@@ -66,7 +66,6 @@ parse_args() {
     esac
     shift
   done
-  ACTIONS=${ACTION:-$ACTIONS}
 }
 
 init() {
@@ -120,7 +119,7 @@ main() {
   set_defaults
   parse_args "$@"
   init
-  for ACTION in "${ACTIONS[@]}"; do
+  for ACTION in "${ACTIONS[@]:-${DEFAULT_ACTIONS[@]}}"; do
     echo "# Test: $ACTION"
     $ACTION
     echo
