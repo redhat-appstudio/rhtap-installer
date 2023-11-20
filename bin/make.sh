@@ -20,6 +20,8 @@ Commands:
         Apply (install/update) the helm chart.
     delete
         Delete the helm chart.
+    release
+        Package and release the helm chart.
     template
         Render the helm chart.
 
@@ -59,7 +61,7 @@ set_defaults() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
-    apply | delete | template)
+    apply | delete | release | template)
       ACTION="$1"
       ;;
     -a | --app-name)
@@ -121,6 +123,50 @@ delete() {
 apply() {
   $helm upgrade --install --create-namespace "$APP_NAME" "$VERSION"
   $helm list
+}
+
+release() {
+  # Check that the repository is in the right state
+  if ! git diff --exit-code >/dev/null; then
+    echo "Cannot release a version with uncommitted changes" >&2
+    exit 1
+  fi
+  git pull --rebase
+
+  # Create package
+  cd "$HELM_CHART"
+  package="/$(helm package . | cut -d/ -f2-)"
+  version="$(
+    basename "$package" |
+      grep --extended-regex --only-matching "([0-9]+\.){3}tgz$" |
+      cut -d. -f 1-3
+  )"
+  git tag --force "$version"
+  git push --tags
+
+  # Update version
+  major_minor="$(echo "$version" | cut -d. -f 1,2)"
+  patch="$(echo "$(($(echo "$version" | cut -d. -f 3) + 1))")"
+  new_version="$major_minor.$patch"
+  sed -i -e "s|^version: \+$version$|version: $new_version|" Chart.yaml
+  git add .
+  git commit -m "Init v$new_version"
+  git push
+
+  # Release package
+  TMPDIR="$(mktemp -d)"
+  cd "$TMPDIR"
+  git clone git@github.com:redhat-appstudio/helm-repository.git
+  cd helm-repository
+  mv "$package" "."
+  helm repo index .
+  git add .
+  git commit -m "Release $version"
+  git push
+  git tag --force "$version"
+  git push --tags
+  cd -
+  rm -rf "$TMPDIR"
 }
 
 template() {
