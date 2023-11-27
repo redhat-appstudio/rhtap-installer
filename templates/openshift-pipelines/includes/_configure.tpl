@@ -10,15 +10,14 @@
       set -o pipefail
 
       CRD="tektonconfigs"
-      echo -n "Waiting for '$CRD' CRD: "
-      while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+      echo -n "* Waiting for '$CRD' CRD: "
+      while [ $(kubectl api-resources 2>/dev/null | grep -c "^$CRD ") = "0" ] ; do
         echo -n "."
         sleep 3
       done
-      echo
       echo "OK"
 
-      echo -n "Waiting for pipelines operator deployment: "
+      echo -n "* Waiting for pipelines operator deployment: "
       until kubectl get "$CRD" config -n openshift-pipelines >/dev/null 2>&1; do
         echo -n "."
         sleep 3
@@ -27,6 +26,6 @@
       echo "OK"
 
       # All actions must be idempotent
-      echo "Updating the TektonConfig"
+      echo -n "* Updating the TektonConfig: "
       kubectl patch "$CRD" config --type 'merge' --patch '{{ include "dance.includes.tektonconfig" . | indent 6 }}'
 {{ end }}

@@ -22,6 +22,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
       containers:
+        {{ include "dance.configure.acs" . | indent 8 }}
         {{ include "dance.configure.gitops" . | indent 8 }}
         {{ include "dance.configure.pipelines" . | indent 8 }}
       restartPolicy: Never
