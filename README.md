@@ -9,8 +9,8 @@ This helm chart installs and configures the following projects/products :
 | OpenShift Pipelines | Operator  `Subscription` | (TODO) Enables Tekton Chains & sets up signing keys   |
 | Quay | (TODO) Operator `Subscription`  |    |
 | ACS | (TODO)   |    |
-| Trusted Application Signer | (TODO) Helm Dependency   |    |
-| Trusted Profile Signer | (TODO) Helm Dependecy   |    |
+| Trusted Artifact Signer | (TODO) Helm Dependency   |    |
+| Trusted Profile Analyzer | (TODO) Helm Dependecy   |    |
 
 
 # Try it
