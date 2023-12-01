@@ -1,10 +1,4 @@
 ---
-# Source: dance/templates/acs/namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: rhacs-operator
----
 # Source: dance/templates/openshift-gitops/namespace.yaml
 apiVersion: v1
 kind: Namespace
@@ -41,20 +35,6 @@ subjects:
   - kind: ServiceAccount
     name: helm-manager
     namespace: redhat-dance
----
-# Source: dance/templates/acs/subscription.yaml
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: rhacs-operator
-  namespace: rhacs-operator
-spec:
-  channel: stable
-  installPlanApproval: Automatic
-  name: rhacs-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-  startingCSV: rhacs-operator.v4.3.0
 ---
 # Source: dance/templates/openshift-gitops/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
@@ -93,7 +73,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "dance-0.2.2"
+    helm.sh/chart: "dance-0.2.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -106,51 +86,9 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.2.2"
+        helm.sh/chart: "dance-0.2.1"
     spec:
       containers:
-                
-        - name: configure-acs
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-        
-              echo -n "* OperatorGroup: "
-              if [ "$(oc get operatorgroups -n rhacs-operator 2>/dev/null | wc -l)" = "0" ];then
-                cat << EOF | oc create -f -
-                    
-              apiVersion: operators.coreos.com/v1
-              kind: OperatorGroup
-              metadata:
-                annotations:
-                  olm.providedAPIs: Central.v1alpha1.platform.stackrox.io,SecuredCluster.v1alpha1.platform.stackrox.io
-                generateName: rhacs-operator-
-                namespace: rhacs-operator
-              spec:
-                upgradeStrategy: Default
-              
-              EOF
-              else
-                echo "OK"
-              fi
-        
-              CRDS=( centrals securedclusters )
-              for CRD in "${CRDS[@]}"; do
-                echo -n "* Waiting for '$CRD' CRD: "
-                while [ $(kubectl api-resources 2>/dev/null | grep -c "^$CRD ") = "0" ] ; do
-                  echo -n "."
-                  sleep 3
-                done
-                echo "OK"
-              done
-        
-              echo "TODO: Configure ACS"
-        
                 
         - name: configure-gitops
           image: "k8s.gcr.io/hyperkube:v1.12.1"
@@ -163,14 +101,14 @@ spec:
               set -o pipefail
               
               CRD="argocds"
-              echo -n "* Waiting for '$CRD' CRD: "
-              while [ $(kubectl api-resources 2>/dev/null | grep -c "^$CRD ") = "0" ] ; do
+              echo -n "Waiting for '$CRD' CRD: "
+              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
                 echo -n "."
                 sleep 3
               done
               echo "OK"
         
-              echo -n "* Waiting for gitops operator deployment: "
+              echo -n "Waiting for gitops operator deployment: "
               until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
                 echo -n "."
                 sleep 3
@@ -319,14 +257,15 @@ spec:
               set -o pipefail
         
               CRD="tektonconfigs"
-              echo -n "* Waiting for '$CRD' CRD: "
-              while [ $(kubectl api-resources 2>/dev/null | grep -c "^$CRD ") = "0" ] ; do
+              echo -n "Waiting for '$CRD' CRD: "
+              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
                 echo -n "."
                 sleep 3
               done
+              echo
               echo "OK"
         
-              echo -n "* Waiting for pipelines operator deployment: "
+              echo -n "Waiting for pipelines operator deployment: "
               until kubectl get "$CRD" config -n openshift-pipelines >/dev/null 2>&1; do
                 echo -n "."
                 sleep 3
@@ -335,7 +274,7 @@ spec:
               echo "OK"
         
               # All actions must be idempotent
-              echo -n "* Updating the TektonConfig: "
+              echo "Updating the TektonConfig"
               kubectl patch "$CRD" config --type 'merge' --patch '      
               {
                 "spec": {
