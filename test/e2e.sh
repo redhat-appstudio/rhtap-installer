@@ -32,11 +32,12 @@ Example:
 
 set_defaults() {
   ACTIONS=()
-  DEFAULT_ACTIONS=(version template apply)
+  DEFAULT_ACTIONS=(version template apply acs)
   HELM_CHART="$(
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
   )"
+  NAMESPACE="redhat-dance"
 }
 
 parse_args() {
@@ -73,6 +74,24 @@ init() {
     [ "$(echo "${ACTIONS[*]}" | grep -c "install")" = "1" -a "$(echo "${ACTIONS[*]}" | grep -c "upgrade")" = "1" ]
   then
     echo "Cannot run 'install' and 'upgrade' together" >&2
+    exit 1
+  fi
+}
+
+acs() {
+  pipeline_id="$(
+    kubectl create -n "$NAMESPACE" -f "$SCRIPT_DIR/data/manifests/acs-pipeline.yaml" |
+      cut -d ' ' -f 1
+  )"
+  echo -n "* Pipeline: "
+  while ! kubectl get -n "$NAMESPACE" "$pipeline_id" | grep --extended-regex --quiet " False | True "; do
+    echo -n "."
+    sleep 2
+  done
+  if kubectl get -n "$NAMESPACE" "$pipeline_id" | grep --quiet " True "; then
+    echo "OK"
+  else
+    echo "Failed"
     exit 1
   fi
 }

@@ -1,0 +1,38 @@
+# oc create -n redhat-dance -f acs-pipelinerun.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: acs-pipeline-
+spec:
+  pipelineSpec:
+    tasks:
+    - name: image-check
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: acs-image-check
+          - name: namespace
+            value: redhat-dance
+      params:
+        - name: image
+          value: quay.io/team-helium/miner
+        - name: image_digest
+          value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+    - name: image-scan
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: acs-image-scan
+          - name: namespace
+            value: redhat-dance
+      params:
+        - name: image
+          value: quay.io/team-helium/miner
+        - name: image_digest
+          value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c

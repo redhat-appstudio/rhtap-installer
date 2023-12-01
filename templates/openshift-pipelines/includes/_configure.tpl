@@ -15,7 +15,6 @@
         echo -n "."
         sleep 3
       done
-      echo
       echo "OK"
 
       echo -n "Waiting for pipelines operator deployment: "
@@ -23,7 +22,6 @@
         echo -n "."
         sleep 3
       done
-      echo
       echo "OK"
 
       # All actions must be idempotent

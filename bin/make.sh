@@ -93,6 +93,8 @@ parse_args() {
       ;;
     --)
       # End of arguments
+      shift
+      PASSTHROUGH_ARGS=($@)
       break
       ;;
     *)
@@ -121,7 +123,7 @@ delete() {
 }
 
 apply() {
-  $helm upgrade --install --create-namespace "$APP_NAME" "$VERSION"
+  $helm upgrade --install --create-namespace "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
   $helm list
 }
 

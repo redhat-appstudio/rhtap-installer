@@ -16,3 +16,9 @@ quay:
   registry: quay.io
   username: admin
   password: admin
+
+# Private values
+# You may want to override those variables in another file (e.g. values-private.yaml)
+acs:
+  central-endpoint: central.acs.mycluster.com:443
+  api-token: eyAbC123...890XyZ
