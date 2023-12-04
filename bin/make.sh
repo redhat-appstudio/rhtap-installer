@@ -24,6 +24,8 @@ Commands:
         Package and release the helm chart.
     template
         Render the helm chart.
+    test
+        Run the helm chart tests.
 
 Optional arguments:
     -a, --app-name APP_NAME
@@ -61,7 +63,7 @@ set_defaults() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
-    apply | delete | release | template)
+    apply | delete | release | template | test)
       ACTION="$1"
       ;;
     -a | --app-name)
@@ -179,6 +181,10 @@ release() {
 
 template() {
   $helm template "$APP_NAME" "$VERSION"
+}
+
+test() {
+  $helm test "$APP_NAME"
 }
 
 _get_versions() {

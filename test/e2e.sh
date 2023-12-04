@@ -32,7 +32,7 @@ Example:
 
 set_defaults() {
   ACTIONS=()
-  DEFAULT_ACTIONS=(version template apply acs)
+  DEFAULT_ACTIONS=(version template apply test)
   HELM_CHART="$(
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
@@ -78,24 +78,6 @@ init() {
   fi
 }
 
-acs() {
-  pipeline_id="$(
-    kubectl create -n "$NAMESPACE" -f "$SCRIPT_DIR/data/manifests/acs-pipeline.yaml" |
-      cut -d ' ' -f 1
-  )"
-  echo -n "* Pipeline: "
-  while ! kubectl get -n "$NAMESPACE" "$pipeline_id" | grep --extended-regex --quiet " False | True "; do
-    echo -n "."
-    sleep 2
-  done
-  if kubectl get -n "$NAMESPACE" "$pipeline_id" | grep --quiet " True "; then
-    echo "OK"
-  else
-    echo "Failed"
-    exit 1
-  fi
-}
-
 apply() {
   # Because the chart is idempotent there is no
   # need to track if the chart as already been
@@ -112,6 +94,10 @@ template() {
       echo "You must update '$SCRIPT_DIR/data/helm-chart/template.yaml'." >&2
       exit 1
     }
+}
+
+test() {
+  $HELM_CHART/bin/make.sh test
 }
 
 upgrade() {

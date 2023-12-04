@@ -470,3 +470,97 @@ spec:
         
       restartPolicy: Never
       serviceAccountName: helm-manager
+---
+# Source: dance/templates/test.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "installer-test"
+  labels:
+    app.kubernetes.io/managed-by: "Helm"
+    app.kubernetes.io/instance: "installer"
+    app.kubernetes.io/version: 1.0.0
+    helm.sh/chart: "dance-0.2.2"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    helm.sh/hook: test
+spec:
+  template:
+    metadata:
+      name: "installer-test"
+      labels:
+        app.kubernetes.io/managed-by: "Helm"
+        app.kubernetes.io/instance: "installer"
+        helm.sh/chart: "dance-0.2.2"
+    spec:
+      containers:
+                
+        - name: test-acs
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
+                    
+              # oc create -n redhat-dance -f acs-pipelinerun.yaml
+              apiVersion: tekton.dev/v1
+              kind: PipelineRun
+              metadata:
+                generateName: acs-test-
+              spec:
+                pipelineSpec:
+                  tasks:
+                  - name: image-check
+                    taskRef:
+                      resolver: cluster
+                      params:
+                        - name: kind
+                          value: task
+                        - name: name
+                          value: acs-image-check
+                        - name: namespace
+                          value: redhat-dance
+                    params:
+                      - name: image
+                        value: quay.io/team-helium/miner
+                      - name: image_digest
+                        value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+                  - name: image-scan
+                    taskRef:
+                      resolver: cluster
+                      params:
+                        - name: kind
+                          value: task
+                        - name: name
+                          value: acs-image-scan
+                        - name: namespace
+                          value: redhat-dance
+                    params:
+                      - name: image
+                        value: quay.io/team-helium/miner
+                      - name: image_digest
+                        value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+              
+              EOF
+              )"
+              echo -n "* Pipeline $pipeline_id: "
+              while ! kubectl get "$pipeline_id" | grep --extended-regex --quiet " False | True "; do
+                echo -n "."
+                sleep 2
+              done
+              if kubectl get "$pipeline_id" | grep --quiet " True "; then
+                kubectl delete "$pipeline_id" > /dev/null
+                echo "OK"
+              else
+                echo "Failed"
+                exit 1
+              fi
+        
+      restartPolicy: Never
+      serviceAccountName: helm-manager
