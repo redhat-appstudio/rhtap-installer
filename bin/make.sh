@@ -154,6 +154,7 @@ release() {
 
   # Update version
   sed -i -e "s|^version: \+$version$|version: $next_version|" Chart.yaml
+  "$SCRIPT_DIR/make.sh" template >"$HELM_CHART/test/data/helm-chart/template.yaml"
   git add .
   git commit -m "Init version: $next_version"
   git push
