@@ -62,11 +62,12 @@ spec:
       # Scan image
       IMAGE=\$(params.image)@\$(params.image_digest)
       ./roxctl image scan --force \
-        $(
+        \$(
           [ "\$(params.insecure-skip-tls-verify)" = "true" ] && \
           echo -n "--insecure-skip-tls-verify"
         ) \
-        --image "\$IMAGE" > scan.log
+        --image "\$IMAGE" \
+        --output json > scan.log
 
       cat scan.log
 {{ end }}

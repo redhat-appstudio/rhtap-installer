@@ -10,14 +10,14 @@
       set -o pipefail
       
       CRD="argocds"
-      echo -n "Waiting for '$CRD' CRD: "
+      echo -n "* Waiting for '$CRD' CRD: "
       while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
         echo -n "."
         sleep 3
       done
       echo "OK"
 
-      echo -n "Waiting for gitops operator deployment: "
+      echo -n "* Waiting for gitops operator deployment: "
       until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
         echo -n "."
         sleep 3
@@ -27,7 +27,12 @@
       #
       # All actions must be idempotent
       #
-      cat << EOF | kubectl apply -n {{ index .Values "openshift-gitops" "argocd-namespace" }} -f -
-      {{ include "dance.include.argocd" . | indent 16 }}
+      echo -n "* ArgoCD resource: "
+      cat << EOF | kubectl apply -n {{ index .Values "openshift-gitops" "argocd-namespace" }} -f - >/dev/null
+      {{ include "dance.include.argocd" . | indent 8 }}
       EOF
+      echo "OK"
+
+      echo
+      echo "Configuration successful"
 {{ end }}

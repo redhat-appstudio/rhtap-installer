@@ -73,7 +73,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "dance-0.2.2"
+    helm.sh/chart: "dance-0.2.3"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -86,7 +86,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.2.2"
+        helm.sh/chart: "dance-0.2.3"
     spec:
       containers:
                 
@@ -100,165 +100,249 @@ spec:
               set -o nounset
               set -o pipefail
         
-              CRD=( pipelines tasks )
-              echo -n "Waiting for '$CRD' CRD: "
-              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
-                echo -n "."
-                sleep 3
+              CRDS=( pipelines tasks )
+              for CRD in "${CRDS[@]}"; do
+                echo -n "* Waiting for '$CRD' CRD: "
+                while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                  echo -n "."
+                  sleep 3
+                done
+                echo "OK"
               done
+        
+              echo -n "* Configuring Tasks: "
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1beta1
+                kind: Task
+                metadata:
+                  name: acs-deploy-check
+                spec:
+                  description: >-
+                    Policy check a deployment with StackRox/RHACS This tasks allows you to check
+                    a deployment against build-time policies and apply enforcement to fail
+                    builds. It's a companion to the stackrox-image-scan task, which returns full
+                    vulnerability scan results for an image.
+                  params:
+                    - default:  "central.acs.mycluster.com:443"
+                      description: |
+                        Secret containing the address:port tuple for StackRox Central)
+                        (example - rox.stackrox.io:443)
+                      name: rox_central_endpoint
+                      type: string
+                    - default: "eyAbC123...890XyZ"
+                      description: |
+                        Secret containing the StackRox API token with CI permissions
+                      name: rox_api_token
+                      type: string
+                    - description: |
+                        URL to the deployment
+                        (example - https://raw.gitlab.mycompany.com/myorg/myapp/mybranch/argocd/mycomponent/myenv/deployment.yaml)
+                      name: deployment_url
+                      type: string
+                    - default: 'false'
+                      description: |
+                        When set to \`"true"\`, skip verifying the TLS certs of the Central
+                        endpoint.  Defaults to \`"false"\`.
+                      name: insecure-skip-tls-verify
+                      type: string
+                  results:
+                    - description: Output of \`roxctl deployment check\`
+                      name: check_output
+                  steps:
+                    - env:
+                      - name: ROX_API_TOKEN
+                        value: \$(params.rox_api_token)
+                      - name: ROX_ENDPOINT
+                        value: \$(params.rox_central_endpoint)
+                      image: registry.access.redhat.com/ubi8/ubi-minimal
+                      name: rox-deploy-scan
+                      resources: {}
+                      script: |
+                        #!/usr/bin/env bash
+                        set -o errexit
+                        set -o nounset
+                        set -o pipefail
+                
+                        curl -s -k -L -H "Authorization: Bearer \$ROX_API_TOKEN" \
+                          "https://\$ROX_ENDPOINT/api/cli/download/roxctl-linux" \
+                          --output ./roxctl  \
+                          > /dev/null
+                        chmod +x ./roxctl  > /dev/null
+                
+                        curl --fail --insecure --location --output deployment.yaml --silent "\$(params.deployment_url)"
+                
+                        ./roxctl deployment check \
+                          \$(
+                            [ "\$(params.insecure-skip-tls-verify)" = "true" ] && \
+                            echo -n "--insecure-skip-tls-verify"
+                          ) \
+                          --file "deployment.yaml" \
+                          --output json > check.log
+                          cat check.log
+                      workingDir: /tmp
+                
+              EOF
+              echo -n "."
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1beta1
+                kind: Task
+                metadata:
+                  name: acs-image-check
+                spec:
+                  description: |
+                    Policy check an image with StackRox/RHACS This tasks allows you to
+                    check an image against build-time policies and apply enforcement to fail builds.
+                    It's a companion to the acs-image-scan task, which returns full vulnerability
+                    scan results for an image.
+                  params:
+                  - default: "central.acs.mycluster.com:443"
+                    description: |
+                      Secret containing the address:port tuple for StackRox Central)
+                      (example - rox.stackrox.io:443)
+                    name: rox_central_endpoint
+                    type: string
+                  - default: "eyAbC123...890XyZ"
+                    description: |
+                      Secret containing the StackRox API token with CI permissions
+                    name: rox_api_token
+                    type: string
+                  - description: |
+                      Full name of image to scan (example -- gcr.io/rox/sample:5.0-rc1)
+                    name: image
+                    type: string
+                  - default: "false"
+                    description: |
+                      When set to \`"true"\`, skip verifying the TLS certs of the Central
+                      endpoint.  Defaults to \`"false"\`.
+                    name: insecure-skip-tls-verify
+                    type: string
+                  - description: |
+                      Digest of the image
+                    name: image_digest
+                    type: string
+                  results:
+                  - description: Output of \`roxctl image check\`
+                    name: check_output
+                  steps:
+                  - env:
+                    - name: ROX_API_TOKEN
+                      value: \$(params.rox_api_token)
+                    - name: ROX_ENDPOINT
+                      value: \$(params.rox_central_endpoint)
+                    image: registry.access.redhat.com/ubi8/ubi-minimal
+                    name: rox-image-check
+                    workingDir: /tmp
+                    script: |
+                      #!/usr/bin/env bash
+                      set -o errexit
+                      set -o nounset
+                      set -o pipefail
+                      set -x
+                
+                      # Install roxctl
+                      curl --fail --insecure --location --silent \
+                        --header "Authorization: Bearer \$ROX_API_TOKEN" \
+                        --output ./roxctl  \
+                        "https://\$ROX_ENDPOINT/api/cli/download/roxctl-linux" \
+                        > /dev/null
+                      chmod +x ./roxctl  > /dev/null
+                
+                      # Check image
+                      IMAGE=\$(params.image)@\$(params.image_digest)
+                      ./roxctl image scan --force \
+                        \$(
+                          [ "\$(params.insecure-skip-tls-verify)" = "true" ] && \
+                          echo -n "--insecure-skip-tls-verify"
+                        ) \
+                        --image "\$IMAGE" \
+                        --output json > check.log
+                
+                      cat check.log
+                
+              EOF
+              echo -n "."
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1beta1
+                kind: Task
+                metadata:
+                  name: acs-image-scan
+                spec:
+                  description: |
+                    Retrun a full vulnerability scan results for an image.
+                  params:
+                  - default: "central.acs.mycluster.com:443"
+                    description: |
+                      Secret containing the address:port tuple for StackRox Central)
+                      (example - rox.stackrox.io:443)
+                    name: rox_central_endpoint
+                    type: string
+                  - default: "eyAbC123...890XyZ"
+                    description: |
+                      Secret containing the StackRox API token with CI permissions
+                    name: rox_api_token
+                    type: string
+                  - description: |
+                      Full name of image to scan (example -- gcr.io/rox/sample:5.0-rc1)
+                    name: image
+                    type: string
+                  - default: "false"
+                    description: |
+                      When set to \`"true"\`, skip verifying the TLS certs of the Central
+                      endpoint.  Defaults to \`"false"\`.
+                    name: insecure-skip-tls-verify
+                    type: string
+                  - description: |
+                      Digest of the image
+                    name: image_digest
+                    type: string
+                  results:
+                  - description: Output of \`roxctl image check\`
+                    name: check_output
+                  steps:
+                  - env:
+                    - name: ROX_API_TOKEN
+                      value: \$(params.rox_api_token)
+                    - name: ROX_ENDPOINT
+                      value: \$(params.rox_central_endpoint)
+                    image: registry.access.redhat.com/ubi8/ubi-minimal
+                    name: rox-image-check
+                    workingDir: /tmp
+                    script: |
+                      #!/usr/bin/env bash
+                      set -o errexit
+                      set -o nounset
+                      set -o pipefail
+                      set -x
+                
+                      # Install roxctl
+                      curl --fail --insecure --location --silent \
+                        --header "Authorization: Bearer \$ROX_API_TOKEN" \
+                        --output ./roxctl  \
+                        "https://\$ROX_ENDPOINT/api/cli/download/roxctl-linux" \
+                        > /dev/null
+                      chmod +x ./roxctl  > /dev/null
+                
+                      # Scan image
+                      IMAGE=\$(params.image)@\$(params.image_digest)
+                      ./roxctl image scan --force \
+                        \$(
+                          [ "\$(params.insecure-skip-tls-verify)" = "true" ] && \
+                          echo -n "--insecure-skip-tls-verify"
+                        ) \
+                        --image "\$IMAGE" \
+                        --output json > scan.log
+                
+                      cat scan.log
+                
+              EOF
+              echo -n "."
               echo "OK"
         
-              cat << EOF | kubectl apply -f -
-                    
-              apiVersion: tekton.dev/v1beta1
-              kind: Task
-              metadata:
-                name: acs-image-check
-              spec:
-                description: |
-                  Policy check an image with StackRox/RHACS This tasks allows you to
-                  check an image against build-time policies and apply enforcement to fail builds.
-                  It's a companion to the acs-image-scan task, which returns full vulnerability
-                  scan results for an image.
-                params:
-                - default: "central.acs.mycluster.com:443"
-                  description: |
-                    Secret containing the address:port tuple for StackRox Central)
-                    (example - rox.stackrox.io:443)
-                  name: rox_central_endpoint
-                  type: string
-                - default: "eyAbC123...890XyZ"
-                  description: |
-                    Secret containing the StackRox API token with CI permissions
-                  name: rox_api_token
-                  type: string
-                - description: |
-                    Full name of image to scan (example -- gcr.io/rox/sample:5.0-rc1)
-                  name: image
-                  type: string
-                - default: "false"
-                  description: |
-                    When set to \`"true"\`, skip verifying the TLS certs of the Central
-                    endpoint.  Defaults to \`"false"\`.
-                  name: insecure-skip-tls-verify
-                  type: string
-                - description: |
-                    Digest of the image
-                  name: image_digest
-                  type: string
-                results:
-                - description: Output of \`roxctl image check\`
-                  name: check_output
-                steps:
-                - env:
-                  - name: ROX_API_TOKEN
-                    value: \$(params.rox_api_token)
-                  - name: ROX_ENDPOINT
-                    value: \$(params.rox_central_endpoint)
-                  image: registry.access.redhat.com/ubi8/ubi-minimal
-                  name: rox-image-check
-                  workingDir: /tmp
-                  script: |
-                    #!/usr/bin/env bash
-                    set -o errexit
-                    set -o nounset
-                    set -o pipefail
-                    set -x
-              
-                    # Install roxctl
-                    curl --fail --insecure --location --silent \
-                      --header "Authorization: Bearer \$ROX_API_TOKEN" \
-                      --output ./roxctl  \
-                      "https://\$ROX_ENDPOINT/api/cli/download/roxctl-linux" \
-                      > /dev/null
-                    chmod +x ./roxctl  > /dev/null
-              
-                    # Check image
-                    IMAGE=\$(params.image)@\$(params.image_digest)
-                    ./roxctl image scan --force \
-                      $(
-                        [ "\$(params.insecure-skip-tls-verify)" = "true" ] && \
-                        echo -n "--insecure-skip-tls-verify"
-                      ) \
-                      --image "\$IMAGE" > check.log
-              
-                    cat check.log
-              
-              EOF
-              cat << EOF | kubectl apply -f -
-                    
-              apiVersion: tekton.dev/v1beta1
-              kind: Task
-              metadata:
-                name: acs-image-scan
-              spec:
-                description: |
-                  Retrun a full vulnerability scan results for an image.
-                params:
-                - default: "central.acs.mycluster.com:443"
-                  description: |
-                    Secret containing the address:port tuple for StackRox Central)
-                    (example - rox.stackrox.io:443)
-                  name: rox_central_endpoint
-                  type: string
-                - default: "eyAbC123...890XyZ"
-                  description: |
-                    Secret containing the StackRox API token with CI permissions
-                  name: rox_api_token
-                  type: string
-                - description: |
-                    Full name of image to scan (example -- gcr.io/rox/sample:5.0-rc1)
-                  name: image
-                  type: string
-                - default: "false"
-                  description: |
-                    When set to \`"true"\`, skip verifying the TLS certs of the Central
-                    endpoint.  Defaults to \`"false"\`.
-                  name: insecure-skip-tls-verify
-                  type: string
-                - description: |
-                    Digest of the image
-                  name: image_digest
-                  type: string
-                results:
-                - description: Output of \`roxctl image check\`
-                  name: check_output
-                steps:
-                - env:
-                  - name: ROX_API_TOKEN
-                    value: \$(params.rox_api_token)
-                  - name: ROX_ENDPOINT
-                    value: \$(params.rox_central_endpoint)
-                  image: registry.access.redhat.com/ubi8/ubi-minimal
-                  name: rox-image-check
-                  workingDir: /tmp
-                  script: |
-                    #!/usr/bin/env bash
-                    set -o errexit
-                    set -o nounset
-                    set -o pipefail
-                    set -x
-              
-                    # Install roxctl
-                    curl --fail --insecure --location --silent \
-                      --header "Authorization: Bearer \$ROX_API_TOKEN" \
-                      --output ./roxctl  \
-                      "https://\$ROX_ENDPOINT/api/cli/download/roxctl-linux" \
-                      > /dev/null
-                    chmod +x ./roxctl  > /dev/null
-              
-                    # Scan image
-                    IMAGE=\$(params.image)@\$(params.image_digest)
-                    ./roxctl image scan --force \
-                      $(
-                        [ "\$(params.insecure-skip-tls-verify)" = "true" ] && \
-                        echo -n "--insecure-skip-tls-verify"
-                      ) \
-                      --image "\$IMAGE" > scan.log
-              
-                    cat scan.log
-              
-              EOF
+              echo
+              echo "Configuration successful"
         
                 
         - name: configure-gitops
@@ -272,14 +356,14 @@ spec:
               set -o pipefail
               
               CRD="argocds"
-              echo -n "Waiting for '$CRD' CRD: "
+              echo -n "* Waiting for '$CRD' CRD: "
               while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
                 echo -n "."
                 sleep 3
               done
               echo "OK"
         
-              echo -n "Waiting for gitops operator deployment: "
+              echo -n "* Waiting for gitops operator deployment: "
               until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
                 echo -n "."
                 sleep 3
@@ -289,132 +373,137 @@ spec:
               #
               # All actions must be idempotent
               #
-              cat << EOF | kubectl apply -n developer-argocd -f -
-                              
-                        apiVersion: argoproj.io/v1beta1
-                        kind: ArgoCD
-                        metadata:
-                          name: developer-argocd
-                        spec:
-                          server:
-                            autoscale:
-                              enabled: false
-                            grpc:
-                              ingress:
-                                enabled: false
-                            ingress:
-                              enabled: false
-                            resources:
-                              limits:
-                                cpu: 500m
-                                memory: 256Mi
-                              requests:
-                                cpu: 125m
-                                memory: 128Mi
-                            route:
-                              enabled: true
-                            service:
-                              type: ''
-                          grafana:
-                            enabled: false
-                            ingress:
-                              enabled: false
-                            resources:
-                              limits:
-                                cpu: 500m
-                                memory: 256Mi
-                              requests:
-                                cpu: 250m
-                                memory: 128Mi
-                            route:
-                              enabled: false
-                          monitoring:
-                            enabled: false
-                          notifications:
-                            enabled: false
-                          prometheus:
-                            enabled: false
-                            ingress:
-                              enabled: false
-                            route:
-                              enabled: false
-                          initialSSHKnownHosts: {}
-                          sso:
-                            dex:
-                              openShiftOAuth: true
-                              resources:
-                                limits:
-                                  cpu: 500m
-                                  memory: 256Mi
-                                requests:
-                                  cpu: 250m
-                                  memory: 128Mi
-                            provider: dex
-                          applicationSet:
-                            resources:
-                              limits:
-                                cpu: '2'
-                                memory: 1Gi
-                              requests:
-                                cpu: 250m
-                                memory: 512Mi
-                            webhookServer:
-                              ingress:
-                                enabled: false
-                              route:
-                                enabled: false
-                          rbac:
-                            defaultPolicy: ''
-                            policy: |
-                              g, system:cluster-admins, role:admin
-                              g, cluster-admins, role:admin
-                            scopes: '[groups]'
-                          repo:
-                            resources:
-                              limits:
-                                cpu: '1'
-                                memory: 1Gi
-                              requests:
-                                cpu: 250m
-                                memory: 256Mi
-                          resourceExclusions: |
-                            - apiGroups:
-                              - tekton.dev
-                              clusters:
-                              - '*'
-                              kinds:
-                              - TaskRun
-                              - PipelineRun
-                          ha:
-                            enabled: false
-                            resources:
-                              limits:
-                                cpu: 500m
-                                memory: 256Mi
-                              requests:
-                                cpu: 250m
-                                memory: 128Mi
-                          tls:
-                            ca: {}
-                          redis:
-                            resources:
-                              limits:
-                                cpu: 500m
-                                memory: 256Mi
-                              requests:
-                                cpu: 250m
-                                memory: 128Mi
-                          controller:
-                            processors: {}
-                            resources:
-                              limits:
-                                cpu: '2'
-                                memory: 2Gi
-                              requests:
-                                cpu: 250m
-                                memory: 1Gi
-                        
+              echo -n "* ArgoCD resource: "
+              cat << EOF | kubectl apply -n developer-argocd -f - >/dev/null
+                      
+                apiVersion: argoproj.io/v1beta1
+                kind: ArgoCD
+                metadata:
+                  name: developer-argocd
+                spec:
+                  server:
+                    autoscale:
+                      enabled: false
+                    grpc:
+                      ingress:
+                        enabled: false
+                    ingress:
+                      enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 125m
+                        memory: 128Mi
+                    route:
+                      enabled: true
+                    service:
+                      type: ''
+                  grafana:
+                    enabled: false
+                    ingress:
+                      enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                    route:
+                      enabled: false
+                  monitoring:
+                    enabled: false
+                  notifications:
+                    enabled: false
+                  prometheus:
+                    enabled: false
+                    ingress:
+                      enabled: false
+                    route:
+                      enabled: false
+                  initialSSHKnownHosts: {}
+                  sso:
+                    dex:
+                      openShiftOAuth: true
+                      resources:
+                        limits:
+                          cpu: 500m
+                          memory: 256Mi
+                        requests:
+                          cpu: 250m
+                          memory: 128Mi
+                    provider: dex
+                  applicationSet:
+                    resources:
+                      limits:
+                        cpu: '2'
+                        memory: 1Gi
+                      requests:
+                        cpu: 250m
+                        memory: 512Mi
+                    webhookServer:
+                      ingress:
+                        enabled: false
+                      route:
+                        enabled: false
+                  rbac:
+                    defaultPolicy: ''
+                    policy: |
+                      g, system:cluster-admins, role:admin
+                      g, cluster-admins, role:admin
+                    scopes: '[groups]'
+                  repo:
+                    resources:
+                      limits:
+                        cpu: '1'
+                        memory: 1Gi
+                      requests:
+                        cpu: 250m
+                        memory: 256Mi
+                  resourceExclusions: |
+                    - apiGroups:
+                      - tekton.dev
+                      clusters:
+                      - '*'
+                      kinds:
+                      - TaskRun
+                      - PipelineRun
+                  ha:
+                    enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                  tls:
+                    ca: {}
+                  redis:
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                  controller:
+                    processors: {}
+                    resources:
+                      limits:
+                        cpu: '2'
+                        memory: 2Gi
+                      requests:
+                        cpu: 250m
+                        memory: 1Gi
+                
               EOF
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
         
                 
         - name: configure-pipelines
@@ -428,14 +517,14 @@ spec:
               set -o pipefail
         
               CRD="tektonconfigs"
-              echo -n "Waiting for '$CRD' CRD: "
+              echo -n "* Waiting for '$CRD' CRD: "
               while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
                 echo -n "."
                 sleep 3
               done
               echo "OK"
         
-              echo -n "Waiting for pipelines operator deployment: "
+              echo -n "* Waiting for pipelines operator deployment: "
               until kubectl get "$CRD" config -n openshift-pipelines >/dev/null 2>&1; do
                 echo -n "."
                 sleep 3
@@ -443,30 +532,34 @@ spec:
               echo "OK"
         
               # All actions must be idempotent
-              echo "Updating the TektonConfig"
-              kubectl patch "$CRD" config --type 'merge' --patch '      
-              {
-                "spec": {
-                  "pipeline": {
-                    "enable-bundles-resolver": true,
-                    "enable-cluster-resolver": true,
-                    "enable-custom-tasks": true,
-                    "enable-git-resolver": true,
-                    "enable-hub-resolver": true,
-                    "enable-tekton-oci-bundles": true
-                  },
-                  "chain": {
-                    "artifacts.oci.storage": "oci",
-                    "artifacts.pipelinerun.format": "in-toto",
-                    "artifacts.pipelinerun.storage": "oci",
-                    "artifacts.taskrun.format": "in-toto",
-                    "artifacts.taskrun.storage": "oci",
-                    "transparency.enabled": "true",
-                    "transparency.url": "http://rekor-server.rekor.svc"
+              echo -n "* Update the TektonConfig resource: "
+              kubectl patch "$CRD" config --type 'merge' --patch '        
+                {
+                  "spec": {
+                    "pipeline": {
+                      "enable-bundles-resolver": true,
+                      "enable-cluster-resolver": true,
+                      "enable-custom-tasks": true,
+                      "enable-git-resolver": true,
+                      "enable-hub-resolver": true,
+                      "enable-tekton-oci-bundles": true
+                    },
+                    "chain": {
+                      "artifacts.oci.storage": "oci",
+                      "artifacts.pipelinerun.format": "in-toto",
+                      "artifacts.pipelinerun.storage": "oci",
+                      "artifacts.taskrun.format": "in-toto",
+                      "artifacts.taskrun.storage": "oci",
+                      "transparency.enabled": "true",
+                      "transparency.url": "http://rekor-server.rekor.svc"
+                    }
                   }
                 }
-              }
-              '
+                ' >/dev/null
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
         
       restartPolicy: Never
       serviceAccountName: helm-manager
@@ -480,7 +573,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "dance-0.2.2"
+    helm.sh/chart: "dance-0.2.3"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -492,7 +585,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.2.2"
+        helm.sh/chart: "dance-0.2.3"
     spec:
       containers:
                 
@@ -516,6 +609,21 @@ spec:
               spec:
                 pipelineSpec:
                   tasks:
+                  - name: deploy-check
+                    taskRef:
+                      resolver: cluster
+                      params:
+                        - name: kind
+                          value: task
+                        - name: name
+                          value: acs-deploy-check
+                        - name: namespace
+                          value: redhat-dance
+                    params:
+                      - name: deployment_url
+                        value: https://raw.githubusercontent.com/jduimovich/quarkus-1/main/argocd/components/q/base/deployment.yaml
+                      - name: insecure-skip-tls-verify
+                        value: true
                   - name: image-check
                     taskRef:
                       resolver: cluster
@@ -531,6 +639,8 @@ spec:
                         value: quay.io/team-helium/miner
                       - name: image_digest
                         value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+                      - name: insecure-skip-tls-verify
+                        value: true
                   - name: image-scan
                     taskRef:
                       resolver: cluster
@@ -546,6 +656,8 @@ spec:
                         value: quay.io/team-helium/miner
                       - name: image_digest
                         value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+                      - name: insecure-skip-tls-verify
+                        value: true
               
               EOF
               )"

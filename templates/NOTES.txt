@@ -3,3 +3,5 @@ Thank you for installing {{ .Chart.Name }}.
 Your ACS configuration is:
 * Endpoint: "{{ (index .Values "acs" "central-endpoint") }}"
 * API Token (sha256): "{{ sha256sum (index .Values "acs" "api-token") }}"
+
+Run `helm test --namespace {{ .Release.Namespace }} {{ .Release.Name }}` to validate the installation.

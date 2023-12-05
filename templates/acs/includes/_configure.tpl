@@ -9,18 +9,31 @@
       set -o nounset
       set -o pipefail
 
-      CRD=( pipelines tasks )
-      echo -n "Waiting for '$CRD' CRD: "
-      while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
-        echo -n "."
-        sleep 3
+      CRDS=( pipelines tasks )
+      for CRD in "${CRDS[@]}"; do
+        echo -n "* Waiting for '$CRD' CRD: "
+        while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+          echo -n "."
+          sleep 3
+        done
+        echo "OK"
       done
+
+      echo -n "* Configuring Tasks: "
+      cat << EOF | kubectl apply -f - >/dev/null
+      {{ include "dance.acs.acs_deploy_check" . | indent 8 }}
+      EOF
+      echo -n "."
+      cat << EOF | kubectl apply -f - >/dev/null
+      {{ include "dance.acs.acs_image_check" . | indent 8 }}
+      EOF
+      echo -n "."
+      cat << EOF | kubectl apply -f - >/dev/null
+      {{ include "dance.acs.acs_image_scan" . | indent 8 }}
+      EOF
+      echo -n "."
       echo "OK"
 
-      cat << EOF | kubectl apply -f -
-      {{ include "dance.acs.acs_image_check" . | indent 6 }}
-      EOF
-      cat << EOF | kubectl apply -f -
-      {{ include "dance.acs.acs_image_scan" . | indent 6 }}
-      EOF
+      echo
+      echo "Configuration successful"
 {{ end }}
