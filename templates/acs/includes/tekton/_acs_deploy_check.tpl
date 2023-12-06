@@ -1,5 +1,5 @@
 {{ define "dance.acs.acs_deploy_check" }}
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: acs-deploy-check
@@ -43,7 +43,6 @@ spec:
         value: \$(params.rox_central_endpoint)
       image: registry.access.redhat.com/ubi8/ubi-minimal
       name: rox-deploy-scan
-      resources: {}
       script: |
         #!/usr/bin/env bash
         set -o errexit

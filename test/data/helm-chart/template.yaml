@@ -113,7 +113,7 @@ spec:
               echo -n "* Configuring Tasks: "
               cat << EOF | kubectl apply -f - >/dev/null
                       
-                apiVersion: tekton.dev/v1beta1
+                apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
                   name: acs-deploy-check
@@ -157,7 +157,6 @@ spec:
                         value: \$(params.rox_central_endpoint)
                       image: registry.access.redhat.com/ubi8/ubi-minimal
                       name: rox-deploy-scan
-                      resources: {}
                       script: |
                         #!/usr/bin/env bash
                         set -o errexit
@@ -186,7 +185,7 @@ spec:
               echo -n "."
               cat << EOF | kubectl apply -f - >/dev/null
                       
-                apiVersion: tekton.dev/v1beta1
+                apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
                   name: acs-image-check
@@ -265,7 +264,7 @@ spec:
               echo -n "."
               cat << EOF | kubectl apply -f - >/dev/null
                       
-                apiVersion: tekton.dev/v1beta1
+                apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
                   name: acs-image-scan

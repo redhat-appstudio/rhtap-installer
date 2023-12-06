@@ -1,5 +1,5 @@
 {{ define "dance.acs.acs_image_check" }}
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: acs-image-check
