@@ -26,8 +26,8 @@ metadata:
     helm.sh/chart: postgresql-12.10.0
 type: Opaque
 data:
- postgres-password: "#masked#"
- password: "#masked#"
+  postgres-password: "#masked#"
+  password: "#masked#"
   # We don't auto-generate LDAP password when it's not provided as we do for other passwords
 ---
 # Source: dance/charts/developer-hub/templates/secrets.yaml
@@ -46,7 +46,7 @@ metadata:
   annotations:
 type: Opaque
 data:
- backend-secret: "#masked#"
+  backend-secret: "#masked#"
 ---
 # Source: dance/templates/developer-hub/quay-token.yaml
 apiVersion: v1
