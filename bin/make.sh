@@ -182,7 +182,12 @@ release() {
 }
 
 template() {
-  $helm template "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
+  $helm template "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}" |
+    {
+      sed 's|^  backend-secret:.*|  backend-secret: "#masked#"|' |
+        sed 's|^  password:.*|  password: "#masked#"|' |
+        sed 's|^  postgres-password:.*|  postgres-password: "#masked#"|'
+    }
 }
 
 test() {

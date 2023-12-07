@@ -87,7 +87,9 @@ apply() {
 
 template() {
   echo -n "Template: "
-  cat "$SCRIPT_DIR/data/helm-chart/template.yaml" | diff - <($HELM_CHART/bin/make.sh template) &&
+
+  cat "$SCRIPT_DIR/data/helm-chart/template.yaml" |
+    diff - <($HELM_CHART/bin/make.sh template) &&
     echo "OK" ||
     {
       echo "FAIL"
