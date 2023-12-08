@@ -648,7 +648,7 @@ spec:
                   params:
                     - default:  "central.acs.mycluster.com:443"
                       description: |
-                        Secret containing the address:port tuple for StackRox Central)
+                        Secret containing the address:port tuple for StackRox Central
                         (example - rox.stackrox.io:443)
                       name: rox_central_endpoint
                       type: string
@@ -720,7 +720,7 @@ spec:
                   params:
                   - default: "central.acs.mycluster.com:443"
                     description: |
-                      Secret containing the address:port tuple for StackRox Central)
+                      Secret containing the address:port tuple for StackRox Central
                       (example - rox.stackrox.io:443)
                     name: rox_central_endpoint
                     type: string
@@ -796,7 +796,7 @@ spec:
                   params:
                   - default: "central.acs.mycluster.com:443"
                     description: |
-                      Secret containing the address:port tuple for StackRox Central)
+                      Secret containing the address:port tuple for StackRox Central
                       (example - rox.stackrox.io:443)
                     name: rox_central_endpoint
                     type: string
@@ -1058,6 +1058,78 @@ spec:
               echo "Configuration successful"
         
                 
+        - name: configure-namespace
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              CRDS=( pipelines tasks )
+              for CRD in "${CRDS[@]}"; do
+                echo -n "* Waiting for '$CRD' CRD: "
+                while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                  echo -n "."
+                  sleep 3
+                done
+                echo "OK"
+              done
+        
+              echo -n "* Configuring Tasks: "
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1
+                kind: Task
+                metadata:
+                  name: dance-namespace-setup
+                spec:
+                  description: >-
+                    Create the required resources for dance tasks to run in a namespace.
+                  params:
+                    - description: |
+                        Secret containing the address:port tuple for StackRox Central
+                        (example - rox.stackrox.io:443)
+                      name: acs_central_endpoint
+                      type: string
+                    - description: |
+                        Secret containing the StackRox API token with CI permissions
+                      name: acs_api_token
+                      type: string
+                  steps:
+                    - env:
+                      - name: ROX_API_TOKEN
+                        value: \$(params.acs_api_token)
+                      - name: ROX_ENDPOINT
+                        value: \$(params.acs_central_endpoint)
+                      image: "k8s.gcr.io/hyperkube:v1.12.1"
+                      name: setup
+                      script: |
+                        #!/usr/bin/env bash
+                        set -o errexit
+                        set -o nounset
+                        set -o pipefail
+                        
+                        echo "Generating secret: "
+                        kubectl create secret generic dance-config \
+                          --from-literal=rox_central_endpoint=\$ROX_ENDPOINT \
+                          --from-literal=rox_api_token=\$ROX_API_TOKEN \
+                          --dry-run -o yaml | kubectl apply -f - >/dev/null
+                        echo "OK"
+                
+                        echo "Namespace is ready to execute dance pipelines"
+                      workingDir: /tmp
+                
+              EOF
+              echo -n "."
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
+        
+                
         - name: configure-pipelines
           image: "k8s.gcr.io/hyperkube:v1.12.1"
           command:
@@ -1120,7 +1192,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "installer-test"
+  name: "dance-installer-test"
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
@@ -1141,6 +1213,57 @@ spec:
     spec:
       containers:
                 
+        - name: test-namespace
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
+                      
+                apiVersion: tekton.dev/v1
+                kind: PipelineRun
+                metadata:
+                  generateName: dance-namespace-setup
+                spec:
+                  pipelineSpec:
+                    tasks:
+                      - name: configure-namespace
+                        taskRef:
+                          resolver: cluster
+                          params:
+                            - name: kind
+                              value: task
+                            - name: name
+                              value: dance-namespace-setup
+                            - name: namespace
+                              value: redhat-dance
+                        params:
+                          - name: acs_central_endpoint
+                            value: central.acs.mycluster.com:443
+                          - name: acs_api_token
+                            value: eyAbC123...acs...890XyZ
+                
+              EOF
+              )"
+              echo -n "* Pipeline $pipeline_id: "
+              while ! kubectl get "$pipeline_id" | grep --extended-regex --quiet " False | True "; do
+                echo -n "."
+                sleep 2
+              done
+              if kubectl get "$pipeline_id" | grep --quiet " True "; then
+                kubectl delete "$pipeline_id" > /dev/null
+                echo "OK"
+              else
+                echo "Failed"
+                exit 1
+              fi
+        
+                
         - name: test-acs
           image: "quay.io/codeready-toolchain/oc-client-base:latest"
           command:
@@ -1152,65 +1275,65 @@ spec:
               set -o pipefail
         
               pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-                    
-              # oc create -n redhat-dance -f acs-pipelinerun.yaml
-              apiVersion: tekton.dev/v1
-              kind: PipelineRun
-              metadata:
-                generateName: acs-test-
-              spec:
-                pipelineSpec:
-                  tasks:
-                  - name: deploy-check
-                    taskRef:
-                      resolver: cluster
+                      
+                # oc create -n redhat-dance -f acs-pipelinerun.yaml
+                apiVersion: tekton.dev/v1
+                kind: PipelineRun
+                metadata:
+                  generateName: acs-test-
+                spec:
+                  pipelineSpec:
+                    tasks:
+                    - name: deploy-check
+                      taskRef:
+                        resolver: cluster
+                        params:
+                          - name: kind
+                            value: task
+                          - name: name
+                            value: acs-deploy-check
+                          - name: namespace
+                            value: redhat-dance
                       params:
-                        - name: kind
-                          value: task
-                        - name: name
-                          value: acs-deploy-check
-                        - name: namespace
-                          value: redhat-dance
-                    params:
-                      - name: deployment_url
-                        value: https://raw.githubusercontent.com/jduimovich/quarkus-1/main/argocd/components/q/base/deployment.yaml
-                      - name: insecure-skip-tls-verify
-                        value: true
-                  - name: image-check
-                    taskRef:
-                      resolver: cluster
+                        - name: deployment_url
+                          value: https://raw.githubusercontent.com/jduimovich/quarkus-1/main/argocd/components/q/base/deployment.yaml
+                        - name: insecure-skip-tls-verify
+                          value: true
+                    - name: image-check
+                      taskRef:
+                        resolver: cluster
+                        params:
+                          - name: kind
+                            value: task
+                          - name: name
+                            value: acs-image-check
+                          - name: namespace
+                            value: redhat-dance
                       params:
-                        - name: kind
-                          value: task
-                        - name: name
-                          value: acs-image-check
-                        - name: namespace
-                          value: redhat-dance
-                    params:
-                      - name: image
-                        value: quay.io/team-helium/miner
-                      - name: image_digest
-                        value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
-                      - name: insecure-skip-tls-verify
-                        value: true
-                  - name: image-scan
-                    taskRef:
-                      resolver: cluster
+                        - name: image
+                          value: quay.io/team-helium/miner
+                        - name: image_digest
+                          value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+                        - name: insecure-skip-tls-verify
+                          value: true
+                    - name: image-scan
+                      taskRef:
+                        resolver: cluster
+                        params:
+                          - name: kind
+                            value: task
+                          - name: name
+                            value: acs-image-scan
+                          - name: namespace
+                            value: redhat-dance
                       params:
-                        - name: kind
-                          value: task
-                        - name: name
-                          value: acs-image-scan
-                        - name: namespace
-                          value: redhat-dance
-                    params:
-                      - name: image
-                        value: quay.io/team-helium/miner
-                      - name: image_digest
-                        value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
-                      - name: insecure-skip-tls-verify
-                        value: true
-              
+                        - name: image
+                          value: quay.io/team-helium/miner
+                        - name: image_digest
+                          value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
+                        - name: insecure-skip-tls-verify
+                          value: true
+                
               EOF
               )"
               echo -n "* Pipeline $pipeline_id: "

@@ -1,7 +1,10 @@
 Thank you for installing {{ .Chart.Name }}.
 
-Your ACS configuration is:
-* Endpoint: "{{ (index .Values "acs" "central-endpoint") }}"
-* API Token (sha256): "{{ sha256sum (index .Values "acs" "api-token") }}"
+Every developer must configure their namespace by running this PipelineRun:
+```
+cat << EOF | kubectl create -f -
+{{ include "dance.namespace.setup_pipelinerun" . }}
+EOF
+```
 
 Run `helm test --namespace {{ .Release.Namespace }} {{ .Release.Name }}` to validate the installation.

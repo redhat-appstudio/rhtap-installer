@@ -1,5 +1,5 @@
-{{ define "dance.acs.test" }}
-- name: test-acs
+{{ define "dance.namespace.test" }}
+- name: test-namespace
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
     - /bin/bash
@@ -10,7 +10,7 @@
       set -o pipefail
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-      {{ include "dance.acs.test_pipeline" . | indent 8 }}
+      {{ include "dance.namespace.setup_pipelinerun" . | indent 8 }}
       EOF
       )"
       echo -n "* Pipeline $pipeline_id: "

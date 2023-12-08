@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ .Release.Name }}-test"
+  name: "{{ .Chart.Name }}-{{ .Release.Name }}-test"
   labels:
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
@@ -21,6 +21,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
       containers:
+        {{ include "dance.namespace.test" . | indent 8 }}
         {{ include "dance.acs.test" . | indent 8 }}
       restartPolicy: Never
       serviceAccountName: helm-manager

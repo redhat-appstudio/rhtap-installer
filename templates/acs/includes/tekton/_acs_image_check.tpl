@@ -12,7 +12,7 @@ spec:
   params:
   - default: "{{ (index .Values "acs" "central-endpoint") }}"
     description: |
-      Secret containing the address:port tuple for StackRox Central)
+      Secret containing the address:port tuple for StackRox Central
       (example - rox.stackrox.io:443)
     name: rox_central_endpoint
     type: string
