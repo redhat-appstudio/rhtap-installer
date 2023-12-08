@@ -57,6 +57,8 @@ parse_args() {
       ;;
     --)
       # End of arguments
+      shift
+      PASSTHROUGH_ARGS=($@)
       break
       ;;
     *)
@@ -82,7 +84,7 @@ apply() {
   # Because the chart is idempotent there is no
   # need to track if the chart as already been
   # applied.
-  $HELM_CHART/bin/make.sh apply
+  $HELM_CHART/bin/make.sh apply -- "${PASSTHROUGH_ARGS[@]}"
 }
 
 template() {
@@ -105,7 +107,7 @@ test() {
 upgrade() {
   BASE_VERSION="0.x"
   echo "## Installing base version '$BASE_VERSION'"
-  $HELM_CHART/bin/make.sh apply --version "$BASE_VERSION"
+  $HELM_CHART/bin/make.sh apply -- --version "$BASE_VERSION" "${PASSTHROUGH_ARGS[@]}"
   echo "## Applying upgrade"
   $HELM_CHART/bin/make.sh template --version "$BASE_VERSION" | diff - <($HELM_CHART/bin/make.sh template) || true
   apply

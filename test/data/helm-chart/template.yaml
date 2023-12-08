@@ -1228,7 +1228,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: PipelineRun
                 metadata:
-                  generateName: dance-namespace-setup
+                  generateName: dance-namespace-setup-
                 spec:
                   pipelineSpec:
                     tasks:

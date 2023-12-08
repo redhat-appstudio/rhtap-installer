@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: {{ .Chart.Name }}-namespace-setup
+  generateName: {{ .Chart.Name }}-namespace-setup-
 spec:
   pipelineSpec:
     tasks:
