@@ -541,12 +541,11 @@ metadata:
   name: openshift-gitops-operator
   namespace: openshift-operators
 spec:
-  channel: gitops-1.10
+  channel: gitops-1.11
   installPlanApproval: Automatic
   name: openshift-gitops-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: openshift-gitops-operator.v1.10.1
 ---
 # Source: dance/templates/openshift-pipelines/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
@@ -555,12 +554,11 @@ metadata:
   name: openshift-pipelines-operator
   namespace: openshift-operators
 spec:
-  channel: pipelines-1.12
+  channel: pipelines-1.13
   installPlanApproval: Automatic
   name: openshift-pipelines-operator-rh
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: openshift-pipelines-operator-rh.v1.12.2
 ---
 # Source: dance/charts/developer-hub/templates/tests/test-connection.yaml
 apiVersion: v1

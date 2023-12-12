@@ -4,13 +4,13 @@
 
 openshift-gitops:
   enabled: true
-  channel: gitops-1.10
+  channel: gitops-1.11
   argocd-namespace: developer-argocd
   workload-namespaces:
     - default
 openshift-pipelines:
   enabled: true
-  channel: pipelines-1.12
+  channel: pipelines-1.13
 quay:
   enabled: true
   registry: quay.io
