@@ -592,8 +592,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
-    app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "dance-0.4.1"
+    app.kubernetes.io/version: 2.0.0
+    helm.sh/chart: "dance-0.4.2"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -606,7 +606,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.4.1"
+        helm.sh/chart: "dance-0.4.2"
     spec:
       containers:
                 
@@ -1194,8 +1194,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
-    app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "dance-0.4.1"
+    app.kubernetes.io/version: 2.0.0
+    helm.sh/chart: "dance-0.4.2"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1207,7 +1207,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.4.1"
+        helm.sh/chart: "dance-0.4.2"
     spec:
       containers:
                 
