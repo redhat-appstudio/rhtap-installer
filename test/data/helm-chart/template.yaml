@@ -593,7 +593,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.0.0
-    helm.sh/chart: "dance-0.4.2"
+    helm.sh/chart: "dance-0.4.3"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -606,221 +606,9 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.4.2"
+        helm.sh/chart: "dance-0.4.3"
     spec:
       containers:
-                
-        - name: configure-gitops
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/sh
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-        
-              echo -n "* Installing 'argocd' CLI: "
-              curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-              chmod 555 argocd
-              ./argocd version --client | head -1 | cut -d' ' -f2
-              
-              CRD="argocds"
-              echo -n "* Waiting for '$CRD' CRD: "
-              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
-        
-              echo -n "* Waiting for gitops operator deployment: "
-              until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
-        
-              #
-              # All actions must be idempotent
-              #
-              CHART="dance"
-              ARGOCD_NAMESPACE="dance-argocd"
-              echo -n "* ArgoCD resource: "
-              until kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; do
-                echo -n "."
-                sleep 3
-              done
-              cat << EOF | kubectl apply -n "$ARGOCD_NAMESPACE" -f - >/dev/null
-                      
-                apiVersion: argoproj.io/v1beta1
-                kind: ArgoCD
-                metadata:
-                  name: dance-argocd
-                spec:
-                  server:
-                    autoscale:
-                      enabled: false
-                    grpc:
-                      ingress:
-                        enabled: false
-                    ingress:
-                      enabled: false
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 125m
-                        memory: 128Mi
-                    route:
-                      enabled: true
-                    service:
-                      type: ''
-                  grafana:
-                    enabled: false
-                    ingress:
-                      enabled: false
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 250m
-                        memory: 128Mi
-                    route:
-                      enabled: false
-                  monitoring:
-                    enabled: false
-                  notifications:
-                    enabled: false
-                  prometheus:
-                    enabled: false
-                    ingress:
-                      enabled: false
-                    route:
-                      enabled: false
-                  initialSSHKnownHosts: {}
-                  sso:
-                    dex:
-                      openShiftOAuth: true
-                      resources:
-                        limits:
-                          cpu: 500m
-                          memory: 256Mi
-                        requests:
-                          cpu: 250m
-                          memory: 128Mi
-                    provider: dex
-                  applicationSet:
-                    resources:
-                      limits:
-                        cpu: '2'
-                        memory: 1Gi
-                      requests:
-                        cpu: 250m
-                        memory: 512Mi
-                    webhookServer:
-                      ingress:
-                        enabled: false
-                      route:
-                        enabled: false
-                  rbac:
-                    defaultPolicy: ''
-                    policy: |
-                      g, system:cluster-admins, role:admin
-                      g, cluster-admins, role:admin
-                    scopes: '[groups]'
-                  repo:
-                    resources:
-                      limits:
-                        cpu: '1'
-                        memory: 1Gi
-                      requests:
-                        cpu: 250m
-                        memory: 256Mi
-                  resourceExclusions: |
-                    - apiGroups:
-                      - tekton.dev
-                      clusters:
-                      - '*'
-                      kinds:
-                      - TaskRun
-                      - PipelineRun
-                  ha:
-                    enabled: false
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 250m
-                        memory: 128Mi
-                  tls:
-                    ca: {}
-                  redis:
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 250m
-                        memory: 128Mi
-                  controller:
-                    processors: {}
-                    resources:
-                      limits:
-                        cpu: '2'
-                        memory: 2Gi
-                      requests:
-                        cpu: 250m
-                        memory: 1Gi
-                  extraConfig:
-                    accounts.admin-dance: apiKey
-                
-              EOF
-              echo "OK"
-        
-              echo -n "* ArgoCD dashboard: "
-              test_cmd="kubectl get route -n  "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
-              argocd_hostname="$(${test_cmd})"
-              until curl --fail --insecure --output /dev/null --silent "https://$argocd_hostname"; do
-                echo -n "."
-                sleep 2
-                argocd_hostname="$(${test_cmd})"
-              done
-              echo "OK"
-        
-              echo -n "* ArgoCD Login: "
-              argocd_password="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
-              ./argocd login "$argocd_hostname" --grpc-web --insecure --username admin --password "$argocd_password" >/dev/null
-              echo "OK"
-              # echo "argocd login '$argocd_hostname' --grpc-web --insecure --username admin --password '$argocd_password'"
-        
-              echo -n "* ArgoCD 'admin-$CHART' token: "
-              if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-                echo -n "." 
-                API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
-                echo -n "."
-                kubectl create secret generic "$CHART-argocd-secret" \
-                  --from-literal="admin-$CHART=$API_TOKEN" >/dev/null
-              fi
-              echo "OK"
-        
-              echo -n "* Disable ArgoCD admin user: "
-              kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '        
-                {
-                  "spec": {
-                    "extraConfig": {
-                      "admin.enabled": "false"
-                    }
-                  }
-                }
-                ' >/dev/null
-              echo "OK"
-        
-              echo
-              echo "Configuration successful"
-        
                 
         - name: configure-acs
           image: "quay.io/codeready-toolchain/oc-client-base:latest"
@@ -1107,6 +895,218 @@ spec:
         
         
                 
+        - name: configure-gitops
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              echo -n "* Installing 'argocd' CLI: "
+              curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+              chmod 555 argocd
+              ./argocd version --client | head -1 | cut -d' ' -f2
+              
+              CRD="argocds"
+              echo -n "* Waiting for '$CRD' CRD: "
+              while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                echo -n "."
+                sleep 3
+              done
+              echo "OK"
+        
+              echo -n "* Waiting for gitops operator deployment: "
+              until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
+                echo -n "."
+                sleep 3
+              done
+              echo "OK"
+        
+              #
+              # All actions must be idempotent
+              #
+              CHART="dance"
+              ARGOCD_NAMESPACE="dance-argocd"
+              echo -n "* ArgoCD resource: "
+              until kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; do
+                echo -n "."
+                sleep 3
+              done
+              cat << EOF | kubectl apply -n "$ARGOCD_NAMESPACE" -f - >/dev/null
+                      
+                apiVersion: argoproj.io/v1beta1
+                kind: ArgoCD
+                metadata:
+                  name: dance-argocd
+                spec:
+                  server:
+                    autoscale:
+                      enabled: false
+                    grpc:
+                      ingress:
+                        enabled: false
+                    ingress:
+                      enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 125m
+                        memory: 128Mi
+                    route:
+                      enabled: true
+                    service:
+                      type: ''
+                  grafana:
+                    enabled: false
+                    ingress:
+                      enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                    route:
+                      enabled: false
+                  monitoring:
+                    enabled: false
+                  notifications:
+                    enabled: false
+                  prometheus:
+                    enabled: false
+                    ingress:
+                      enabled: false
+                    route:
+                      enabled: false
+                  initialSSHKnownHosts: {}
+                  sso:
+                    dex:
+                      openShiftOAuth: true
+                      resources:
+                        limits:
+                          cpu: 500m
+                          memory: 256Mi
+                        requests:
+                          cpu: 250m
+                          memory: 128Mi
+                    provider: dex
+                  applicationSet:
+                    resources:
+                      limits:
+                        cpu: '2'
+                        memory: 1Gi
+                      requests:
+                        cpu: 250m
+                        memory: 512Mi
+                    webhookServer:
+                      ingress:
+                        enabled: false
+                      route:
+                        enabled: false
+                  rbac:
+                    defaultPolicy: ''
+                    policy: |
+                      g, system:cluster-admins, role:admin
+                      g, cluster-admins, role:admin
+                    scopes: '[groups]'
+                  repo:
+                    resources:
+                      limits:
+                        cpu: '1'
+                        memory: 1Gi
+                      requests:
+                        cpu: 250m
+                        memory: 256Mi
+                  resourceExclusions: |
+                    - apiGroups:
+                      - tekton.dev
+                      clusters:
+                      - '*'
+                      kinds:
+                      - TaskRun
+                      - PipelineRun
+                  ha:
+                    enabled: false
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                  tls:
+                    ca: {}
+                  redis:
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                  controller:
+                    processors: {}
+                    resources:
+                      limits:
+                        cpu: '2'
+                        memory: 2Gi
+                      requests:
+                        cpu: 250m
+                        memory: 1Gi
+                  extraConfig:
+                    accounts.admin-dance: apiKey
+                
+              EOF
+              echo "OK"
+        
+              echo -n "* ArgoCD dashboard: "
+              test_cmd="kubectl get route -n  "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
+              argocd_hostname="$(${test_cmd})"
+              until curl --fail --insecure --output /dev/null --silent "https://$argocd_hostname"; do
+                echo -n "."
+                sleep 2
+                argocd_hostname="$(${test_cmd})"
+              done
+              echo "OK"
+        
+              echo -n "* ArgoCD Login: "
+              argocd_password="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+              ./argocd login "$argocd_hostname" --grpc-web --insecure --username admin --password "$argocd_password" >/dev/null
+              echo "OK"
+              # echo "argocd login '$argocd_hostname' --grpc-web --insecure --username admin --password '$argocd_password'"
+        
+              echo -n "* ArgoCD 'admin-$CHART' token: "
+              if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+                echo -n "."
+                API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
+                echo -n "."
+                kubectl create secret generic "$CHART-argocd-secret" \
+                  --from-literal="admin-$CHART=$API_TOKEN" >/dev/null
+              fi
+              echo "OK"
+        
+              echo -n "* Disable ArgoCD admin user: "
+              kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '        
+                {
+                  "spec": {
+                    "extraConfig": {
+                      "admin.enabled": "false"
+                    }
+                  }
+                }
+                ' >/dev/null
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
+        
+                
         - name: configure-namespace
           image: "quay.io/codeready-toolchain/oc-client-base:latest"
           command:
@@ -1246,7 +1246,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.0.0
-    helm.sh/chart: "dance-0.4.2"
+    helm.sh/chart: "dance-0.4.3"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1258,7 +1258,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.4.2"
+        helm.sh/chart: "dance-0.4.3"
     spec:
       containers:
                 
