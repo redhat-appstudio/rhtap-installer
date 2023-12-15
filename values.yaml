@@ -22,6 +22,6 @@ quay:
 acs:
   central-endpoint: central.acs.mycluster.com:443
   api-token: eyAbC123...acs...890XyZ
-developer-hub:
+# developer-hub:
   # This should be removed once RHDH is GA
-  quay-token: eyAbC123...rhdh...890XyZ
+  # quay-token: eyAbC123...rhdh...890XyZ
