@@ -23,14 +23,18 @@
       TEKTON_NAMESPACE="openshift-pipelines"
 
       echo -n "* Waiting for pipelines operator deployment: "
-      until kubectl get tektonconfig  -n "$TEKTON_NAMESPACE" config >/dev/null 2>&1; do
+      until kubectl get namespace "$TEKTON_NAMESPACE" >/dev/null 2>&1; do
         echo -n "."
         sleep 3
       done
       echo "OK"
 
       echo -n "* Update the TektonConfig resource: "
-      kubectl patch tektonconfig -n "$TEKTON_NAMESPACE" config --type 'merge' --patch '{{ include "dance.includes.tektonconfig" . | indent 8 }}' >/dev/null
+      until kubectl get tektonconfig config >/dev/null 2>&1; do
+        echo -n "."
+        sleep 3
+      done
+      kubectl patch tektonconfig config --type 'merge' --patch '{{ include "dance.includes.tektonconfig" . | indent 8 }}' >/dev/null
       echo "OK"
 
       echo -n "* Configuring Chains secret: "
@@ -47,14 +51,14 @@
         # Generate the key pair secret directly in the cluster.
         # The secret should be created as immutable.
         echo -n "."
-        env COSIGN_PASSWORD=$RANDOM_PASS cosign generate-key-pair "k8s://$TEKTON_NAMESPACE/$SECRET"
+        env COSIGN_PASSWORD=$RANDOM_PASS cosign generate-key-pair "k8s://$TEKTON_NAMESPACE/$SECRET" >/dev/null
       fi
       # If the secret is not marked as immutable, make it so.
       if [ "$(kubectl get secret -n "$TEKTON_NAMESPACE" "$SECRET" -o jsonpath='{.immutable}')" != "true" ]; then
         echo -n "."
         kubectl patch secret -n "$TEKTON_NAMESPACE" "$SECRET" --dry-run=client -o yaml \
           --patch='{"immutable": true}' \
-        | kubectl apply -f -
+        | kubectl apply -f - >/dev/null
       fi
       echo "OK"
 
