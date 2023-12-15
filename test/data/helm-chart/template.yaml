@@ -584,7 +584,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.1"
+    helm.sh/chart: "dance-0.5.2"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -597,7 +597,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.1"
+        helm.sh/chart: "dance-0.5.2"
     spec:
       containers:
                 
@@ -1222,14 +1222,18 @@ spec:
               TEKTON_NAMESPACE="openshift-pipelines"
         
               echo -n "* Waiting for pipelines operator deployment: "
-              until kubectl get tektonconfig  -n "$TEKTON_NAMESPACE" config >/dev/null 2>&1; do
+              until kubectl get namespace "$TEKTON_NAMESPACE" >/dev/null 2>&1; do
                 echo -n "."
                 sleep 3
               done
               echo "OK"
         
               echo -n "* Update the TektonConfig resource: "
-              kubectl patch tektonconfig -n "$TEKTON_NAMESPACE" config --type 'merge' --patch '        
+              until kubectl get tektonconfig config >/dev/null 2>&1; do
+                echo -n "."
+                sleep 3
+              done
+              kubectl patch tektonconfig config --type 'merge' --patch '        
                 {
                   "spec": {
                     "pipeline": {
@@ -1268,14 +1272,14 @@ spec:
                 # Generate the key pair secret directly in the cluster.
                 # The secret should be created as immutable.
                 echo -n "."
-                env COSIGN_PASSWORD=$RANDOM_PASS cosign generate-key-pair "k8s://$TEKTON_NAMESPACE/$SECRET"
+                env COSIGN_PASSWORD=$RANDOM_PASS cosign generate-key-pair "k8s://$TEKTON_NAMESPACE/$SECRET" >/dev/null
               fi
               # If the secret is not marked as immutable, make it so.
               if [ "$(kubectl get secret -n "$TEKTON_NAMESPACE" "$SECRET" -o jsonpath='{.immutable}')" != "true" ]; then
                 echo -n "."
                 kubectl patch secret -n "$TEKTON_NAMESPACE" "$SECRET" --dry-run=client -o yaml \
                   --patch='{"immutable": true}' \
-                | kubectl apply -f -
+                | kubectl apply -f - >/dev/null
               fi
               echo "OK"
         
@@ -1294,7 +1298,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.1"
+    helm.sh/chart: "dance-0.5.2"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1306,7 +1310,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.1"
+        helm.sh/chart: "dance-0.5.2"
     spec:
       containers:
                 
