@@ -1,9 +1,17 @@
 Thank you for installing {{ .Chart.Name }}.
 
+You can access all the configuration information by running the following pipeline
+and checking the logs:
+```
+cat << EOF | kubectl create -f -
+{{ include "dance.namespace.pe_info_pipelinerun" . }}
+EOF
+```
+
 Every developer must configure their namespace by running this PipelineRun:
 ```
 cat << EOF | kubectl create -f -
-{{ include "dance.namespace.setup_pipelinerun" . }}
+{{ include "dance.namespace.dev_setup_pipelinerun" . }}
 EOF
 ```
 

@@ -1,8 +1,8 @@
-{{ define "dance.namespace.setup_pipelinerun" }}
+{{ define "dance.namespace.dev_setup_pipelinerun" }}
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: {{ .Chart.Name }}-namespace-setup-
+  generateName: {{ .Chart.Name }}-dev-namespace-setup-
 spec:
   pipelineSpec:
     tasks:
@@ -13,7 +13,7 @@ spec:
             - name: kind
               value: task
             - name: name
-              value: {{ .Chart.Name }}-namespace-setup
+              value: {{ .Chart.Name }}-dev-namespace-setup
             - name: namespace
               value: {{ .Release.Namespace }}
         params:

@@ -1067,19 +1067,19 @@ spec:
         
               echo -n "* ArgoCD dashboard: "
               test_cmd="kubectl get route -n  "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
-              argocd_hostname="$(${test_cmd})"
-              until curl --fail --insecure --output /dev/null --silent "https://$argocd_hostname"; do
+              ARGOCD_HOSTNAME="$(${test_cmd})"
+              until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
                 echo -n "."
                 sleep 2
-                argocd_hostname="$(${test_cmd})"
+                ARGOCD_HOSTNAME="$(${test_cmd})"
               done
               echo "OK"
         
               echo -n "* ArgoCD Login: "
-              argocd_password="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
-              ./argocd login "$argocd_hostname" --grpc-web --insecure --username admin --password "$argocd_password" >/dev/null
+              ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+              ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
               echo "OK"
-              # echo "argocd login '$argocd_hostname' --grpc-web --insecure --username admin --password '$argocd_password'"
+              # echo "argocd login '$ARGOCD_HOSTNAME' --grpc-web --insecure --username admin --password '$ARGOCD_PASSWORD'"
         
               echo -n "* ArgoCD 'admin-$CHART' token: "
               if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
@@ -1087,7 +1087,8 @@ spec:
                 API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
                 echo -n "."
                 kubectl create secret generic "$CHART-argocd-secret" \
-                  --from-literal="admin-$CHART=$API_TOKEN" >/dev/null
+                  --from-literal="api-token=$API_TOKEN" \
+                  --from-literal="hostname=$ARGOCD_HOSTNAME" >/dev/null
               fi
               echo "OK"
         
@@ -1133,7 +1134,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: dance-namespace-setup
+                  name: dance-dev-namespace-setup
                 spec:
                   description: >-
                     Create the required resources for dance tasks to run in a namespace.
@@ -1169,6 +1170,47 @@ spec:
                         echo "OK"
                 
                         echo "Namespace is ready to execute dance pipelines"
+                      workingDir: /tmp
+                
+              EOF
+              echo -n "."
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1
+                kind: Task
+                metadata:
+                  name: dance-pe-info
+                spec:
+                  description: >-
+                    Display the configuration information needed by the Platform
+                    Engineer to configure the RHDH.
+                  steps:
+                    - env:
+                      - name: ARGOCD_HOSTNAME
+                        valueFrom:
+                          secretKeyRef:
+                            name: dance-argocd-secret
+                            key: hostname
+                      - name: ARGOCD_TOKEN
+                        valueFrom:
+                          secretKeyRef:
+                            name: dance-argocd-secret
+                            key: api-token
+                      image: "k8s.gcr.io/hyperkube:v1.12.1"
+                      name: setup
+                      script: |
+                        #!/usr/bin/env bash
+                        set -o errexit
+                        set -o nounset
+                        set -o pipefail
+                
+                        # Output information in YAML so that it can easily be
+                        # post-processed if necessary.
+                        cat << EOF
+                        gitops:
+                          api-token: \$ARGOCD_TOKEN
+                          hostname: \$ARGOCD_HOSTNAME
+                        EOF
                       workingDir: /tmp
                 
               EOF
@@ -1306,7 +1348,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: PipelineRun
                 metadata:
-                  generateName: dance-namespace-setup-
+                  generateName: dance-dev-namespace-setup-
                 spec:
                   pipelineSpec:
                     tasks:
@@ -1317,7 +1359,7 @@ spec:
                             - name: kind
                               value: task
                             - name: name
-                              value: dance-namespace-setup
+                              value: dance-dev-namespace-setup
                             - name: namespace
                               value: dance-installer
                         params:

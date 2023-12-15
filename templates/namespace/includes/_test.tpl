@@ -10,7 +10,7 @@
       set -o pipefail
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-      {{ include "dance.namespace.setup_pipelinerun" . | indent 8 }}
+      {{ include "dance.namespace.dev_setup_pipelinerun" . | indent 8 }}
       EOF
       )"
       echo -n "* Pipeline $pipeline_id: "

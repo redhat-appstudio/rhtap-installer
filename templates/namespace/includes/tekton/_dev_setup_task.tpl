@@ -1,8 +1,8 @@
-{{ define "dance.namespace.setup_task" }}
+{{ define "dance.namespace.dev_setup_task" }}
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: {{ .Chart.Name }}-namespace-setup
+  name: {{ .Chart.Name }}-dev-namespace-setup
 spec:
   description: >-
     Create the required resources for {{ .Chart.Name }} tasks to run in a namespace.

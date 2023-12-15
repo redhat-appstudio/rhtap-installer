@@ -46,19 +46,19 @@
 
       echo -n "* ArgoCD dashboard: "
       test_cmd="kubectl get route -n  "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
-      argocd_hostname="$(${test_cmd})"
-      until curl --fail --insecure --output /dev/null --silent "https://$argocd_hostname"; do
+      ARGOCD_HOSTNAME="$(${test_cmd})"
+      until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
         echo -n "."
         sleep 2
-        argocd_hostname="$(${test_cmd})"
+        ARGOCD_HOSTNAME="$(${test_cmd})"
       done
       echo "OK"
 
       echo -n "* ArgoCD Login: "
-      argocd_password="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
-      ./argocd login "$argocd_hostname" --grpc-web --insecure --username admin --password "$argocd_password" >/dev/null
+      ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+      ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
       echo "OK"
-      # echo "argocd login '$argocd_hostname' --grpc-web --insecure --username admin --password '$argocd_password'"
+      # echo "argocd login '$ARGOCD_HOSTNAME' --grpc-web --insecure --username admin --password '$ARGOCD_PASSWORD'"
 
       echo -n "* ArgoCD 'admin-$CHART' token: "
       if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
@@ -66,7 +66,8 @@
         API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
         echo -n "."
         kubectl create secret generic "$CHART-argocd-secret" \
-          --from-literal="admin-$CHART=$API_TOKEN" >/dev/null
+          --from-literal="api-token=$API_TOKEN" \
+          --from-literal="hostname=$ARGOCD_HOSTNAME" >/dev/null
       fi
       echo "OK"
 
