@@ -45,7 +45,7 @@
       echo "OK"
 
       echo -n "* ArgoCD dashboard: "
-      test_cmd="kubectl get route -n  "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
+      test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
       ARGOCD_HOSTNAME="$(${test_cmd})"
       until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
         echo -n "."
@@ -54,26 +54,40 @@
       done
       echo "OK"
 
-      echo -n "* ArgoCD Login: "
-      ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
-      ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
-      echo "OK"
-      # echo "argocd login '$ARGOCD_HOSTNAME' --grpc-web --insecure --username admin --password '$ARGOCD_PASSWORD'"
+      echo -n " * ArgoCD admin user: "
+      if [ "$(kubectl get argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" -o jsonpath='{.spec.extraConfig.admin\.enabled}')" = "false" ]; then
+        echo "disabled"
+        echo -n "* ArgoCD 'admin-$CHART' token: "
+        if kubectl get secret -n dance-installer dance-argocd-secret >/dev/null; then
+          echo "already generated"
+        else
+          echo "not available"
+          echo "[ERROR] Missing ArgoCD token cannot be created"
+          exit 1
+        fi
+      else
+        echo "enabled"
+        echo -n "* ArgoCD Login: "
+        ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+        ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
+        echo "OK"
+        # echo "argocd login '$ARGOCD_HOSTNAME' --grpc-web --insecure --username admin --password '$ARGOCD_PASSWORD'"
 
-      echo -n "* ArgoCD 'admin-$CHART' token: "
-      if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-        echo -n "."
-        API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
-        echo -n "."
-        kubectl create secret generic "$CHART-argocd-secret" \
-          --from-literal="api-token=$API_TOKEN" \
-          --from-literal="hostname=$ARGOCD_HOSTNAME" >/dev/null
+        echo -n "* ArgoCD 'admin-$CHART' token: "
+        if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+          echo -n "."
+          API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
+          echo -n "."
+          kubectl create secret generic "$CHART-argocd-secret" \
+            --from-literal="api-token=$API_TOKEN" \
+            --from-literal="hostname=$ARGOCD_HOSTNAME" >/dev/null
+        fi
+        echo "OK"
+
+        echo -n "* Disable ArgoCD admin user: "
+        kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '{{ include "dance.argocd.user_admin" . | indent 8 }}' >/dev/null
+        echo "OK"
       fi
-      echo "OK"
-
-      echo -n "* Disable ArgoCD admin user: "
-      kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '{{ include "dance.argocd.user_admin" . | indent 8 }}' >/dev/null
-      echo "OK"
 
       echo
       echo "Configuration successful"

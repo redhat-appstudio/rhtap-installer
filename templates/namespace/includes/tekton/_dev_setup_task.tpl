@@ -31,7 +31,7 @@ spec:
         set -o pipefail
         
         echo "Generating secret: "
-        kubectl create secret generic dance-config \
+        kubectl create secret generic dance-secret \
           --from-literal=rox_central_endpoint=\$ROX_ENDPOINT \
           --from-literal=rox_api_token=\$ROX_API_TOKEN \
           --dry-run -o yaml | kubectl apply -f - >/dev/null
