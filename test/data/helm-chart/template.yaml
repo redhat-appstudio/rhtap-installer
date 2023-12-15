@@ -38,7 +38,7 @@ metadata:
   namespace: "dance-installer"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0-200-CI
+    helm.sh/chart: developer-hub-1.0.0
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: "1.0-200"
@@ -47,15 +47,6 @@ metadata:
 type: Opaque
 data:
   backend-secret: "#masked#"
----
-# Source: dance/templates/developer-hub/quay-token.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rhdh-pull-secret
-data:
-  .dockerconfigjson: eyAbC123...rhdh...890XyZ
-type: kubernetes.io/dockerconfigjson
 ---
 # Source: dance/charts/developer-hub/charts/upstream/templates/app-config-configmap.yaml
 apiVersion: v1
@@ -515,7 +506,7 @@ metadata:
   namespace: "dance-installer"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0-200-CI
+    helm.sh/chart: developer-hub-1.0.0
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: "1.0-200"
@@ -567,7 +558,7 @@ metadata:
   name: "installer-developer-hub-test-connection"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0-200-CI
+    helm.sh/chart: developer-hub-1.0.0
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: "1.0-200"
@@ -592,8 +583,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
-    app.kubernetes.io/version: 2.0.0
-    helm.sh/chart: "dance-0.4.5"
+    app.kubernetes.io/version: 2.1.0
+    helm.sh/chart: "dance-0.5.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -606,7 +597,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.4.5"
+        helm.sh/chart: "dance-0.5.1"
     spec:
       containers:
                 
@@ -864,34 +855,6 @@ spec:
               echo "Configuration successful"
         
                 
-        
-        - name: configure-developer-hub
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-        
-              echo -n "* Waiting for route: "
-              until kubectl get route installer-developer-hub -o name --ignore-not-found >/dev/null ; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
-        
-              echo -n "* Waiting for UI: "
-              URL="https://$(kubectl get route installer-developer-hub -o jsonpath='{.spec.host}')"
-              until curl --fail --location --output /dev/null --silent "$URL"; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
-        
-              echo
-              echo "Configuration successful"
         
         
                 
@@ -1330,8 +1293,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
-    app.kubernetes.io/version: 2.0.0
-    helm.sh/chart: "dance-0.4.5"
+    app.kubernetes.io/version: 2.1.0
+    helm.sh/chart: "dance-0.5.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1343,7 +1306,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.4.5"
+        helm.sh/chart: "dance-0.5.1"
     spec:
       containers:
                 
