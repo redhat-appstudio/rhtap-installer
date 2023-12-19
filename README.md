@@ -15,6 +15,12 @@ This helm chart installs and configures the following projects/products :
 
 # Try it
 
+## Requirements
+
+* Helm CLI.
+* An ACS endpoint and the associated API token.
+* A GitHub Application and its associated information (c.f. [Create a Pipelines-as-Code GitHub App](https://pipelinesascode.com/docs/install/github_apps/)).
+
 ## CLI
 
 0. Login to an OpenShift 4.14 cluster and create a new Project.
@@ -42,6 +48,11 @@ This helm chart installs and configures the following projects/products :
     TEST SUITE: None
     ```
 
+    Run the pipeline to get the configuration information as per helm output.
+    Use the logs information to finish the setup of the GitHub App:
+    * Homepage URL
+    * Webhook URL
+    * Webhook secret
 
 3. Uninstall Dance
 
