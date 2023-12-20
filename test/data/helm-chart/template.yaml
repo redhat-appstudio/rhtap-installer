@@ -38,7 +38,7 @@ metadata:
   namespace: "dance-installer"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0.0
+    helm.sh/chart: developer-hub-1.0.0-1
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: "1.0-200"
@@ -506,7 +506,7 @@ metadata:
   namespace: "dance-installer"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0.0
+    helm.sh/chart: developer-hub-1.0.0-1
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: "1.0-200"
@@ -558,7 +558,7 @@ metadata:
   name: "installer-developer-hub-test-connection"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0.0
+    helm.sh/chart: developer-hub-1.0.0-1
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/version: "1.0-200"
@@ -584,7 +584,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.3"
+    helm.sh/chart: "dance-0.5.4"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -597,7 +597,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.3"
+        helm.sh/chart: "dance-0.5.4"
     spec:
       containers:
                 
@@ -1384,7 +1384,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.3"
+    helm.sh/chart: "dance-0.5.4"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1396,7 +1396,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.3"
+        helm.sh/chart: "dance-0.5.4"
     spec:
       containers:
                 
