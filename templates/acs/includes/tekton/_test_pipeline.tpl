@@ -1,5 +1,5 @@
 {{ define "dance.acs.test_pipeline" }}
-# oc create -n {{ .Release.Namespace }} -f acs-pipelinerun.yaml
+# kubectl create -n {{ .Release.Namespace }} -f acs-pipelinerun.yaml
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:

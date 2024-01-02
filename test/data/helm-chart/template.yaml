@@ -865,6 +865,11 @@ spec:
               set -o nounset
               set -o pipefail
         
+              YQ_VERSION="v4.40.5"
+              CURL_OPTS=("--fail" "--location" "--silent" "--show-error")
+              curl "${CURL_OPTS[@]}" -o "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+              chmod +x "/usr/bin/yq"
+        
               CHART="dance"
         
               echo -n "* Waiting for route: "
@@ -880,8 +885,35 @@ spec:
               fi
               echo "OK"
         
+              kubectl get configmap installer-developer-hub-app-config -o yaml > developer-hub-app-config.yaml
+              yq '.data.["app-config.yaml"]' developer-hub-app-config.yaml > app-config.yaml
+        
+              # Set the base URL
+              URL="https://$HOSTNAME"
+              yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
+        
+              # Set the authentication
+              
+                
+              cat << _EOF_ >> app-config.yaml
+              auth:
+                environment: development
+                providers:
+                  github:
+                    development:
+                      clientId: abcd1234cdef7890
+                      clientSecret: abcd1234...cdef7890
+              _EOF_
+                
+              
+              yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
+              cat developer-hub-app-config.yaml
+              kubectl apply -f developer-hub-app-config.yaml
+        
+              kubectl delete pods -l "app.kubernetes.io/component=backstage"
+        
               echo -n "* Waiting for UI: "
-              until curl --fail --location --output /dev/null --silent "https://$HOSTNAME"; do
+              until curl --fail --location --output /dev/null --silent "$URL"; do
                 echo -n "."
                 sleep 3
               done
@@ -1237,6 +1269,10 @@ spec:
                           hostname: \$ARGOCD_HOSTNAME
                         developer-hub:
                           hostname: \$DEVELOPER_HUB_HOSTNAME
+                          auth:
+                            github:
+                              homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
+                              authorization-callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
                         pipelines:
                           pipelines-as-code:
                             github:
@@ -1463,7 +1499,7 @@ spec:
         
               pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
                       
-                # oc create -n dance-installer -f acs-pipelinerun.yaml
+                # kubectl create -n dance-installer -f acs-pipelinerun.yaml
                 apiVersion: tekton.dev/v1
                 kind: PipelineRun
                 metadata:

@@ -50,6 +50,10 @@ spec:
           hostname: \$ARGOCD_HOSTNAME
         developer-hub:
           hostname: \$DEVELOPER_HUB_HOSTNAME
+          auth:
+            github:
+              homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
+              authorization-callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
         pipelines:
           pipelines-as-code:
             github:
