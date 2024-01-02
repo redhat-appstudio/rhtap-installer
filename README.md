@@ -54,6 +54,10 @@ This helm chart installs and configures the following projects/products :
     * Webhook URL
     * Webhook secret
 
+    Use the logs information to finish the setup of the GitHub OAuth App:
+    * Homepage URL
+    * Authorization Callback URL
+
 3. Uninstall Dance
 
     `helm uninstall --namespace dance-installer dance-1700107222`
