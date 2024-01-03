@@ -10,8 +10,7 @@
       set -o pipefail
 
       YQ_VERSION="v4.40.5"
-      CURL_OPTS=("--fail" "--insecure" "--location" "--silent" "--show-error")
-      curl "${CURL_OPTS[@]}" -o "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+      curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
       chmod +x "/usr/bin/yq"
 
       CHART="{{ .Chart.Name }}"
@@ -51,7 +50,7 @@
       kubectl delete pods -l "app.kubernetes.io/component=backstage"
 
       echo -n "* Waiting for UI: "
-      until curl --fail --location --output /dev/null --silent "$URL"; do
+      until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
         echo -n "."
         sleep 3
       done
