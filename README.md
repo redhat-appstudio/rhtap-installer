@@ -19,7 +19,8 @@ This helm chart installs and configures the following projects/products :
 
 * Helm CLI.
 * An ACS endpoint and the associated API token.
-* A GitHub Application and its associated information (c.f. [Create a Pipelines-as-Code GitHub App](https://pipelinesascode.com/docs/install/github_apps/)).
+* A GitHub Application and its associated information (c.f. [Create a Pipelines-as-Code GitHub App](https://pipelinesascode.com/docs/install/github_apps/)). Use placeholder values for `Homepage URL` and `Webhook URL`.
+* A GitHub OAuth Application (c.f. [Creating an OAuth app](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app)). Use placeholder values for `Homepage URL` and `Authorization Callback URL`.
 
 ## CLI
 

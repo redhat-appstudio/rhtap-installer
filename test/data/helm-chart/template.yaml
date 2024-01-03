@@ -895,6 +895,7 @@ spec:
               # Set the authentication
               
                 
+              cat << _EOF_ >> app-config.yaml
               auth:
                 environment: development
                 providers:

@@ -39,6 +39,7 @@
       # Set the authentication
       {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "auth") }}
         {{ if (index .Values "developer-hub" "auth") }}
+      cat << _EOF_ >> app-config.yaml
       auth:
 {{ index .Values "developer-hub" "auth" | toYaml | indent 8 }}
       _EOF_
