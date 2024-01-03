@@ -584,7 +584,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.5"
+    helm.sh/chart: "dance-0.5.6"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -597,7 +597,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.5"
+        helm.sh/chart: "dance-0.5.6"
     spec:
       containers:
                 
@@ -866,7 +866,7 @@ spec:
               set -o pipefail
         
               YQ_VERSION="v4.40.5"
-              CURL_OPTS=("--fail" "--location" "--silent" "--show-error")
+              CURL_OPTS=("--fail" "--insecure" "--location" "--silent" "--show-error")
               curl "${CURL_OPTS[@]}" -o "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
               chmod +x "/usr/bin/yq"
         
@@ -895,7 +895,6 @@ spec:
               # Set the authentication
               
                 
-              cat << _EOF_ >> app-config.yaml
               auth:
                 environment: development
                 providers:
@@ -907,7 +906,6 @@ spec:
                 
               
               yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
-              cat developer-hub-app-config.yaml
               kubectl apply -f developer-hub-app-config.yaml
         
               kubectl delete pods -l "app.kubernetes.io/component=backstage"
@@ -1420,7 +1418,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.5"
+    helm.sh/chart: "dance-0.5.6"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1432,7 +1430,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.5"
+        helm.sh/chart: "dance-0.5.6"
     spec:
       containers:
                 
