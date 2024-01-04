@@ -36,13 +36,10 @@
       yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
 
       # Set the authentication
-      {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "auth") }}
-        {{ if (index .Values "developer-hub" "auth") }}
+      {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
       cat << _EOF_ >> app-config.yaml
-      auth:
-{{ index .Values "developer-hub" "auth" | toYaml | indent 8 }}
+{{ index .Values "developer-hub" "app-config" | toYaml | indent 6 }}
       _EOF_
-        {{ end }}
       {{ end }}
       yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
       kubectl apply -f developer-hub-app-config.yaml

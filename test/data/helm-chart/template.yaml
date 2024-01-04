@@ -893,7 +893,6 @@ spec:
         
               # Set the authentication
               
-                
               cat << _EOF_ >> app-config.yaml
               auth:
                 environment: development
@@ -903,7 +902,6 @@ spec:
                       clientId: abcd1234cdef7890
                       clientSecret: abcd1234...cdef7890
               _EOF_
-                
               
               yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
               kubectl apply -f developer-hub-app-config.yaml
