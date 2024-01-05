@@ -50,10 +50,6 @@ spec:
           hostname: \$ARGOCD_HOSTNAME
         developer-hub:
           hostname: \$DEVELOPER_HUB_HOSTNAME
-          auth:
-            github:
-              homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
-              authorization-callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
         pipelines:
           pipelines-as-code:
             github:
@@ -62,9 +58,9 @@ spec:
               # replace them with the final values after the chart is installed.
               docs-url: https://pipelinesascode.com/docs/install/github_apps/
               homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
-              webhook:
-                secret: \$PIPELINES_PAC_GH_SECRET
-                url: \$PIPELINES_PAC_URL
+              callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
+              webhook-url: \$PIPELINES_PAC_URL
+              secret: \$PIPELINES_PAC_GH_SECRET
         _EOF_
       workingDir: /tmp
 {{ end }}

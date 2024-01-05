@@ -901,6 +901,17 @@ spec:
                     development:
                       clientId: abcd1234cdef7890
                       clientSecret: abcd1234...cdef7890
+              integrations:
+                github:
+                - apps:
+                  - appId: ${GITHUB_APP_APP_ID}
+                    clientId: ${GITHUB_APP_CLIENT_ID}
+                    clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+                    privateKey: |
+                      ${GITHUB_APP_PRIVATE_KEY}
+                    webhookSecret: ${GITHUB_APP_WEBHOOK_SECRET}
+                    webhookUrl: ${GITHUB_APP_WEBHOOK_URL}
+                  host: github.com
               _EOF_
               
               yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
@@ -1265,10 +1276,6 @@ spec:
                           hostname: \$ARGOCD_HOSTNAME
                         developer-hub:
                           hostname: \$DEVELOPER_HUB_HOSTNAME
-                          auth:
-                            github:
-                              homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
-                              authorization-callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
                         pipelines:
                           pipelines-as-code:
                             github:
@@ -1277,9 +1284,9 @@ spec:
                               # replace them with the final values after the chart is installed.
                               docs-url: https://pipelinesascode.com/docs/install/github_apps/
                               homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
-                              webhook:
-                                secret: \$PIPELINES_PAC_GH_SECRET
-                                url: \$PIPELINES_PAC_URL
+                              callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
+                              webhook-url: \$PIPELINES_PAC_URL
+                              secret: \$PIPELINES_PAC_GH_SECRET
                         _EOF_
                       workingDir: /tmp
                 
@@ -1381,10 +1388,11 @@ spec:
               fi
               echo "OK"
         
+              
               echo -n "* Configuring Pipelines-as-Code: "
               if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
-                WEBHOOK_SECRET="$(openssl rand -hex 20)"
+                WEBHOOK_SECRET="${WEBHOOK_SECRET}"
                 kubectl create secret generic "$CHART-pipelines-secret" \
                   --from-literal="webhook-github-secret=$WEBHOOK_SECRET" \
                   --from-literal="webhook-url=$(kubectl get routes -n "$PIPELINES_NAMESPACE" pipelines-as-code-controller -o jsonpath="https://{.spec.host}")" >/dev/null
@@ -1395,11 +1403,12 @@ spec:
                 echo -n "."
                 kubectl -n "$PIPELINES_NAMESPACE" create secret generic pipelines-as-code-secret \
                   --from-literal github-application-id="123456" \
-                  --from-literal github-private-key="$(echo "SW5zZXJ0IHRoZSBwcml2YXRlIGtleSBkYXRhLCBpbmNsdWRpbmcgdGhlICctLS0tIC4uLiAtLS0tJwpoZWFkZXIgYW5kIGZvb3Rlci4=" | base64 -d)" \
+                  --from-literal github-private-key="$(echo "SW5zZXJ0IHRoZSBwcml2YXRlIGtleSBkYXRhLCBpbmNsdWRpbmcgdGhlICctLS0tIC4uLiAtLS0tJwpoZWFkZXIgYW5kIGZvb3Rlci4K" | base64 -d)" \
                   --from-literal webhook.secret="$WEBHOOK_SECRET" \
                   --dry-run=client -o yaml | kubectl apply -f - >/dev/null
               fi
               echo "OK"
+              
         
               echo
               echo "Configuration successful"

@@ -19,8 +19,15 @@ This helm chart installs and configures the following projects/products :
 
 * Helm CLI.
 * An ACS endpoint and the associated API token.
-* A GitHub Application and its associated information (c.f. [Create a Pipelines-as-Code GitHub App](https://pipelinesascode.com/docs/install/github_apps/)). Use placeholder values for `Homepage URL` and `Webhook URL`.
-* A GitHub OAuth Application (c.f. [Creating an OAuth app](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app)). Use placeholder values for `Homepage URL` and `Authorization Callback URL`.
+* A GitHub App and its associated information (c.f. [Create a Pipelines-as-Code GitHub App](https://pipelinesascode.com/docs/install/github_apps/)).
+  * `General`
+    * Use placeholder values for `Homepage URL`, `Callback URL` and `Webhook URL`.
+    * Generate a `Webhook secret`.
+  * `Permissions & events`
+    * Follow the instructions from the Pipelines-as-Code documentation.
+    * `Repository permissions`
+      * `Administration`: `Read and write`
+* The GitHub App must be installed at the organization/user level.
 
 ## CLI
 
@@ -51,13 +58,9 @@ This helm chart installs and configures the following projects/products :
 
     Run the pipeline to get the configuration information as per helm output.
     Use the logs information to finish the setup of the GitHub App:
-    * Homepage URL
-    * Webhook URL
-    * Webhook secret
-
-    Use the logs information to finish the setup of the GitHub OAuth App:
-    * Homepage URL
-    * Authorization Callback URL
+    * `Homepage URL`: `.pipelines.pipelines-as-code.homepage-url`
+    * `Callback URL`: `.pipelines.pipelines-as-code.callback-url`
+    * `Webhook URL`: `.pipelines.pipelines-as-code.webhook-url`
 
 3. Uninstall Dance
 

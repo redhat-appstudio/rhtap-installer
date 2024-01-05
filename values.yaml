@@ -31,6 +31,17 @@ developer-hub:
           development:
             clientId: abcd1234cdef7890
             clientSecret: abcd1234...cdef7890
+    integrations:
+      github:
+        - host: github.com
+          apps:
+            - appId: ${GITHUB_APP_APP_ID}
+              clientId: ${GITHUB_APP_CLIENT_ID}
+              clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+              webhookUrl: ${GITHUB_APP_WEBHOOK_URL}
+              webhookSecret: ${GITHUB_APP_WEBHOOK_SECRET}
+              privateKey: |
+                ${GITHUB_APP_PRIVATE_KEY}
     # This should be removed once RHDH is GA
   # quay-token: eyAbC123...rhdh...890XyZ
 pipelines:
@@ -40,3 +51,4 @@ pipelines:
       private-key: |
         Insert the private key data, including the '---- ... ----'
         header and footer.
+      webhook-secret: ${WEBHOOK_SECRET}

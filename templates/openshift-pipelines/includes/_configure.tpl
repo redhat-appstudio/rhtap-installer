@@ -67,10 +67,11 @@
       fi
       echo "OK"
 
+      {{ if and (index .Values "pipelines") (index .Values "pipelines" "pipelines-as-code") }}
       echo -n "* Configuring Pipelines-as-Code: "
       if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         echo -n "."
-        WEBHOOK_SECRET="$(openssl rand -hex 20)"
+        WEBHOOK_SECRET="{{ default "$(openssl rand -hex 20)" (index .Values "pipelines" "pipelines-as-code" "github" "webhook-secret") }}"
         kubectl create secret generic "$CHART-pipelines-secret" \
           --from-literal="webhook-github-secret=$WEBHOOK_SECRET" \
           --from-literal="webhook-url=$(kubectl get routes -n "$PIPELINES_NAMESPACE" pipelines-as-code-controller -o jsonpath="https://{.spec.host}")" >/dev/null
@@ -86,6 +87,7 @@
           --dry-run=client -o yaml | kubectl apply -f - >/dev/null
       fi
       echo "OK"
+      {{ end }}
 
       echo
       echo "Configuration successful"
