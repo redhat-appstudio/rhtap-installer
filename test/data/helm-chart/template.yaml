@@ -901,6 +901,19 @@ spec:
                     development:
                       clientId: abcd1234cdef7890
                       clientSecret: abcd1234...cdef7890
+              catalog:
+                locations:
+                - target: https://github.com/my-org/my-gpt-repo/blob/my-branch/my-catalog.yaml
+                  type: url
+                rules:
+                - allow:
+                  - Component
+                  - System
+                  - Group
+                  - Resource
+                  - Location
+                  - Template
+                  - API
               integrations:
                 github:
                 - apps:

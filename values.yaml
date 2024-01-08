@@ -42,6 +42,19 @@ developer-hub:
               webhookSecret: ${GITHUB_APP_WEBHOOK_SECRET}
               privateKey: |
                 ${GITHUB_APP_PRIVATE_KEY}
+    catalog:
+      locations:
+        - type: url
+          target: https://github.com/my-org/my-gpt-repo/blob/my-branch/my-catalog.yaml
+      rules:
+        - allow:
+          - Component
+          - System
+          - Group
+          - Resource
+          - Location
+          - Template
+          - API
     # This should be removed once RHDH is GA
   # quay-token: eyAbC123...rhdh...890XyZ
 pipelines:
