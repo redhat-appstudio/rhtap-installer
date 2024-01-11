@@ -887,8 +887,8 @@ spec:
               fi
               echo "OK"
         
-              kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.yaml
-              yq '.data.["app-config.yaml"]' developer-hub-app-config.yaml > app-config.yaml
+              kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
+              yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
         
               # Set the base URL
               URL="https://$HOSTNAME"
@@ -931,10 +931,11 @@ spec:
               _EOF_
               yq -i '. *= load("app-config-update.yaml")' app-config.yaml
             
-              yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
-              kubectl apply -f developer-hub-app-config.yaml
-        
-              kubectl delete pods -l "app.kubernetes.io/component=backstage"
+              yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
+              if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
+                kubectl apply -f developer-hub-app-config.new.yaml
+                kubectl delete pods -l "app.kubernetes.io/component=backstage"
+              fi
         
               echo -n "* Waiting for UI: "
               until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
