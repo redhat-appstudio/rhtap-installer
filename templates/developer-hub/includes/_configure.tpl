@@ -16,11 +16,16 @@
       CHART="{{ .Chart.Name }}"
 
       echo -n "* Waiting for route: "
-      until kubectl get route {{ .Release.Name }}-developer-hub -o name >/dev/null ; do
+    {{ if eq .Release.Name "developer-hub" }}
+      PREFIX=""
+    {{ else }}
+      PREFIX="{{ .Release.Name }}-"
+    {{ end }}
+      until kubectl get route "${PREFIX}developer-hub" -o name >/dev/null ; do
         echo -n "."
         sleep 3
       done
-      HOSTNAME="$(kubectl get routes {{ .Release.Name }}-developer-hub -o jsonpath="{.spec.host}")"
+      HOSTNAME="$(kubectl get routes "${PREFIX}developer-hub" -o jsonpath="{.spec.host}")"
       echo -n "."
       if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         kubectl create secret generic "$CHART-developer-hub-secret" \
@@ -28,7 +33,7 @@
       fi
       echo "OK"
 
-      kubectl get configmap {{ .Release.Name }}-developer-hub-app-config -o yaml > developer-hub-app-config.yaml
+      kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.yaml
       yq '.data.["app-config.yaml"]' developer-hub-app-config.yaml > app-config.yaml
 
       # Set the base URL
@@ -36,11 +41,12 @@
       yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
 
       # Set the authentication
-      {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
-      cat << _EOF_ >> app-config.yaml
+    {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
+      cat << _EOF_ > app-config-update.yaml
 {{ index .Values "developer-hub" "app-config" | toYaml | indent 6 }}
       _EOF_
-      {{ end }}
+      yq -i '. *= load("app-config-update.yaml")' app-config.yaml
+    {{ end }}
       yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
       kubectl apply -f developer-hub-app-config.yaml
 

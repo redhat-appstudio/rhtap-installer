@@ -10,14 +10,14 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: helm-manager
-  namespace: dance-installer
+  namespace: rhtap
 ---
 # Source: dance/charts/developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml
 apiVersion: v1
 kind: Secret
 metadata:
   name: installer-postgresql
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels:
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
@@ -35,7 +35,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: installer-developer-hub-auth
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels:
     app.kubernetes.io/name: developer-hub
     helm.sh/chart: developer-hub-1.0.0-1
@@ -56,14 +56,14 @@ metadata:
 data:
   app-config.yaml: |
     app:
-      baseUrl: https://installer-developer-hub-dance-installer.apps.example.com
+      baseUrl: https://installer-developer-hub-rhtap.apps.example.com
     backend:
       auth:
         keys:
         - secret: ${BACKEND_SECRET}
-      baseUrl: https://installer-developer-hub-dance-installer.apps.example.com
+      baseUrl: https://installer-developer-hub-rhtap.apps.example.com
       cors:
-        origin: https://installer-developer-hub-dance-installer.apps.example.com
+        origin: https://installer-developer-hub-rhtap.apps.example.com
       database:
         connection:
           password: ${POSTGRESQL_ADMIN_PASSWORD}
@@ -102,14 +102,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: helm-manager
-    namespace: dance-installer
+    namespace: rhtap
 ---
 # Source: dance/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc-headless.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: installer-postgresql-hl
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels:
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
@@ -144,7 +144,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: installer-postgresql
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels:
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
@@ -170,7 +170,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: installer-developer-hub
-  namespace: "dance-installer" 
+  namespace: "rhtap" 
   labels:
     app.kubernetes.io/name: developer-hub
     helm.sh/chart: upstream-1.8.0
@@ -196,7 +196,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: installer-developer-hub
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels: 
     app.kubernetes.io/name: developer-hub
     helm.sh/chart: upstream-1.8.0
@@ -221,7 +221,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
       annotations:
-        checksum/app-config: 28661b8d257d16030d058df4a7416ee91bd10d2e283801b5d6bb98f7cb70987c
+        checksum/app-config: 6b26747d5021d4fb38189114dfc815a692e5074ec940c10981f622fe87475502
         checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'
     spec:
       serviceAccountName: default
@@ -342,7 +342,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: installer-postgresql
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels:
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
@@ -503,7 +503,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: installer-developer-hub
-  namespace: "dance-installer"
+  namespace: "rhtap"
   labels:
     app.kubernetes.io/name: developer-hub
     helm.sh/chart: developer-hub-1.0.0-1
@@ -872,11 +872,14 @@ spec:
               CHART="dance"
         
               echo -n "* Waiting for route: "
-              until kubectl get route installer-developer-hub -o name >/dev/null ; do
+            
+              PREFIX="installer-"
+            
+              until kubectl get route "${PREFIX}developer-hub" -o name >/dev/null ; do
                 echo -n "."
                 sleep 3
               done
-              HOSTNAME="$(kubectl get routes installer-developer-hub -o jsonpath="{.spec.host}")"
+              HOSTNAME="$(kubectl get routes "${PREFIX}developer-hub" -o jsonpath="{.spec.host}")"
               echo -n "."
               if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 kubectl create secret generic "$CHART-developer-hub-secret" \
@@ -884,7 +887,7 @@ spec:
               fi
               echo "OK"
         
-              kubectl get configmap installer-developer-hub-app-config -o yaml > developer-hub-app-config.yaml
+              kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.yaml
               yq '.data.["app-config.yaml"]' developer-hub-app-config.yaml > app-config.yaml
         
               # Set the base URL
@@ -892,8 +895,8 @@ spec:
               yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
         
               # Set the authentication
-              
-              cat << _EOF_ >> app-config.yaml
+            
+              cat << _EOF_ > app-config-update.yaml
               auth:
                 environment: development
                 providers:
@@ -926,7 +929,8 @@ spec:
                     webhookUrl: ${GITHUB_APP_WEBHOOK_URL}
                   host: github.com
               _EOF_
-              
+              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
+            
               yq -i ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.yaml
               kubectl apply -f developer-hub-app-config.yaml
         
@@ -1482,7 +1486,7 @@ spec:
                             - name: name
                               value: dance-dev-namespace-setup
                             - name: namespace
-                              value: dance-installer
+                              value: rhtap
                         params:
                           - name: acs_central_endpoint
                             value: central.acs.mycluster.com:443
@@ -1517,7 +1521,7 @@ spec:
         
               pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
                       
-                # kubectl create -n dance-installer -f acs-pipelinerun.yaml
+                # kubectl create -n rhtap -f acs-pipelinerun.yaml
                 apiVersion: tekton.dev/v1
                 kind: PipelineRun
                 metadata:
@@ -1534,7 +1538,7 @@ spec:
                           - name: name
                             value: acs-deploy-check
                           - name: namespace
-                            value: dance-installer
+                            value: rhtap
                       params:
                         - name: deployment_url
                           value: https://raw.githubusercontent.com/jduimovich/quarkus-1/main/argocd/components/q/base/deployment.yaml
@@ -1549,7 +1553,7 @@ spec:
                           - name: name
                             value: acs-image-check
                           - name: namespace
-                            value: dance-installer
+                            value: rhtap
                       params:
                         - name: image
                           value: quay.io/team-helium/miner
@@ -1566,7 +1570,7 @@ spec:
                           - name: name
                             value: acs-image-scan
                           - name: namespace
-                            value: dance-installer
+                            value: rhtap
                       params:
                         - name: image
                           value: quay.io/team-helium/miner
