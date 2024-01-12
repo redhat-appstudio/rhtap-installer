@@ -1,4 +1,4 @@
-{{ define "dance.developer-hub.configure" }}
+{{ define "rhtap.developer-hub.configure" }}
 - name: configure-developer-hub
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:

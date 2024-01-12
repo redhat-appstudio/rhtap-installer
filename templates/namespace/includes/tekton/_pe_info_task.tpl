@@ -1,4 +1,4 @@
-{{ define "dance.namespace.pe_info_task" }}
+{{ define "rhtap.namespace.pe_info_task" }}
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:

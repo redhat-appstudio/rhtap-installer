@@ -1,4 +1,4 @@
-{{ define "dance.acs.test_pipeline" }}
+{{ define "rhtap.acs.test_pipeline" }}
 # kubectl create -n {{ .Release.Namespace }} -f acs-pipelinerun.yaml
 apiVersion: tekton.dev/v1
 kind: PipelineRun

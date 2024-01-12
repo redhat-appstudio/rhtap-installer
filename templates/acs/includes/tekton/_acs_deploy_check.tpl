@@ -1,4 +1,4 @@
-{{ define "dance.acs.acs_deploy_check" }}
+{{ define "rhtap.acs.acs_deploy_check" }}
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:

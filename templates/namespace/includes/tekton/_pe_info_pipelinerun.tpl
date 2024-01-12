@@ -1,4 +1,4 @@
-{{ define "dance.namespace.pe_info_pipelinerun" }}
+{{ define "rhtap.namespace.pe_info_pipelinerun" }}
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:

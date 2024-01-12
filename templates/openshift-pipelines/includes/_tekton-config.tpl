@@ -1,4 +1,4 @@
-{{ define "dance.includes.tektonconfig" }}
+{{ define "rhtap.includes.tektonconfig" }}
 {
   "spec": {
     "pipeline": {

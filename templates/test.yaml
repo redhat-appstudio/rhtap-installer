@@ -21,7 +21,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
       containers:
-        {{ include "dance.namespace.test" . | indent 8 }}
-        {{ include "dance.acs.test" . | indent 8 }}
+        {{ include "rhtap.namespace.test" . | indent 8 }}
+        {{ include "rhtap.acs.test" . | indent 8 }}
       restartPolicy: Never
       serviceAccountName: helm-manager

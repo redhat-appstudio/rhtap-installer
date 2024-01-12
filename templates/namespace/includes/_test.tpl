@@ -1,4 +1,4 @@
-{{ define "dance.namespace.test" }}
+{{ define "rhtap.namespace.test" }}
 - name: test-namespace
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -10,7 +10,7 @@
       set -o pipefail
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-      {{ include "dance.namespace.dev_setup_pipelinerun" . | indent 8 }}
+      {{ include "rhtap.namespace.dev_setup_pipelinerun" . | indent 8 }}
       EOF
       )"
       echo -n "* Pipeline $pipeline_id: "

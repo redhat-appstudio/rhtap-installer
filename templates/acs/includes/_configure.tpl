@@ -1,4 +1,4 @@
-{{ define "dance.acs.configure" }}
+{{ define "rhtap.acs.configure" }}
 - name: configure-acs
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -21,15 +21,15 @@
 
       echo -n "* Configuring Tasks: "
       cat << EOF | kubectl apply -f - >/dev/null
-      {{ include "dance.acs.acs_deploy_check" . | indent 8 }}
+      {{ include "rhtap.acs.acs_deploy_check" . | indent 8 }}
       EOF
       echo -n "."
       cat << EOF | kubectl apply -f - >/dev/null
-      {{ include "dance.acs.acs_image_check" . | indent 8 }}
+      {{ include "rhtap.acs.acs_image_check" . | indent 8 }}
       EOF
       echo -n "."
       cat << EOF | kubectl apply -f - >/dev/null
-      {{ include "dance.acs.acs_image_scan" . | indent 8 }}
+      {{ include "rhtap.acs.acs_image_scan" . | indent 8 }}
       EOF
       echo -n "."
       echo "OK"

@@ -1,4 +1,4 @@
-{{ define "dance.acs.acs_image_scan" }}
+{{ define "rhtap.acs.acs_image_scan" }}
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:

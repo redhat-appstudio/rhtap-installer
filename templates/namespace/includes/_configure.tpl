@@ -1,4 +1,4 @@
-{{ define "dance.namespace.configure" }}
+{{ define "rhtap.namespace.configure" }}
 - name: configure-namespace
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -21,11 +21,11 @@
 
       echo -n "* Configuring Tasks: "
       cat << EOF | kubectl apply -f - >/dev/null
-      {{ include "dance.namespace.dev_setup_task" . | indent 8 }}
+      {{ include "rhtap.namespace.dev_setup_task" . | indent 8 }}
       EOF
       echo -n "."
       cat << EOF | kubectl apply -f - >/dev/null
-      {{ include "dance.namespace.pe_info_task" . | indent 8 }}
+      {{ include "rhtap.namespace.pe_info_task" . | indent 8 }}
       EOF
       echo -n "."
       echo "OK"

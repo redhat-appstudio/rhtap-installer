@@ -1,18 +1,18 @@
 ---
-# Source: dance/templates/openshift-gitops/namespace.yaml
+# Source: rhtap/templates/openshift-gitops/namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: dance-argocd
+  name: rhtap-argocd
 ---
-# Source: dance/templates/serviceaccount.yaml
+# Source: rhtap/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: helm-manager
   namespace: rhtap
 ---
-# Source: dance/charts/developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -30,7 +30,7 @@ data:
   password: "#masked#"
   # We don't auto-generate LDAP password when it's not provided as we do for other passwords
 ---
-# Source: dance/charts/developer-hub/templates/secrets.yaml
+# Source: rhtap/charts/developer-hub/templates/secrets.yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -48,7 +48,7 @@ type: Opaque
 data:
   backend-secret: "#masked#"
 ---
-# Source: dance/charts/developer-hub/charts/upstream/templates/app-config-configmap.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/templates/app-config-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -69,7 +69,7 @@ data:
           password: ${POSTGRESQL_ADMIN_PASSWORD}
           user: postgres
 ---
-# Source: dance/charts/developer-hub/templates/dynamic-plugins-configmap.yaml
+# Source: rhtap/charts/developer-hub/templates/dynamic-plugins-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -80,7 +80,7 @@ data:
     - dynamic-plugins.default.yaml
     plugins: []
 ---
-# Source: dance/templates/serviceaccount.yaml
+# Source: rhtap/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
 # might not be declated until after Subscriptions have been
 # deployed (e.g. TektonConfig).
@@ -104,7 +104,7 @@ subjects:
     name: helm-manager
     namespace: rhtap
 ---
-# Source: dance/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc-headless.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc-headless.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -139,7 +139,7 @@ spec:
     app.kubernetes.io/name: postgresql
     app.kubernetes.io/component: primary
 ---
-# Source: dance/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -165,7 +165,7 @@ spec:
     app.kubernetes.io/name: postgresql
     app.kubernetes.io/component: primary
 ---
-# Source: dance/charts/developer-hub/charts/upstream/templates/service.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -191,7 +191,7 @@ spec:
     app.kubernetes.io/instance: installer
     app.kubernetes.io/component: backstage
 ---
-# Source: dance/charts/developer-hub/charts/upstream/templates/backstage-deployment.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/templates/backstage-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -337,7 +337,7 @@ spec:
             - mountPath: /opt/app-root/src/dynamic-plugins-root
               name: dynamic-plugins-root
 ---
-# Source: dance/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/statefulset.yaml
+# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -498,7 +498,7 @@ spec:
           requests:
             storage: "1Gi"
 ---
-# Source: dance/charts/developer-hub/templates/route.yaml
+# Source: rhtap/charts/developer-hub/templates/route.yaml
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -525,7 +525,7 @@ spec:
     weight: 100
   wildcardPolicy: None
 ---
-# Source: dance/templates/openshift-gitops/subscription.yaml
+# Source: rhtap/templates/openshift-gitops/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -538,7 +538,7 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
-# Source: dance/templates/openshift-pipelines/subscription.yaml
+# Source: rhtap/templates/openshift-pipelines/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -551,7 +551,7 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
-# Source: dance/charts/developer-hub/templates/tests/test-connection.yaml
+# Source: rhtap/charts/developer-hub/templates/tests/test-connection.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -575,16 +575,16 @@ spec:
           curl --connect-timeout 5 --max-time 20 --retry 20 --retry-delay 10 --retry-max-time 60 --retry-all-errors installer-developer-hub:7007
   restartPolicy: Never
 ---
-# Source: dance/templates/configure.yaml
+# Source: rhtap/templates/configure.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "dance-installer-configure"
+  name: "rhtap-installer-configure"
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.12"
+    helm.sh/chart: "rhtap-0.5.12"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -597,7 +597,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.12"
+        helm.sh/chart: "rhtap-0.5.12"
     spec:
       containers:
                 
@@ -869,7 +869,7 @@ spec:
               curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
               chmod +x "/usr/bin/yq"
         
-              CHART="dance"
+              CHART="rhtap"
         
               echo -n "* Waiting for route: "
             
@@ -981,8 +981,8 @@ spec:
               #
               # All actions must be idempotent
               #
-              CHART="dance"
-              ARGOCD_NAMESPACE="dance-argocd"
+              CHART="rhtap"
+              ARGOCD_NAMESPACE="rhtap-argocd"
               echo -n "* ArgoCD resource: "
               until kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; do
                 echo -n "."
@@ -993,7 +993,7 @@ spec:
                 apiVersion: argoproj.io/v1beta1
                 kind: ArgoCD
                 metadata:
-                  name: dance-argocd
+                  name: rhtap-argocd
                 spec:
                   server:
                     autoscale:
@@ -1113,7 +1113,7 @@ spec:
                         cpu: 250m
                         memory: 1Gi
                   extraConfig:
-                    accounts.admin-dance: apiKey
+                    accounts.admin-rhtap: apiKey
                 
               EOF
               echo "OK"
@@ -1132,7 +1132,7 @@ spec:
               if [ "$(kubectl get argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" -o jsonpath='{.spec.extraConfig.admin\.enabled}')" = "false" ]; then
                 echo "disabled"
                 echo -n "* ArgoCD 'admin-$CHART' token: "
-                if kubectl get secret -n dance-installer dance-argocd-secret >/dev/null; then
+                if kubectl get secret "$CHART"-argocd-secret >/dev/null; then
                   echo "already generated"
                 else
                   echo "not available"
@@ -1201,10 +1201,10 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: dance-dev-namespace-setup
+                  name: rhtap-dev-namespace-setup
                 spec:
                   description: >-
-                    Create the required resources for dance tasks to run in a namespace.
+                    Create the required resources for rhtap tasks to run in a namespace.
                   params:
                     - description: |
                         Secret containing the address:port tuple for StackRox Central
@@ -1230,13 +1230,13 @@ spec:
                         set -o pipefail
                         
                         echo "Generating secret: "
-                        kubectl create secret generic dance-secret \
+                        kubectl create secret generic rhtap-secret \
                           --from-literal=rox_central_endpoint=\$ROX_ENDPOINT \
                           --from-literal=rox_api_token=\$ROX_API_TOKEN \
                           --dry-run -o yaml | kubectl apply -f - >/dev/null
                         echo "OK"
                 
-                        echo "Namespace is ready to execute dance pipelines"
+                        echo "Namespace is ready to execute rhtap pipelines"
                       workingDir: /tmp
                 
               EOF
@@ -1246,7 +1246,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: dance-pe-info
+                  name: rhtap-pe-info
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1256,27 +1256,27 @@ spec:
                       - name: ARGOCD_HOSTNAME
                         valueFrom:
                           secretKeyRef:
-                            name: dance-argocd-secret
+                            name: rhtap-argocd-secret
                             key: hostname
                       - name: ARGOCD_TOKEN
                         valueFrom:
                           secretKeyRef:
-                            name: dance-argocd-secret
+                            name: rhtap-argocd-secret
                             key: api-token
                       - name: DEVELOPER_HUB_HOSTNAME
                         valueFrom:
                           secretKeyRef:
-                            name: dance-developer-hub-secret
+                            name: rhtap-developer-hub-secret
                             key: hostname
                       - name: PIPELINES_PAC_GH_SECRET
                         valueFrom:
                           secretKeyRef:
-                            name: dance-pipelines-secret
+                            name: rhtap-pipelines-secret
                             key: webhook-github-secret
                       - name: PIPELINES_PAC_URL
                         valueFrom:
                           secretKeyRef:
-                            name: dance-pipelines-secret
+                            name: rhtap-pipelines-secret
                             key: webhook-url
                       image: "k8s.gcr.io/hyperkube:v1.12.1"
                       name: setup
@@ -1337,7 +1337,7 @@ spec:
               #
               # All actions MUST be idempotent
               #
-              CHART="dance"
+              CHART="rhtap"
               PIPELINES_NAMESPACE="openshift-pipelines"
         
               echo -n "* Waiting for pipelines operator deployment: "
@@ -1434,16 +1434,16 @@ spec:
       restartPolicy: Never
       serviceAccountName: helm-manager
 ---
-# Source: dance/templates/test.yaml
+# Source: rhtap/templates/test.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "dance-installer-test"
+  name: "rhtap-installer-test"
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "dance-0.5.12"
+    helm.sh/chart: "rhtap-0.5.12"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1455,7 +1455,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "dance-0.5.12"
+        helm.sh/chart: "rhtap-0.5.12"
     spec:
       containers:
                 
@@ -1474,7 +1474,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: PipelineRun
                 metadata:
-                  generateName: dance-dev-namespace-setup-
+                  generateName: rhtap-dev-namespace-setup-
                 spec:
                   pipelineSpec:
                     tasks:
@@ -1485,7 +1485,7 @@ spec:
                             - name: kind
                               value: task
                             - name: name
-                              value: dance-dev-namespace-setup
+                              value: rhtap-dev-namespace-setup
                             - name: namespace
                               value: rhtap
                         params:

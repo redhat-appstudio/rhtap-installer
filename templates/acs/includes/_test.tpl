@@ -1,4 +1,4 @@
-{{ define "dance.acs.test" }}
+{{ define "rhtap.acs.test" }}
 - name: test-acs
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -10,7 +10,7 @@
       set -o pipefail
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-      {{ include "dance.acs.test_pipeline" . | indent 8 }}
+      {{ include "rhtap.acs.test_pipeline" . | indent 8 }}
       EOF
       )"
       echo -n "* Pipeline $pipeline_id: "

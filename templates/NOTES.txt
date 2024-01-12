@@ -4,14 +4,14 @@ You can access all the configuration information by running the following pipeli
 and checking the logs:
 ```
 cat << EOF | kubectl create -f -
-{{ include "dance.namespace.pe_info_pipelinerun" . }}
+{{ include "rhtap.namespace.pe_info_pipelinerun" . }}
 EOF
 ```
 
 Every developer must configure their namespace by running this PipelineRun:
 ```
 cat << EOF | kubectl create -f -
-{{ include "dance.namespace.dev_setup_pipelinerun" . }}
+{{ include "rhtap.namespace.dev_setup_pipelinerun" . }}
 EOF
 ```
 

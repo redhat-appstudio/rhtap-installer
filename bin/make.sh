@@ -83,7 +83,7 @@ parse_args() {
           sort --version-sort |
           tail -1
       )
-      VERSION="https://redhat-appstudio.github.io/helm-repository/dance-$VERSION.tgz"
+      VERSION="https://redhat-appstudio.github.io/helm-repository/rhtap-installer-$VERSION.tgz"
       ;;
     -d | --debug)
       set -x
@@ -115,8 +115,8 @@ parse_args() {
 }
 
 init() {
-  helm repo add dance https://redhat-appstudio.github.io/helm-repository/ >/dev/null
-  helm repo update dance >/dev/null
+  helm repo add rhtap https://redhat-appstudio.github.io/helm-repository/ >/dev/null
+  helm repo update rhtap >/dev/null
   helm dependencies update >/dev/null || {
     RHDH_VERSION=$(cat Chart.yaml | grep -A1 "developer-hub" | grep " version: " | cut -d '"' -f 2)
     mkdir -p "$HELM_CHART/charts"

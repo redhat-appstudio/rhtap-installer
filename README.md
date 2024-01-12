@@ -1,4 +1,4 @@
-# Project Dance
+# Red Hat Trusted Application Pipeline
 
 This helm chart installs and configures the following projects/products :
 
@@ -35,40 +35,38 @@ This helm chart installs and configures the following projects/products :
 
 1. Add the helm repository to your local system 
 
-    `helm repo add rhtap-dance https://redhat-appstudio.github.io/helm-repository`
+    `helm repo add rhtap https://redhat-appstudio.github.io/helm-repository`
     
     If you've already added this, run a `helm repo update` time to time to pull the latest packages.
 
 2. Edit `values.yaml` to set your configuration parameters.
 
-3. Install Dance
+3. Install/upgrade RHTAP
 
-    `helm install rhtap-dance/dance --generate-name --namespace dance-installer --values values.yaml`
+    `helm upgrade installer rhtap/rhtap --install --create-namespace --namespace rhtap --values values.yaml`
 
     Sample output:
     
     ```
-    NAME: dance-1700107222
-    LAST DEPLOYED: Wed Nov 15 23:00:25 2023
-    NAMESPACE: dance-installer
+    NAME: installer
+    LAST DEPLOYED: Fri Jan 12 12:21:01 2024
+    NAMESPACE: rhtap
     STATUS: deployed
     REVISION: 1
-    TEST SUITE: None
+    NOTES:
+    Thank you for installing rhtap-installer.
+    [...]
     ```
 
-    Run the pipeline to get the configuration information as per helm output.
+    Run the pipeline to get the configuration information as per the `NOTES` section of the helm output.
     Use the logs information to finish the setup of the GitHub App:
     * `Homepage URL`: `.pipelines.pipelines-as-code.homepage-url`
     * `Callback URL`: `.pipelines.pipelines-as-code.callback-url`
     * `Webhook URL`: `.pipelines.pipelines-as-code.webhook-url`
 
-3. Uninstall Dance
+3. Uninstall RHTAP
 
-    `helm uninstall --namespace dance-installer dance-1700107222`
-
-4. Upgrade an existing installation of Dance
-
-    `TODO`
+    `helm uninstall --namespace rhtap installer`
 
 ## UI ( a.k.a OpenShift Console )
 
@@ -78,11 +76,11 @@ This helm chart installs and configures the following projects/products :
 apiVersion: helm.openshift.io/v1beta1
 kind: HelmChartRepository
 metadata:
-  name: dance-rhtap
+  name: rhtap-installer
 spec:
   connectionConfig:
     url: 'https://redhat-appstudio.github.io/helm-repository'
-  name: dance
+  name: rhtap-installer
 ```
 
 2. Install the Chart from the catalog
@@ -95,31 +93,18 @@ spec:
 
 ### "Inner loop"
 
-1. Download/Clone this Git Repository.
-2. `./bin/make.sh apply`
+1. Download/Clone this Git Repository: `git clone https://github.com/redhat-appstudio/rhtap-installer`.
+2. Install/upgrade the chart on your cluster: `./bin/make.sh apply -- --values values-private.yaml`
+3. Run tests: `./test/e2e.sh -- --values values-private.yaml`
 
-### Tests
+### Continuous integration
 
 TODO
 
-### Release a new version of Dance
-
-#### Generate a tarball of the chart
-
+### Release a new version of RHTAP
 
 ```
-$ git clone https://github.com/redhat-appstudio/dance
-$ helm package dance
-$ mv dance-0.2.0.tgz /tmp/
-```
-
-#### Push the tarball into the helm chart repository
-
-
-```
-$ git clone https://github.com/redhat-appstudio/helm-repository
-$ cd helm-repository
-$ mv /tmp/dance-0.2.0.tgz
-$ rm -rf /tmp/dance-0.1.0.tgz
-$ helm repo index --url https://redhat-appstudio.github.io/helm-repository/ .
+$ git clone https://github.com/redhat-appstudio/rhtap-installer
+$ cd rhtap-installer/bin
+$ ./make.sh release
 ```

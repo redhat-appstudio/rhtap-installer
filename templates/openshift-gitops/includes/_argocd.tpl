@@ -1,4 +1,4 @@
-{{ define "dance.include.argocd" }}
+{{ define "rhtap.include.argocd" }}
 apiVersion: argoproj.io/v1beta1
 kind: ArgoCD
 metadata:

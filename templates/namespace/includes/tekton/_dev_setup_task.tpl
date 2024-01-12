@@ -1,4 +1,4 @@
-{{ define "dance.namespace.dev_setup_task" }}
+{{ define "rhtap.namespace.dev_setup_task" }}
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
@@ -31,12 +31,12 @@ spec:
         set -o pipefail
         
         echo "Generating secret: "
-        kubectl create secret generic dance-secret \
+        kubectl create secret generic {{ .Chart.Name }}-secret \
           --from-literal=rox_central_endpoint=\$ROX_ENDPOINT \
           --from-literal=rox_api_token=\$ROX_API_TOKEN \
           --dry-run -o yaml | kubectl apply -f - >/dev/null
         echo "OK"
 
-        echo "Namespace is ready to execute dance pipelines"
+        echo "Namespace is ready to execute {{ .Chart.Name }} pipelines"
       workingDir: /tmp
 {{ end }}

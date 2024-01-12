@@ -37,7 +37,7 @@ set_defaults() {
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
   )"
-  NAMESPACE="dance-installer"
+  NAMESPACE="rhtap-installer"
 }
 
 parse_args() {

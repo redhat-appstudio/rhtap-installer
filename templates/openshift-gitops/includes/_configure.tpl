@@ -1,4 +1,4 @@
-{{ define "dance.gitops.configure" }}
+{{ define "rhtap.gitops.configure" }}
 - name: configure-gitops
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -40,7 +40,7 @@
         sleep 3
       done
       cat << EOF | kubectl apply -n "$ARGOCD_NAMESPACE" -f - >/dev/null
-      {{ include "dance.include.argocd" . | indent 8 }}
+      {{ include "rhtap.include.argocd" . | indent 8 }}
       EOF
       echo "OK"
 
@@ -58,7 +58,7 @@
       if [ "$(kubectl get argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" -o jsonpath='{.spec.extraConfig.admin\.enabled}')" = "false" ]; then
         echo "disabled"
         echo -n "* ArgoCD 'admin-$CHART' token: "
-        if kubectl get secret -n dance-installer dance-argocd-secret >/dev/null; then
+        if kubectl get secret "$CHART"-argocd-secret >/dev/null; then
           echo "already generated"
         else
           echo "not available"
@@ -85,7 +85,7 @@
         echo "OK"
 
         echo -n "* Disable ArgoCD admin user: "
-        kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '{{ include "dance.argocd.user_admin" . | indent 8 }}' >/dev/null
+        kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '{{ include "rhtap.argocd.user_admin" . | indent 8 }}' >/dev/null
         echo "OK"
       fi
 

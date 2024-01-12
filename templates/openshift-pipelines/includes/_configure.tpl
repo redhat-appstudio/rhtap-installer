@@ -1,4 +1,4 @@
-{{ define "dance.pipelines.configure" }}
+{{ define "rhtap.pipelines.configure" }}
 - name: configure-pipelines
   image: quay.io/redhat-appstudio/appstudio-utils:dbbdd82734232e6289e8fbae5b4c858481a7c057
   command:
@@ -39,7 +39,7 @@
         echo -n "."
         sleep 3
       done
-      kubectl patch tektonconfig config --type 'merge' --patch '{{ include "dance.includes.tektonconfig" . | indent 8 }}' >/dev/null
+      kubectl patch tektonconfig config --type 'merge' --patch '{{ include "rhtap.includes.tektonconfig" . | indent 8 }}' >/dev/null
       echo "OK"
 
       echo -n "* Configuring Chains secret: "

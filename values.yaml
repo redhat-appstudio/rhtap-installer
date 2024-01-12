@@ -1,11 +1,11 @@
-# Default values for dance.
+# Default values for rhtap-installer.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 openshift-gitops:
   enabled: true
   channel: gitops-1.11
-  argocd-namespace: dance-argocd
+  argocd-namespace: rhtap-argocd
   workload-namespaces:
     - default
 openshift-pipelines:
