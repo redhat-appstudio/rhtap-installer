@@ -33,7 +33,7 @@
       # All actions must be idempotent
       #
       CHART="{{ .Chart.Name }}"
-      ARGOCD_NAMESPACE="{{ index .Values "openshift-gitops" "argocd-namespace" }}"
+      ARGOCD_NAMESPACE="{{ index .Values "openshift-gitops" "argocd-namespace" | default ( print .Release.Namespace "-argocd" ) }}"
       echo -n "* ArgoCD resource: "
       until kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; do
         echo -n "."

@@ -5,7 +5,6 @@
 openshift-gitops:
   enabled: true
   channel: gitops-1.11
-  argocd-namespace: rhtap-argocd
   workload-namespaces:
     - default
 openshift-pipelines:
