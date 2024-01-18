@@ -1,6 +1,6 @@
 dependencies:
 - name: developer-hub
-  repository: https://gist.githubusercontent.com/rhdh-bot/63cef5cb6285889527bd6a67c0e1c2a9/raw/1321d62343b208213089549b8a1050d9c3f48551
-  version: 1.1-7-CI
-digest: sha256:c5732879ab618422e2e30bc7be3f1497c9245de5d58b503729077009269a9049
-generated: "2023-12-20T16:55:41.194467535-05:00"
+  repository: https://gist.githubusercontent.com/rhdh-bot/63cef5cb6285889527bd6a67c0e1c2a9/raw/be57b45121ce9206b8b0c88e07ed444ad2710fe8
+  version: 1.0.0-1
+digest: sha256:052c443d6d3d761106da050b6c2c75782854ea459ec1a48eab9650328dd1007c
+generated: "2024-01-18T11:17:34.412374384-05:00"

@@ -117,14 +117,7 @@ parse_args() {
 init() {
   helm repo add rhtap https://redhat-appstudio.github.io/helm-repository/ >/dev/null
   helm repo update rhtap >/dev/null
-  helm dependencies update >/dev/null || {
-    RHDH_VERSION=$(cat Chart.yaml | grep -A1 "developer-hub" | grep " version: " | cut -d '"' -f 2)
-    mkdir -p "$HELM_CHART/charts"
-    if [ ! -e "$HELM_CHART/charts/developer-hub-$RHDH_VERSION.tgz" ]; then
-      find "$HELM_CHART/charts" -name developer-hub-\* -delete
-      curl --fail --location --output "$HELM_CHART/charts/developer-hub-$RHDH_VERSION.tgz" --silent "https://github.com/rhdh-bot/openshift-helm-charts/raw/developer-hub-$RHDH_VERSION/charts/redhat/redhat/developer-hub/$RHDH_VERSION/developer-hub-$RHDH_VERSION.tgz"
-    fi
-  }
+  helm dependencies update >/dev/null
 }
 
 delete() {
