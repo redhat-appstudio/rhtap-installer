@@ -13,7 +13,7 @@
       curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
       chmod 555 argocd
       ./argocd version --client | head -1 | cut -d' ' -f2
-      
+
       CRD="argocds"
       echo -n "* Waiting for '$CRD' CRD: "
       while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
@@ -23,7 +23,7 @@
       echo "OK"
 
       echo -n "* Waiting for gitops operator deployment: "
-      until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
+      until kubectl get argocd openshift-gitops -n openshift-gitops --ignore-not-found >/dev/null; do
         echo -n "."
         sleep 3
       done
@@ -76,11 +76,20 @@
         echo -n "* ArgoCD 'admin-$CHART' token: "
         if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
           echo -n "."
-          API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
+          ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
+          echo -n "."
+          ARGOCD_USER_PASSWORD=$(openssl rand --base64 20 | tr -d '=')
+          ./argocd account update-password \
+            --account "admin-$CHART" \
+            --current-password "$ARGOCD_PASSWORD" \
+            --new-password "$ARGOCD_USER_PASSWORD" > /dev/null
           echo -n "."
           kubectl create secret generic "$CHART-argocd-secret" \
-            --from-literal="api-token=$API_TOKEN" \
-            --from-literal="hostname=$ARGOCD_HOSTNAME" >/dev/null
+            --from-literal="api-token=$ARGOCD_API_TOKEN" \
+            --from-literal="hostname=$ARGOCD_HOSTNAME" \
+            --from-literal="password=$ARGOCD_USER_PASSWORD" \
+            --from-literal="user=admin-$CHART" \
+            > /dev/null
         fi
         echo "OK"
 
@@ -88,6 +97,13 @@
         kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '{{ include "rhtap.argocd.user_admin" . | indent 8 }}' >/dev/null
         echo "OK"
       fi
+
+      {{ include "rhtap.openshift-pipelines.wait" . | indent 6 }}
+
+      echo -n "* Configuring Tasks: "
+      cat << EOF | kubectl apply -f - >/dev/null
+      {{ include "rhtap.openshift-gitops.argocd-login-check" . | indent 6 }}
+      EOF
 
       echo
       echo "Configuration successful"

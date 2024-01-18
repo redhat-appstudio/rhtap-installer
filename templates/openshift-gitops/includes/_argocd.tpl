@@ -122,5 +122,5 @@ spec:
         cpu: 250m
         memory: 1Gi
   extraConfig:
-    accounts.admin-{{ .Chart.Name }}: apiKey
+    accounts.admin-{{ .Chart.Name }}: apiKey, login
 {{ end }}

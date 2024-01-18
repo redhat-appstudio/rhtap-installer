@@ -1,5 +1,5 @@
-{{ define "rhtap.acs.test" }}
-- name: test-acs
+{{ define "rhtap.namespace.test" }}
+- name: test-rhtap
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
     - /bin/bash
@@ -10,7 +10,7 @@
       set -o pipefail
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-      {{ include "rhtap.acs.test_pipeline" . | indent 8 }}
+      {{ include "rhtap.namespace.test_pipeline" . | indent 8 }}
       EOF
       )"
       echo -n "* Pipeline $pipeline_id: "

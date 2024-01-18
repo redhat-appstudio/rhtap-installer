@@ -1,13 +1,12 @@
-{{ define "rhtap.acs.test_pipeline" }}
-# kubectl create -n {{ .Release.Namespace }} -f acs-pipelinerun.yaml
+{{ define "rhtap.namespace.test_pipeline" }}
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: acs-test-
+  generateName: rhtap-test-config-
 spec:
   pipelineSpec:
     tasks:
-    - name: deploy-check
+    - name: acs-deploy-check
       taskRef:
         resolver: cluster
         params:
@@ -22,7 +21,7 @@ spec:
           value: https://raw.githubusercontent.com/jduimovich/quarkus-1/main/argocd/components/q/base/deployment.yaml
         - name: insecure-skip-tls-verify
           value: true
-    - name: image-check
+    - name: acs-image-check
       taskRef:
         resolver: cluster
         params:
@@ -39,7 +38,7 @@ spec:
           value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
         - name: insecure-skip-tls-verify
           value: true
-    - name: image-scan
+    - name: acs-image-scan
       taskRef:
         resolver: cluster
         params:
@@ -56,4 +55,14 @@ spec:
           value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
         - name: insecure-skip-tls-verify
           value: true
+    - name: argocd-login-check
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: argocd-login-check
+          - name: namespace
+            value: {{ .Release.Namespace }}
 {{ end }}

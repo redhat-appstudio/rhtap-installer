@@ -979,6 +979,7 @@ spec:
               chmod 555 argocd
               ./argocd version --client | head -1 | cut -d' ' -f2
               
+        
               CRD="argocds"
               echo -n "* Waiting for '$CRD' CRD: "
               while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
@@ -988,7 +989,7 @@ spec:
               echo "OK"
         
               echo -n "* Waiting for gitops operator deployment: "
-              until kubectl get "$CRD" openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
+              until kubectl get argocd openshift-gitops -n openshift-gitops >/dev/null 2>&1; do
                 echo -n "."
                 sleep 3
               done
@@ -1129,7 +1130,7 @@ spec:
                         cpu: 250m
                         memory: 1Gi
                   extraConfig:
-                    accounts.admin-rhtap: apiKey
+                    accounts.admin-rhtap: apiKey, login
                 
               EOF
               echo "OK"
@@ -1168,9 +1169,18 @@ spec:
                   echo -n "."
                   API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
                   echo -n "."
+                  ARGOCD_USER_PASSWORD=$(openssl rand --base64 20 | tr -d '=')
+                  ./argocd account update-password \
+                    --account "admin-$CHART" \
+                    --current-password "$ARGOCD_PASSWORD" \
+                    --new-password "$ARGOCD_USER_PASSWORD" > /dev/null
+                  echo -n "."
                   kubectl create secret generic "$CHART-argocd-secret" \
                     --from-literal="api-token=$API_TOKEN" \
-                    --from-literal="hostname=$ARGOCD_HOSTNAME" >/dev/null
+                    --from-literal="hostname=$ARGOCD_HOSTNAME" \
+                    --from-literal="password=$ARGOCD_USER_PASSWORD" \
+                    --from-literal="user=admin-$CHART" \
+                    > /dev/null
                 fi
                 echo "OK"
         
@@ -1186,6 +1196,77 @@ spec:
                 ' >/dev/null
                 echo "OK"
               fi
+        
+                    
+              echo -n "* Waiting for openshift-pipelines: "
+              while ! kubectl get namespace openshift-pipelines --ignore-not-found > /dev/null; do
+                echo -n "."
+                sleep 2
+              done
+              echo "OK"
+              
+              CRDS=( pipelines tasks )
+              for CRD in "${CRDS[@]}"; do
+                echo -n "* Waiting for '$CRD' CRD: "
+                while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                  echo -n "."
+                  sleep 2
+                done
+                echo "OK"
+              done
+              
+              echo -n "* Waiting for openshift-pipelines webhook service: "
+              while [ "$(kubectl get pods -n openshift-pipelines -l app.kubernetes.io/name=webhook,app.kubernetes.io/part-of=tekton-pipelines --ignore-not-found | grep -c " Running ")" != "1" ]; do
+                echo -n "."
+                sleep 2
+              done
+              echo "OK"
+              
+        
+              echo -n "* Configuring Tasks: "
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1
+                kind: Task
+                metadata:
+                  name: argocd-login-check
+                spec:
+                  description: >-
+                    Check the argocd login credentials.
+                  steps:
+                    - env:
+                      - name: ARGOCD_HOSTNAME
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-argocd-secret
+                            key: hostname
+                      - name: ARGOCD_PASSWORD
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-argocd-secret
+                            key: password
+                      - name: ARGOCD_USER
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-argocd-secret
+                            key: user
+                      image: registry.access.redhat.com/ubi9/ubi-minimal
+                      name: check-argocd-login
+                      script: |
+                        #!/usr/bin/env bash
+                        set -o errexit
+                        set -o nounset
+                        set -o pipefail
+                
+                        echo -n "* Installing 'argocd' CLI: "
+                        curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+                        chmod 555 argocd
+                        ./argocd version --client | head -1 | cut -d' ' -f2
+                
+                        ./argocd login "\$ARGOCD_HOSTNAME" --grpc-web --insecure --username "\$ARGOCD_USER" --password "\$ARGOCD_PASSWORD"
+                      workingDir: /tmp
+                
+              EOF
         
               echo
               echo "Configuration successful"
@@ -1506,63 +1587,11 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: PipelineRun
                 metadata:
-                  generateName: rhtap-dev-namespace-setup-
+                  generateName: rhtap-test-config-
                 spec:
                   pipelineSpec:
                     tasks:
-                      - name: configure-namespace
-                        taskRef:
-                          resolver: cluster
-                          params:
-                            - name: kind
-                              value: task
-                            - name: name
-                              value: rhtap-dev-namespace-setup
-                            - name: namespace
-                              value: rhtap
-                        params:
-                          - name: acs_central_endpoint
-                            value: ${ACS__CENTRAL_ENDPOINT}
-                          - name: acs_api_token
-                            value: ${ACS__API_TOKEN}
-                
-              EOF
-              )"
-              echo -n "* Pipeline $pipeline_id: "
-              while ! kubectl get "$pipeline_id" | grep --extended-regex --quiet " False | True "; do
-                echo -n "."
-                sleep 2
-              done
-              if kubectl get "$pipeline_id" | grep --quiet " True "; then
-                kubectl delete "$pipeline_id" > /dev/null
-                echo "OK"
-              else
-                echo "Failed"
-                exit 1
-              fi
-        
-                
-        - name: test-acs
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-        
-              pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-                      
-                # kubectl create -n rhtap -f acs-pipelinerun.yaml
-                apiVersion: tekton.dev/v1
-                kind: PipelineRun
-                metadata:
-                  generateName: acs-test-
-                spec:
-                  pipelineSpec:
-                    tasks:
-                    - name: deploy-check
+                    - name: acs-deploy-check
                       taskRef:
                         resolver: cluster
                         params:
@@ -1577,7 +1606,7 @@ spec:
                           value: https://raw.githubusercontent.com/jduimovich/quarkus-1/main/argocd/components/q/base/deployment.yaml
                         - name: insecure-skip-tls-verify
                           value: true
-                    - name: image-check
+                    - name: acs-image-check
                       taskRef:
                         resolver: cluster
                         params:
@@ -1594,7 +1623,7 @@ spec:
                           value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
                         - name: insecure-skip-tls-verify
                           value: true
-                    - name: image-scan
+                    - name: acs-image-scan
                       taskRef:
                         resolver: cluster
                         params:
@@ -1611,6 +1640,16 @@ spec:
                           value: sha256:19bffd927a8dc70be5995eeba4ede675f57eca6222329477a50d65dc06880e3c
                         - name: insecure-skip-tls-verify
                           value: true
+                    - name: argocd-login-check
+                      taskRef:
+                        resolver: cluster
+                        params:
+                          - name: kind
+                            value: task
+                          - name: name
+                            value: argocd-login-check
+                          - name: namespace
+                            value: rhtap
                 
               EOF
               )"

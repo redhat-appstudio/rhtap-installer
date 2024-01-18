@@ -10,7 +10,7 @@
       set -o pipefail
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
-      {{ include "rhtap.namespace.dev_setup_pipelinerun" . | indent 8 }}
+      {{ include "rhtap.namespace.test_pipeline" . | indent 8 }}
       EOF
       )"
       echo -n "* Pipeline $pipeline_id: "
