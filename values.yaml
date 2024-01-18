@@ -56,3 +56,36 @@ pipelines:
       private-key: |
         ${GITHUB__APP__PRIVATE_KEY}
       webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
+global:
+  # Developer Hub
+  dynamic:
+    includes:
+      - dynamic-plugins.default.yaml
+    plugins:
+      - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
+        disabled: false
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              roadiehq.backstage-plugin-argo-cd:
+                mountPoints:
+                  - mountPoint: entity.page.overview/cards
+                    importName: EntityArgoCDOverviewCard
+                    config:
+                      layout:
+                        gridColumnEnd:
+                          lg: "span 8"
+                          xs: "span 12"
+                      if:
+                        allOf:
+                          - isArgocdAvailable
+                  - mountPoint: entity.page.cd/cards
+                    importName: EntityArgoCDHistoryCard
+                    config:
+                      layout:
+                        gridColumn: "1 / -1"
+                      if:
+                        allOf:
+                          - isArgocdAvailable
+      - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+        disabled: false

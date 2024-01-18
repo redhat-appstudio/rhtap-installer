@@ -78,7 +78,34 @@ data:
   dynamic-plugins.yaml: |
     includes:
     - dynamic-plugins.default.yaml
-    plugins: []
+    plugins:
+    - disabled: false
+      package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
+      pluginConfig:
+        dynamicPlugins:
+          frontend:
+            roadiehq.backstage-plugin-argo-cd:
+              mountPoints:
+              - config:
+                  if:
+                    allOf:
+                    - isArgocdAvailable
+                  layout:
+                    gridColumnEnd:
+                      lg: span 8
+                      xs: span 12
+                importName: EntityArgoCDOverviewCard
+                mountPoint: entity.page.overview/cards
+              - config:
+                  if:
+                    allOf:
+                    - isArgocdAvailable
+                  layout:
+                    gridColumn: 1 / -1
+                importName: EntityArgoCDHistoryCard
+                mountPoint: entity.page.cd/cards
+    - disabled: false
+      package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
 ---
 # Source: rhtap/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
@@ -222,7 +249,7 @@ spec:
         app.kubernetes.io/component: backstage
       annotations:
         checksum/app-config: 6b26747d5021d4fb38189114dfc815a692e5074ec940c10981f622fe87475502
-        checksum/dynamic-plugins: 'f1f9a92f14a31362d7eb30e67ac1458faf1c685765610f93a8967194d8bc1a5f'
+        checksum/dynamic-plugins: '21dc3bcc495d3754af269f72a1fe2a31da61907b1b24fa30ca3bdcaeb857ab5c'
     spec:
       serviceAccountName: default
       volumes:
@@ -903,16 +930,20 @@ spec:
               fi
               echo "OK"
         
+              echo -n "* Updating app-config.yaml: "
               kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
               yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
+              touch app-config-update.yaml
+              echo -n "."
         
               # Set the base URL
               URL="https://$HOSTNAME"
               yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
+              echo -n "."
         
               # Set the authentication
             
-              cat << _EOF_ > app-config-update.yaml
+              cat << _EOF_ >> app-config-update.yaml
               auth:
                 environment: development
                 providers:
@@ -945,13 +976,42 @@ spec:
                     webhookUrl: ${GITHUB__APP__WEBHOOK_URL}
                   host: github.com
               _EOF_
-              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
+              echo -n "."
             
+        
+              while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+                echo -ne "_"
+                sleep 2
+              done
+              kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
+              echo -n "."
+        
+              ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
+              ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
+              ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
+              ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
+              cat << _EOF_ >> app-config-update.yaml
+              argocd:
+                username: $ARGOCD_USER
+                password: $ARGOCD_PASSWORD
+                waitCycles: 25
+                appLocatorMethods:
+                  - type: 'config'
+                    instances:
+                      - name: default
+                        url: https://$ARGOCD_HOSTNAME
+                        token: $ARGOCD_API_TOKEN
+              _EOF_
+        
+              # Process app-config update
+              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
               yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
               if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
+                echo
                 kubectl apply -f developer-hub-app-config.new.yaml
                 kubectl delete pods -l "app.kubernetes.io/component=backstage"
               fi
+              echo "OK"
         
               echo -n "* Waiting for UI: "
               until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
