@@ -651,13 +651,13 @@ spec:
                     builds. It's a companion to the stackrox-image-scan task, which returns full
                     vulnerability scan results for an image.
                   params:
-                    - default:  "central.acs.mycluster.com:443"
+                    - default:  "${ACS__CENTRAL_ENDPOINT}"
                       description: |
                         Secret containing the address:port tuple for StackRox Central
                         (example - rox.stackrox.io:443)
                       name: rox_central_endpoint
                       type: string
-                    - default: "eyAbC123...acs...890XyZ"
+                    - default: "${ACS__API_TOKEN}"
                       description: |
                         Secret containing the StackRox API token with CI permissions
                       name: rox_api_token
@@ -723,13 +723,13 @@ spec:
                     It's a companion to the acs-image-scan task, which returns full vulnerability
                     scan results for an image.
                   params:
-                  - default: "central.acs.mycluster.com:443"
+                  - default: "${ACS__CENTRAL_ENDPOINT}"
                     description: |
                       Secret containing the address:port tuple for StackRox Central
                       (example - rox.stackrox.io:443)
                     name: rox_central_endpoint
                     type: string
-                  - default: "eyAbC123...acs...890XyZ"
+                  - default: "${ACS__API_TOKEN}"
                     description: |
                       Secret containing the StackRox API token with CI permissions
                     name: rox_api_token
@@ -799,13 +799,13 @@ spec:
                   description: |
                     Retrun a full vulnerability scan results for an image.
                   params:
-                  - default: "central.acs.mycluster.com:443"
+                  - default: "${ACS__CENTRAL_ENDPOINT}"
                     description: |
                       Secret containing the address:port tuple for StackRox Central
                       (example - rox.stackrox.io:443)
                     name: rox_central_endpoint
                     type: string
-                  - default: "eyAbC123...acs...890XyZ"
+                  - default: "${ACS__API_TOKEN}"
                     description: |
                       Secret containing the StackRox API token with CI permissions
                     name: rox_api_token
@@ -918,11 +918,11 @@ spec:
                 providers:
                   github:
                     development:
-                      clientId: abcd1234cdef7890
-                      clientSecret: abcd1234...cdef7890
+                      clientId: ${GITHUB__APP__CLIENT_ID}
+                      clientSecret: ${GITHUB__APP__CLIENT_SECRET}
               catalog:
                 locations:
-                - target: https://github.com/my-org/my-gpt-repo/blob/my-branch/my-catalog.yaml
+                - target: ${DEVELOPER_HUB__CATALOG__URL}
                   type: url
                 rules:
                 - allow:
@@ -936,13 +936,13 @@ spec:
               integrations:
                 github:
                 - apps:
-                  - appId: ${GITHUB_APP_APP_ID}
-                    clientId: ${GITHUB_APP_CLIENT_ID}
-                    clientSecret: ${GITHUB_APP_CLIENT_SECRET}
+                  - appId: ${GITHUB__APP__APP_ID}
+                    clientId: ${GITHUB__APP__CLIENT_ID}
+                    clientSecret: ${GITHUB__APP__CLIENT_SECRET}
                     privateKey: |
-                      ${GITHUB_APP_PRIVATE_KEY}
-                    webhookSecret: ${GITHUB_APP_WEBHOOK_SECRET}
-                    webhookUrl: ${GITHUB_APP_WEBHOOK_URL}
+                      ${GITHUB__APP__PRIVATE_KEY}
+                    webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
+                    webhookUrl: ${GITHUB__APP__WEBHOOK_URL}
                   host: github.com
               _EOF_
               yq -i '. *= load("app-config-update.yaml")' app-config.yaml
@@ -1442,7 +1442,7 @@ spec:
               echo -n "* Configuring Pipelines-as-Code: "
               if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
-                WEBHOOK_SECRET="${WEBHOOK_SECRET}"
+                WEBHOOK_SECRET="${GITHUB__APP__WEBHOOK_SECRET}"
                 kubectl create secret generic "$CHART-pipelines-secret" \
                   --from-literal="webhook-github-secret=$WEBHOOK_SECRET" \
                   --from-literal="webhook-url=$(kubectl get routes -n "$PIPELINES_NAMESPACE" pipelines-as-code-controller -o jsonpath="https://{.spec.host}")" >/dev/null
@@ -1452,8 +1452,8 @@ spec:
               if [ "$(kubectl get secret -n "$PIPELINES_NAMESPACE" "pipelines-as-code-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
                 kubectl -n "$PIPELINES_NAMESPACE" create secret generic pipelines-as-code-secret \
-                  --from-literal github-application-id="123456" \
-                  --from-literal github-private-key="$(echo "SW5zZXJ0IHRoZSBwcml2YXRlIGtleSBkYXRhLCBpbmNsdWRpbmcgdGhlICctLS0tIC4uLiAtLS0tJwpoZWFkZXIgYW5kIGZvb3Rlci4K" | base64 -d)" \
+                  --from-literal github-application-id="${GITHUB__APP__APP_ID}" \
+                  --from-literal github-private-key="$(echo "JHtHSVRIVUJfX0FQUF9fUFJJVkFURV9LRVl9Cg==" | base64 -d)" \
                   --from-literal webhook.secret="$WEBHOOK_SECRET" \
                   --dry-run=client -o yaml | kubectl apply -f - >/dev/null
               fi
@@ -1522,9 +1522,9 @@ spec:
                               value: rhtap
                         params:
                           - name: acs_central_endpoint
-                            value: central.acs.mycluster.com:443
+                            value: ${ACS__CENTRAL_ENDPOINT}
                           - name: acs_api_token
-                            value: eyAbC123...acs...890XyZ
+                            value: ${ACS__API_TOKEN}
                 
               EOF
               )"

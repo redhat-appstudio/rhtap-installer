@@ -11,17 +11,12 @@ openshift-gitops:
 openshift-pipelines:
   enabled: true
   channel: pipelines-1.13
-quay:
-  enabled: true
-  registry: quay.io
-  username: admin
-  password: admin
 
 # Private values
 # You may want to override those variables in another file (e.g. values-private.yaml)
 acs:
-  central-endpoint: central.acs.mycluster.com:443
-  api-token: eyAbC123...acs...890XyZ
+  central-endpoint: ${ACS__CENTRAL_ENDPOINT}
+  api-token: ${ACS__API_TOKEN}
 developer-hub:
   app-config:
     auth:
@@ -29,23 +24,23 @@ developer-hub:
       providers:
         github:
           development:
-            clientId: abcd1234cdef7890
-            clientSecret: abcd1234...cdef7890
+            clientId: ${GITHUB__APP__CLIENT_ID}
+            clientSecret: ${GITHUB__APP__CLIENT_SECRET}
     integrations:
       github:
         - host: github.com
           apps:
-            - appId: ${GITHUB_APP_APP_ID}
-              clientId: ${GITHUB_APP_CLIENT_ID}
-              clientSecret: ${GITHUB_APP_CLIENT_SECRET}
-              webhookUrl: ${GITHUB_APP_WEBHOOK_URL}
-              webhookSecret: ${GITHUB_APP_WEBHOOK_SECRET}
+            - appId: ${GITHUB__APP__APP_ID}
+              clientId: ${GITHUB__APP__CLIENT_ID}
+              clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+              webhookUrl: ${GITHUB__APP__WEBHOOK_URL}
+              webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
               privateKey: |
-                ${GITHUB_APP_PRIVATE_KEY}
+                ${GITHUB__APP__PRIVATE_KEY}
     catalog:
       locations:
         - type: url
-          target: https://github.com/my-org/my-gpt-repo/blob/my-branch/my-catalog.yaml
+          target: ${DEVELOPER_HUB__CATALOG__URL}
       rules:
         - allow:
           - Component
@@ -55,13 +50,10 @@ developer-hub:
           - Location
           - Template
           - API
-    # This should be removed once RHDH is GA
-  # quay-token: eyAbC123...rhdh...890XyZ
 pipelines:
   pipelines-as-code:
     github:
-      application-id: 123456
+      application-id: ${GITHUB__APP__APP_ID}
       private-key: |
-        Insert the private key data, including the '---- ... ----'
-        header and footer.
-      webhook-secret: ${WEBHOOK_SECRET}
+        ${GITHUB__APP__PRIVATE_KEY}
+      webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
