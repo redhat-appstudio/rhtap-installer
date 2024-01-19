@@ -26,6 +26,10 @@ Commands:
         Render the helm chart.
     test
         Run the helm chart tests.
+    values
+        Generate a 'values-private.yaml' configuration based on environment
+        variables defined in 'private.env'.
+        User will be prompted for missing values.
 
 Optional arguments:
     -a, --app-name APP_NAME
@@ -63,7 +67,7 @@ set_defaults() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
-    apply | delete | release | template | test)
+    apply | delete | release | template | test | values)
       ACTION="$1"
       ;;
     -a | --app-name)
@@ -192,6 +196,28 @@ template() {
 
 test() {
   $helm test "$APP_NAME"
+}
+
+values() {
+  cd "$HELM_CHART"
+  touch "private.env"
+  source "private.env"
+  echo >"private.env"
+  mapfile -t ENV_VARS < <(grep --only-matching "\${[^}]*" values.yaml | cut -d{ -f2 | sort -u)
+  for ENV_VAR in "${ENV_VARS[@]}"; do
+    if [ -z "${!ENV_VAR:-}" ]; then
+      read -p "Enter value for $ENV_VAR: " VALUE
+    else
+      echo "$ENV_VAR: OK"
+      VALUE=${!ENV_VAR}
+    fi
+    echo "export $ENV_VAR='$VALUE'" >>"private.env"
+  done
+  source "private.env"
+  yq "
+    .developer-hub.app-config.integrations.github[0].apps[0].privateKey = \"$GITHUB__APP__PRIVATE_KEY\",
+    .pipelines.pipelines-as-code.github.private-key = \"$GITHUB__APP__PRIVATE_KEY\"
+    " "values.yaml" | envsubst >"private-values.yaml"
 }
 
 _get_versions() {
