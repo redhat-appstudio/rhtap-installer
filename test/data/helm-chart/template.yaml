@@ -106,6 +106,8 @@ data:
                 mountPoint: entity.page.cd/cards
     - disabled: false
       package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+    - disabled: false
+      package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
 ---
 # Source: rhtap/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
@@ -249,7 +251,7 @@ spec:
         app.kubernetes.io/component: backstage
       annotations:
         checksum/app-config: 6b26747d5021d4fb38189114dfc815a692e5074ec940c10981f622fe87475502
-        checksum/dynamic-plugins: '21dc3bcc495d3754af269f72a1fe2a31da61907b1b24fa30ca3bdcaeb857ab5c'
+        checksum/dynamic-plugins: 'b5a27f2cc82628905cebfa0bc0f7f4dbe90e3d8c1c9ee25841866875ccb00e7c'
     spec:
       serviceAccountName: default
       volumes:

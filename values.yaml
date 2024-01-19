@@ -89,3 +89,5 @@ global:
                           - isArgocdAvailable
       - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
         disabled: false
+      - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
+        disabled: false
