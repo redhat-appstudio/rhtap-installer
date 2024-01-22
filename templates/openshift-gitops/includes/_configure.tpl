@@ -55,48 +55,20 @@
       echo "OK"
 
       echo -n " * ArgoCD admin user: "
-      if [ "$(kubectl get argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" -o jsonpath='{.spec.extraConfig.admin\.enabled}')" = "false" ]; then
-        echo "disabled"
-        echo -n "* ArgoCD 'admin-$CHART' token: "
-        if kubectl get secret "$CHART"-argocd-secret >/dev/null; then
-          echo "already generated"
-        else
-          echo "not available"
-          echo "[ERROR] Missing ArgoCD token cannot be created"
-          exit 1
-        fi
-      else
-        echo "enabled"
-        echo -n "* ArgoCD Login: "
-        ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
-        ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
-        echo "OK"
-        # echo "argocd login '$ARGOCD_HOSTNAME' --grpc-web --insecure --username admin --password '$ARGOCD_PASSWORD'"
-
-        echo -n "* ArgoCD 'admin-$CHART' token: "
-        if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+      if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+          ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+          ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
           echo -n "."
-          ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin-$CHART")"
-          echo -n "."
-          ARGOCD_USER_PASSWORD=$(openssl rand --base64 20 | tr -d '=')
-          ./argocd account update-password \
-            --account "admin-$CHART" \
-            --current-password "$ARGOCD_PASSWORD" \
-            --new-password "$ARGOCD_USER_PASSWORD" > /dev/null
+          ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"
           echo -n "."
           kubectl create secret generic "$CHART-argocd-secret" \
             --from-literal="api-token=$ARGOCD_API_TOKEN" \
             --from-literal="hostname=$ARGOCD_HOSTNAME" \
-            --from-literal="password=$ARGOCD_USER_PASSWORD" \
-            --from-literal="user=admin-$CHART" \
+            --from-literal="password=$ARGOCD_PASSWORD" \
+            --from-literal="user=admin" \
             > /dev/null
-        fi
-        echo "OK"
-
-        echo -n "* Disable ArgoCD admin user: "
-        kubectl patch argocd -n "$ARGOCD_NAMESPACE" "$CHART-argocd" --type 'merge' --patch '{{ include "rhtap.argocd.user_admin" . | indent 8 }}' >/dev/null
-        echo "OK"
       fi
+      echo "OK"
 
       {{ include "rhtap.openshift-pipelines.wait" . | indent 6 }}
 

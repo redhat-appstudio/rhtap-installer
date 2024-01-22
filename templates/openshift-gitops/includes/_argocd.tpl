@@ -21,6 +21,9 @@ spec:
         memory: 128Mi
     route:
       enabled: true
+      tls:
+        insecureEdgeTerminationPolicy: Redirect
+        termination: reencrypt
     service:
       type: ''
   grafana:
@@ -122,5 +125,5 @@ spec:
         cpu: 250m
         memory: 1Gi
   extraConfig:
-    accounts.admin-{{ .Chart.Name }}: apiKey, login
+    accounts.admin: apiKey, login
 {{ end }}
