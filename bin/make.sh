@@ -206,7 +206,15 @@ values() {
   mapfile -t ENV_VARS < <(grep --only-matching "\${[^}]*" values.yaml | cut -d{ -f2 | sort -u)
   for ENV_VAR in "${ENV_VARS[@]}"; do
     if [ -z "${!ENV_VAR:-}" ]; then
-      read -p "Enter value for $ENV_VAR: " VALUE
+      case $ENV_VAR in
+      GITHUB__APP__PRIVATE_KEY)
+        echo "Enter value for $ENV_VAR (end with a blank line):"
+        VALUE=$(sed '/^$/q')
+        ;;
+      *)
+        read -p "Enter value for $ENV_VAR: " VALUE
+        ;;
+      esac
     else
       echo "$ENV_VAR: OK"
       VALUE=${!ENV_VAR}
