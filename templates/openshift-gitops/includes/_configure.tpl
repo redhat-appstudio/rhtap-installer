@@ -33,19 +33,14 @@
       # All actions must be idempotent
       #
       CHART="{{ .Chart.Name }}"
-      ARGOCD_NAMESPACE="{{ index .Values "openshift-gitops" "argocd-namespace" | default ( print .Release.Namespace "-argocd" ) }}"
-      echo -n "* ArgoCD resource: "
-      until kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; do
-        echo -n "."
-        sleep 3
-      done
-      cat << EOF | kubectl apply -n "$ARGOCD_NAMESPACE" -f - >/dev/null
-      {{ include "rhtap.include.argocd" . | indent 8 }}
-      EOF
+      ARGOCD_NAMESPACE="openshift-gitops"
+
+      echo -n "* Configure ArgoCD default instance: "
+      kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '{{ include "rhtap.argocd.configuration" . | indent 8 }}' >/dev/null
       echo "OK"
 
       echo -n "* ArgoCD dashboard: "
-      test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
+      test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "openshift-gitops-server" --ignore-not-found -o jsonpath={.spec.host}"
       ARGOCD_HOSTNAME="$(${test_cmd})"
       until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
         echo -n "."
@@ -56,7 +51,7 @@
 
       echo -n " * ArgoCD admin user: "
       if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-          ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+          ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "openshift-gitops-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
           ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
           echo -n "."
           ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"

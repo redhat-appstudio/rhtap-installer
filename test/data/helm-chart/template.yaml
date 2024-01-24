@@ -1,10 +1,4 @@
 ---
-# Source: rhtap/templates/openshift-gitops/namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: rhtap-argocd
----
 # Source: rhtap/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -1060,147 +1054,30 @@ spec:
               # All actions must be idempotent
               #
               CHART="rhtap"
-              ARGOCD_NAMESPACE="rhtap-argocd"
-              echo -n "* ArgoCD resource: "
-              until kubectl get namespace "$ARGOCD_NAMESPACE" >/dev/null 2>&1; do
-                echo -n "."
-                sleep 3
-              done
-              cat << EOF | kubectl apply -n "$ARGOCD_NAMESPACE" -f - >/dev/null
-                      
-                apiVersion: argoproj.io/v1beta1
-                kind: ArgoCD
-                metadata:
-                  name: rhtap-argocd
-                spec:
-                  server:
-                    autoscale:
-                      enabled: false
-                    grpc:
-                      ingress:
-                        enabled: false
-                    ingress:
-                      enabled: false
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 125m
-                        memory: 128Mi
-                    route:
-                      enabled: true
-                      tls:
-                        insecureEdgeTerminationPolicy: Redirect
-                        termination: reencrypt
-                    service:
-                      type: ''
-                  grafana:
-                    enabled: false
-                    ingress:
-                      enabled: false
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 250m
-                        memory: 128Mi
-                    route:
-                      enabled: false
-                  monitoring:
-                    enabled: false
-                  notifications:
-                    enabled: false
-                  prometheus:
-                    enabled: false
-                    ingress:
-                      enabled: false
-                    route:
-                      enabled: false
-                  initialSSHKnownHosts: {}
-                  sso:
-                    dex:
-                      openShiftOAuth: true
-                      resources:
-                        limits:
-                          cpu: 500m
-                          memory: 256Mi
-                        requests:
-                          cpu: 250m
-                          memory: 128Mi
-                    provider: dex
-                  applicationSet:
-                    resources:
-                      limits:
-                        cpu: '2'
-                        memory: 1Gi
-                      requests:
-                        cpu: 250m
-                        memory: 512Mi
-                    webhookServer:
-                      ingress:
-                        enabled: false
-                      route:
-                        enabled: false
-                  rbac:
-                    defaultPolicy: ''
-                    policy: |
-                      g, system:cluster-admins, role:admin
-                      g, cluster-admins, role:admin
-                    scopes: '[groups]'
-                  repo:
-                    resources:
-                      limits:
-                        cpu: '1'
-                        memory: 1Gi
-                      requests:
-                        cpu: 250m
-                        memory: 256Mi
-                  resourceExclusions: |
-                    - apiGroups:
-                      - tekton.dev
-                      clusters:
-                      - '*'
-                      kinds:
-                      - TaskRun
-                      - PipelineRun
-                  ha:
-                    enabled: false
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 250m
-                        memory: 128Mi
-                  tls:
-                    ca: {}
-                  redis:
-                    resources:
-                      limits:
-                        cpu: 500m
-                        memory: 256Mi
-                      requests:
-                        cpu: 250m
-                        memory: 128Mi
-                  controller:
-                    processors: {}
-                    resources:
-                      limits:
-                        cpu: '2'
-                        memory: 2Gi
-                      requests:
-                        cpu: 250m
-                        memory: 1Gi
-                  extraConfig:
-                    accounts.admin: apiKey, login
-                
-              EOF
+              ARGOCD_NAMESPACE="openshift-gitops"
+        
+              echo -n "* Configure ArgoCD default instance: "
+              kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '        
+                {
+                  "spec": {
+                    "server": {
+                      "route":{
+                        "tls": {
+                          "insecureEdgeTerminationPolicy": "Redirect",
+                          "termination": "reencrypt"
+                        }
+                      }
+                    },
+                    "extraConfig": {
+                      "accounts.admin": "apiKey, login"
+                    }
+                  }
+                }
+                ' >/dev/null
               echo "OK"
         
               echo -n "* ArgoCD dashboard: "
-              test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "$CHART-argocd-server" --ignore-not-found -o jsonpath={.spec.host}"
+              test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "openshift-gitops-server" --ignore-not-found -o jsonpath={.spec.host}"
               ARGOCD_HOSTNAME="$(${test_cmd})"
               until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
                 echo -n "."
@@ -1211,7 +1088,7 @@ spec:
         
               echo -n " * ArgoCD admin user: "
               if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-                  ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "$CHART-argocd-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+                  ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "openshift-gitops-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
                   ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
                   echo -n "."
                   ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"

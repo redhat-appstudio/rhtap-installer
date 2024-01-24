@@ -1,6 +1,0 @@
-{{ if eq (len (lookup "v1" "Namespace" "" (index .Values "openshift-gitops" "argocd-namespace" | default (print .Release.Namespace "-argocd")))) 0 }}
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ index .Values "openshift-gitops" "argocd-namespace" | default (print .Release.Namespace "-argocd") }}
-{{ end }}
