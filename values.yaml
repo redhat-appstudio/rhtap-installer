@@ -32,7 +32,7 @@ developer-hub:
             - appId: ${GITHUB__APP__APP_ID}
               clientId: ${GITHUB__APP__CLIENT_ID}
               clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-              webhookUrl: ${GITHUB__APP__WEBHOOK_URL}
+              webhookUrl: GITHUB__APP__WEBHOOK_URL
               webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
               privateKey: |
                 ${GITHUB__APP__PRIVATE_KEY}

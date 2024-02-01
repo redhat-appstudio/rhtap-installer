@@ -22,21 +22,26 @@
       done
       echo "OK"
 
-      echo -n "* Waiting for gitops operator deployment: "
-      until kubectl get argocd openshift-gitops -n openshift-gitops --ignore-not-found >/dev/null; do
-        echo -n "."
-        sleep 3
-      done
-      echo "OK"
-
       #
       # All actions must be idempotent
       #
       CHART="{{ .Chart.Name }}"
       ARGOCD_NAMESPACE="openshift-gitops"
 
+      echo -n "* Waiting for gitops operator deployment: "
+      until kubectl get argocd -n "$ARGOCD_NAMESPACE" openshift-gitops --ignore-not-found >/dev/null; do
+        echo -n "."
+        sleep 3
+      done
+      echo "OK"
+
       echo -n "* Configure ArgoCD default instance: "
-      kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '{{ include "rhtap.argocd.configuration" . | indent 8 }}' >/dev/null
+      # 'while' loop is necessary because sometimes the patch was failing
+      # even though the resource was just verified to exist
+      while ! kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '{{ include "rhtap.argocd.configuration" . | indent 8 }}' >/dev/null 2>&1; do
+        echo -n "."
+        sleep 3
+      done
       echo "OK"
 
       echo -n "* ArgoCD dashboard: "
@@ -71,6 +76,7 @@
       cat << EOF | kubectl apply -f - >/dev/null
       {{ include "rhtap.openshift-gitops.argocd-login-check" . | indent 6 }}
       EOF
+      echo "OK"
 
       echo
       echo "Configuration successful"

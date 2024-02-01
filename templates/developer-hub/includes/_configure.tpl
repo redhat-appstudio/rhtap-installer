@@ -44,7 +44,6 @@
       yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
       echo -n "."
 
-      # Set the authentication
     {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
       cat << _EOF_ >> app-config-update.yaml
 {{ index .Values "developer-hub" "app-config" | toYaml | indent 6 }}
@@ -52,6 +51,7 @@
       echo -n "."
     {{ end }}
 
+      # ArgoCD integration
       while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
         echo -ne "_"
         sleep 2
@@ -76,12 +76,23 @@
                 token: $ARGOCD_API_TOKEN
       _EOF_
 
+      # Tekton integration
+      while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+        echo -ne "_"
+        sleep 2
+      done
+      PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
+      yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
+      echo -n "."
+
       # Process app-config update
       yq -i '. *= load("app-config-update.yaml")' app-config.yaml
       yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
       if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
         echo
         kubectl apply -f developer-hub-app-config.new.yaml
+        echo "OK"
+        echo -n "* Restarting Developer Hub: "
         kubectl delete pods -l "app.kubernetes.io/component=backstage"
       fi
       echo "OK"

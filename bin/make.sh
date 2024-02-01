@@ -130,7 +130,7 @@ delete() {
 }
 
 apply() {
-  $helm upgrade --install --create-namespace "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
+  $helm upgrade --install --create-namespace --timeout 10m "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
   $helm list
 }
 

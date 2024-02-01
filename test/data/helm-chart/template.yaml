@@ -653,7 +653,24 @@ spec:
               done
               
               echo -n "* Waiting for openshift-pipelines webhook service: "
-              while [ "$(kubectl get pods -n openshift-pipelines -l app.kubernetes.io/name=webhook,app.kubernetes.io/part-of=tekton-pipelines --ignore-not-found | grep -c " Running ")" != "1" ]; do
+              while true; do
+                # Try instanciating a task
+                cat << EOF | kubectl apply -f - --dry-run=server >/dev/null 2>&1 && break
+              apiVersion: tekton.dev/v1
+              kind: Task
+              metadata:
+                name: deleteme-task
+              spec:
+                description: >-
+                  Test task to validate that Tekton is installed.
+                steps:
+                  - image: "k8s.gcr.io/hyperkube:v1.12.1"
+                    name: setup
+                    script: |
+                      #!/usr/bin/env bash
+                      echo "OK"
+                    workingDir: /tmp
+              EOF
                 echo -n "."
                 sleep 2
               done
@@ -937,7 +954,6 @@ spec:
               yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
               echo -n "."
         
-              # Set the authentication
             
               cat << _EOF_ >> app-config-update.yaml
               auth:
@@ -969,12 +985,13 @@ spec:
                     privateKey: |
                       ${GITHUB__APP__PRIVATE_KEY}
                     webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
-                    webhookUrl: ${GITHUB__APP__WEBHOOK_URL}
+                    webhookUrl: GITHUB__APP__WEBHOOK_URL
                   host: github.com
               _EOF_
               echo -n "."
             
         
+              # ArgoCD integration
               while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
                 echo -ne "_"
                 sleep 2
@@ -999,12 +1016,23 @@ spec:
                         token: $ARGOCD_API_TOKEN
               _EOF_
         
+              # Tekton integration
+              while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+                echo -ne "_"
+                sleep 2
+              done
+              PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
+              yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
+              echo -n "."
+        
               # Process app-config update
               yq -i '. *= load("app-config-update.yaml")' app-config.yaml
               yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
               if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
                 echo
                 kubectl apply -f developer-hub-app-config.new.yaml
+                echo "OK"
+                echo -n "* Restarting Developer Hub: "
                 kubectl delete pods -l "app.kubernetes.io/component=backstage"
               fi
               echo "OK"
@@ -1043,21 +1071,23 @@ spec:
               done
               echo "OK"
         
-              echo -n "* Waiting for gitops operator deployment: "
-              until kubectl get argocd openshift-gitops -n openshift-gitops --ignore-not-found >/dev/null; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
-        
               #
               # All actions must be idempotent
               #
               CHART="rhtap"
               ARGOCD_NAMESPACE="openshift-gitops"
         
+              echo -n "* Waiting for gitops operator deployment: "
+              until kubectl get argocd -n "$ARGOCD_NAMESPACE" openshift-gitops --ignore-not-found >/dev/null; do
+                echo -n "."
+                sleep 3
+              done
+              echo "OK"
+        
               echo -n "* Configure ArgoCD default instance: "
-              kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '        
+              # 'while' loop is necessary because sometimes the patch was failing
+              # even though the resource was just verified to exist
+              while ! kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '        
                 {
                   "spec": {
                     "server": {
@@ -1073,7 +1103,10 @@ spec:
                     }
                   }
                 }
-                ' >/dev/null
+                ' >/dev/null 2>&1; do
+                echo -n "."
+                sleep 3
+              done
               echo "OK"
         
               echo -n "* ArgoCD dashboard: "
@@ -1121,7 +1154,24 @@ spec:
               done
               
               echo -n "* Waiting for openshift-pipelines webhook service: "
-              while [ "$(kubectl get pods -n openshift-pipelines -l app.kubernetes.io/name=webhook,app.kubernetes.io/part-of=tekton-pipelines --ignore-not-found | grep -c " Running ")" != "1" ]; do
+              while true; do
+                # Try instanciating a task
+                cat << EOF | kubectl apply -f - --dry-run=server >/dev/null 2>&1 && break
+              apiVersion: tekton.dev/v1
+              kind: Task
+              metadata:
+                name: deleteme-task
+              spec:
+                description: >-
+                  Test task to validate that Tekton is installed.
+                steps:
+                  - image: "k8s.gcr.io/hyperkube:v1.12.1"
+                    name: setup
+                    script: |
+                      #!/usr/bin/env bash
+                      echo "OK"
+                    workingDir: /tmp
+              EOF
                 echo -n "."
                 sleep 2
               done
@@ -1172,6 +1222,7 @@ spec:
                     workingDir: /tmp
               
               EOF
+              echo "OK"
         
               echo
               echo "Configuration successful"
@@ -1206,7 +1257,24 @@ spec:
               done
               
               echo -n "* Waiting for openshift-pipelines webhook service: "
-              while [ "$(kubectl get pods -n openshift-pipelines -l app.kubernetes.io/name=webhook,app.kubernetes.io/part-of=tekton-pipelines --ignore-not-found | grep -c " Running ")" != "1" ]; do
+              while true; do
+                # Try instanciating a task
+                cat << EOF | kubectl apply -f - --dry-run=server >/dev/null 2>&1 && break
+              apiVersion: tekton.dev/v1
+              kind: Task
+              metadata:
+                name: deleteme-task
+              spec:
+                description: >-
+                  Test task to validate that Tekton is installed.
+                steps:
+                  - image: "k8s.gcr.io/hyperkube:v1.12.1"
+                    name: setup
+                    script: |
+                      #!/usr/bin/env bash
+                      echo "OK"
+                    workingDir: /tmp
+              EOF
                 echo -n "."
                 sleep 2
               done

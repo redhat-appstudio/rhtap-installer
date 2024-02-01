@@ -17,7 +17,24 @@ for CRD in "${CRDS[@]}"; do
 done
 
 echo -n "* Waiting for openshift-pipelines webhook service: "
-while [ "$(kubectl get pods -n openshift-pipelines -l app.kubernetes.io/name=webhook,app.kubernetes.io/part-of=tekton-pipelines --ignore-not-found | grep -c " Running ")" != "1" ]; do
+while true; do
+  # Try instanciating a task
+  cat << EOF | kubectl apply -f - --dry-run=server >/dev/null 2>&1 && break
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deleteme-task
+spec:
+  description: >-
+    Test task to validate that Tekton is installed.
+  steps:
+    - image: "k8s.gcr.io/hyperkube:v1.12.1"
+      name: setup
+      script: |
+        #!/usr/bin/env bash
+        echo "OK"
+      workingDir: /tmp
+EOF
   echo -n "."
   sleep 2
 done
