@@ -607,7 +607,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.6.3"
+    helm.sh/chart: "rhtap-0.6.4"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -620,7 +620,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.6.3"
+        helm.sh/chart: "rhtap-0.6.4"
     spec:
       containers:
                 
@@ -1529,7 +1529,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.6.3"
+    helm.sh/chart: "rhtap-0.6.4"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1541,7 +1541,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.6.3"
+        helm.sh/chart: "rhtap-0.6.4"
     spec:
       containers:
                 
