@@ -49,6 +49,12 @@ metadata:
   name: installer-developer-hub-app-config
 data:
   app-config.yaml: |
+    techdocs:
+      builder: 'local'
+      generator:
+        runIn: 'local'
+      publisher:
+        type: 'local'
     app:
       baseUrl: https://installer-developer-hub-rhtap.apps.example.com
     backend:
@@ -102,6 +108,10 @@ data:
       package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
     - disabled: false
       package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
+    - disabled: false
+      package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
+    - disabled: false
+      package: ./dynamic-plugins/dist/backstage-plugin-techdocs
 ---
 # Source: rhtap/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
