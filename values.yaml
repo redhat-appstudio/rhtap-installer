@@ -18,6 +18,12 @@ acs:
   api-token: ${ACS__API_TOKEN}
 developer-hub:
   app-config:
+    techdocs:
+      builder: 'local'
+      generator:
+        runIn: 'local'
+      publisher:
+        type: 'local'
     auth:
       environment: development
       providers:
@@ -91,3 +97,7 @@ global:
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
         disabled: false
+      - disabled: false
+        package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
+      - disabled: false
+        package: ./dynamic-plugins/dist/backstage-plugin-techdocs
