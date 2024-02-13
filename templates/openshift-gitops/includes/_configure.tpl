@@ -8,6 +8,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
+    {{ if eq .Values.debug.script true }}
+      set -x
+    {{ end }}
 
       echo -n "* Installing 'argocd' CLI: "
       curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64

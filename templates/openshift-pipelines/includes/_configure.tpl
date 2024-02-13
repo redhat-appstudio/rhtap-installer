@@ -8,6 +8,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
+    {{ if eq .Values.debug.script true }}
+      set -x
+    {{ end }}
 
       CRD="tektonconfigs"
       echo -n "* Waiting for '$CRD' CRD: "
@@ -67,7 +70,7 @@
       fi
       echo "OK"
 
-      {{ if and (index .Values "pipelines") (index .Values "pipelines" "pipelines-as-code") }}
+    {{ if and (index .Values "pipelines") (index .Values "pipelines" "pipelines-as-code") }}
       echo -n "* Configuring Pipelines-as-Code: "
       if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         echo -n "."
@@ -87,7 +90,7 @@
           --dry-run=client -o yaml | kubectl apply -f - >/dev/null
       fi
       echo "OK"
-      {{ end }}
+    {{ end }}
 
       echo
       echo "Configuration successful"

@@ -1,7 +1,9 @@
 # Default values for rhtap-installer.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-
+debug:
+  container: false  # Creates a long running container to easily open a terminal for troubleshooting.
+  script: false  # Prints commands before executing them.
 openshift-gitops:
   enabled: true
   channel: gitops-1.11
