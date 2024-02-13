@@ -49,12 +49,6 @@ metadata:
   name: installer-developer-hub-app-config
 data:
   app-config.yaml: |
-    techdocs:
-      builder: 'local'
-      generator:
-        runIn: 'local'
-      publisher:
-        type: 'local'
     app:
       baseUrl: https://installer-developer-hub-rhtap.apps.example.com
     backend:
@@ -255,7 +249,7 @@ spec:
         app.kubernetes.io/component: backstage
       annotations:
         checksum/app-config: 6b26747d5021d4fb38189114dfc815a692e5074ec940c10981f622fe87475502
-        checksum/dynamic-plugins: 'b5a27f2cc82628905cebfa0bc0f7f4dbe90e3d8c1c9ee25841866875ccb00e7c'
+        checksum/dynamic-plugins: '80c632d264227f09a3e292e11657e61fb658e216ea915747c3a0ee720dcb07fa'
     spec:
       serviceAccountName: default
       volumes:
@@ -997,6 +991,12 @@ spec:
                     webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
                     webhookUrl: GITHUB__APP__WEBHOOK_URL
                   host: github.com
+              techdocs:
+                builder: local
+                generator:
+                  runIn: local
+                publisher:
+                  type: local
               _EOF_
               echo -n "."
             
