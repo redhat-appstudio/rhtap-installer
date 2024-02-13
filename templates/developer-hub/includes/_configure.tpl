@@ -8,6 +8,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
+    {{ if eq .Values.debug.script true }}
+      set -x
+    {{ end }}
 
       YQ_VERSION="v4.40.5"
       curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"

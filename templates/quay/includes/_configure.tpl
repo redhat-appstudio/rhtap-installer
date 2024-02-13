@@ -8,6 +8,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
+    {{ if eq .Values.debug.script true }}
+      set -x
+    {{ end }}
 
       CRD=""
       echo -n "Waiting for '$CRD' CRD: "

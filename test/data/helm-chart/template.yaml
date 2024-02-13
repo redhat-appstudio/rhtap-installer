@@ -49,12 +49,6 @@ metadata:
   name: installer-developer-hub-app-config
 data:
   app-config.yaml: |
-    techdocs:
-      builder: 'local'
-      generator:
-        runIn: 'local'
-      publisher:
-        type: 'local'
     app:
       baseUrl: https://installer-developer-hub-rhtap.apps.example.com
     backend:
@@ -255,7 +249,7 @@ spec:
         app.kubernetes.io/component: backstage
       annotations:
         checksum/app-config: 6b26747d5021d4fb38189114dfc815a692e5074ec940c10981f622fe87475502
-        checksum/dynamic-plugins: 'b5a27f2cc82628905cebfa0bc0f7f4dbe90e3d8c1c9ee25841866875ccb00e7c'
+        checksum/dynamic-plugins: '80c632d264227f09a3e292e11657e61fb658e216ea915747c3a0ee720dcb07fa'
     spec:
       serviceAccountName: default
       volumes:
@@ -633,6 +627,7 @@ spec:
         helm.sh/chart: "rhtap-0.6.4"
     spec:
       containers:
+      
                 
         - name: configure-acs
           image: "quay.io/codeready-toolchain/oc-client-base:latest"
@@ -643,6 +638,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
                     
               echo -n "* Waiting for openshift-pipelines: "
@@ -930,6 +926,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
               YQ_VERSION="v4.40.5"
               curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
@@ -997,6 +994,12 @@ spec:
                     webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
                     webhookUrl: GITHUB__APP__WEBHOOK_URL
                   host: github.com
+              techdocs:
+                builder: local
+                generator:
+                  runIn: local
+                publisher:
+                  type: local
               _EOF_
               echo -n "."
             
@@ -1067,6 +1070,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
               echo -n "* Installing 'argocd' CLI: "
               curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
@@ -1247,6 +1251,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
                     
               echo -n "* Waiting for openshift-pipelines: "
@@ -1421,6 +1426,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
               CRD="tektonconfigs"
               echo -n "* Waiting for '$CRD' CRD: "
@@ -1502,7 +1508,7 @@ spec:
               fi
               echo "OK"
         
-              
+            
               echo -n "* Configuring Pipelines-as-Code: "
               if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
@@ -1522,7 +1528,7 @@ spec:
                   --dry-run=client -o yaml | kubectl apply -f - >/dev/null
               fi
               echo "OK"
-              
+            
         
               echo
               echo "Configuration successful"
