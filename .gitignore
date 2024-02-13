@@ -2,3 +2,4 @@ private*
 values-private.yaml
 charts/
 tmp/
+/*.tgz
