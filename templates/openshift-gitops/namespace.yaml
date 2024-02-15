@@ -1,0 +1,11 @@
+{{ if .Values.debug.namespaces }}
+{{ range .Values.debug.namespaces }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ . }}
+  labels:
+    argocd.argoproj.io/managed-by: openshift-gitops
+{{ end }}
+{{ end }}
