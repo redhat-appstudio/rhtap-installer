@@ -12,9 +12,58 @@ openshift-gitops:
 openshift-pipelines:
   enabled: true
   channel: pipelines-1.13
-#
-# Trusted Profile Analyzer (TPA)
-#
+# Private values
+# You may want to override those variables in another file (e.g. values-private.yaml)
+acs:
+  central-endpoint: ${ACS__CENTRAL_ENDPOINT}
+  api-token: ${ACS__API_TOKEN}
+developer-hub:
+  app-config:
+    techdocs:
+      builder: 'local'
+      generator:
+        runIn: 'local'
+      publisher:
+        type: 'local'
+    auth:
+      environment: development
+      providers:
+        github:
+          development:
+            clientId: ${GITHUB__APP__CLIENT_ID}
+            clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+    integrations:
+      github:
+        - host: github.com
+          apps:
+            - appId: ${GITHUB__APP__APP_ID}
+              clientId: ${GITHUB__APP__CLIENT_ID}
+              clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+              webhookUrl: GITHUB__APP__WEBHOOK_URL
+              webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
+              privateKey: |
+                ${GITHUB__APP__PRIVATE_KEY}
+    catalog:
+      locations:
+        - type: url
+          target: ${DEVELOPER_HUB__CATALOG__URL}
+      rules:
+        - allow:
+          - Component
+          - System
+          - Group
+          - Resource
+          - Location
+          - Template
+          - API
+pipelines:
+  pipelines-as-code:
+    github:
+      application-id: ${GITHUB__APP__APP_ID}
+      private-key: |
+        ${GITHUB__APP__PRIVATE_KEY}
+      webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
+
 trusted-profile-analyzer:
   tracing:
     enabled: false
@@ -183,57 +232,6 @@ trusted-profile-analyzer:
           secretKeyRef:
             name: tpa-infrastructure-postgresql
             key: postgres-password
-# Private values
-# You may want to override those variables in another file (e.g. values-private.yaml)
-acs:
-  central-endpoint: ${ACS__CENTRAL_ENDPOINT}
-  api-token: ${ACS__API_TOKEN}
-developer-hub:
-  app-config:
-    techdocs:
-      builder: 'local'
-      generator:
-        runIn: 'local'
-      publisher:
-        type: 'local'
-    auth:
-      environment: development
-      providers:
-        github:
-          development:
-            clientId: ${GITHUB__APP__CLIENT_ID}
-            clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-    integrations:
-      github:
-        - host: github.com
-          apps:
-            - appId: ${GITHUB__APP__APP_ID}
-              clientId: ${GITHUB__APP__CLIENT_ID}
-              clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-              webhookUrl: GITHUB__APP__WEBHOOK_URL
-              webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
-              privateKey: |
-                ${GITHUB__APP__PRIVATE_KEY}
-    catalog:
-      locations:
-        - type: url
-          target: ${DEVELOPER_HUB__CATALOG__URL}
-      rules:
-        - allow:
-          - Component
-          - System
-          - Group
-          - Resource
-          - Location
-          - Template
-          - API
-pipelines:
-  pipelines-as-code:
-    github:
-      application-id: ${GITHUB__APP__APP_ID}
-      private-key: |
-        ${GITHUB__APP__PRIVATE_KEY}
-      webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
 global:
   # Developer Hub
   dynamic:
