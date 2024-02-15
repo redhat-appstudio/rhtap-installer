@@ -1533,6 +1533,237 @@ spec:
               echo
               echo "Configuration successful"
         
+                
+        - name: configure-trusted-profile-analyzer
+          image: quay.io/codeready-toolchain/oc-client-base:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+          
+        
+              cd /tmp
+        
+              # Installing Helm...
+              curl --fail --silent --show-error --location \
+                https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+                  | bash
+              
+              # Storing the attributes ".trusted-profile-analyzer" from "values.yaml" as a
+              # standalone file, employed later on as input for the trustification Charts.
+              declare -r TRUSTIFICATION_VALUES="/tmp/trustification-values.yaml"
+          
+              cat <<EOF >${TRUSTIFICATION_VALUES}
+              ---
+              eventBus:
+                bootstrapServers: tpa-infrastructure-kafka:9092
+                config:
+                  mechanism: PLAIN
+                  password:
+                    valueFrom:
+                      secretKeyRef:
+                        key: client-passwords
+                        name: tpa-infrastructure-kafka-user-passwords
+                  securityProtocol: SASL_PLAINTEXT
+                  username: user1
+                type: kafka
+              guac:
+                database:
+                  host: tpa-infrastructure-postgresql
+                  name: guac
+                  password: ${TPA__GUAC__PASSWORD}
+                  sslMode: disable
+                  username: guac
+                initDatabase:
+                  host: tpa-infrastructure-postgresql
+                  name: postgres
+                  password:
+                    valueFrom:
+                      secretKeyRef:
+                        key: postgres-password
+                        name: tpa-infrastructure-postgresql
+                  sslMode: disable
+                  username: postgres
+              ingress:
+                className: openshift-default
+              kafka:
+                controller:
+                  containerSecurityContext:
+                    enabled: false
+                  podSecurityContext:
+                    enabled: false
+                enabled: true
+                kraft:
+                  clusterId: 3nA2qspzReOmcxqlkmITAA
+                provisioning:
+                  containerSecurityContext:
+                    enabled: false
+                  podSecurityContext:
+                    enabled: false
+              keycloak:
+                auth:
+                  adminPassword: ${TPA__KEYCLOAK__ADMIN_PASSWORD}
+                  adminUser: admin
+                containerSecurityContext:
+                  enabled: false
+                enabled: true
+                ingress:
+                  annotations:
+                    route.openshift.io/termination: reencrypt
+                  enabled: true
+                  ingressClassName: openshift-default
+                  servicePort: https
+                podSecurityContext:
+                  enabled: false
+                postgresql:
+                  primary:
+                    containerSecurityContext:
+                      enabled: false
+                    podSecurityContext:
+                      enabled: false
+                production: true
+                proxy: reencrypt
+                service:
+                  annotations:
+                    service.beta.openshift.io/serving-cert-secret-name: sso-tls
+                tls:
+                  enabled: true
+                  existingSecret: sso-tls
+                  usePem: true
+              minio:
+                containerSecurityContext:
+                  enabled: false
+                enabled: true
+                podSecurityContext:
+                  enabled: false
+                rootPassword: ${TPA__MINIO__ROOT_PASSWORD}
+              modules:
+                bombasticWalker:
+                  sources:
+                    redhat:
+                      acceptV3Signatures: true
+                      fixLicenses: true
+                      job:
+                        schedule: 0 * * * *
+                      signingKeyUrl: https://access.redhat.com/security/data/97f5eac4.txt#77E79ABE93673533ED09EBE2DCE3823597F5EAC4
+                      url: https://access.redhat.com/security/data/sbom/beta/
+                vexinationWalker:
+                  sources:
+                    redhat:
+                      acceptV3Signatures: true
+                      ignoreDistributions:
+                      - https://access.redhat.com/security/data/csaf/v2/advisories/
+                      job:
+                        schedule: 0 * * * *
+                      url: https://www.redhat.com/.well-known/csaf/provider-metadata.json
+              oidc:
+                clients:
+                  frontend: {}
+                  testingManager:
+                    clientSecret:
+                      value: ${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
+                  testingUser:
+                    clientSecret:
+                      value: ${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
+                  walker:
+                    clientSecret:
+                      value: ${TPA__OIDC__WALKER_CLIENT_SECRET}
+              openshift:
+                useServiceCa: true
+              postgres:
+                auth:
+                  password: ${TPA__POSTGRES__TPA_PASSWORD}
+                  postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
+                  username: trusted-profile-analyzer
+                enabled: true
+                primary:
+                  containerSecurityContext:
+                    enabled: false
+                  podSecurityContext:
+                    enabled: false
+              storage:
+                accessKey:
+                  valueFrom:
+                    secretKeyRef:
+                      key: root-user
+                      name: tpa-infrastructure-minio
+                endpoint: http://tpa-infrastructure-minio:9000
+                secretKey:
+                  valueFrom:
+                    secretKeyRef:
+                      key: root-password
+                      name: tpa-infrastructure-minio
+              tracing:
+                enabled: false
+              EOF
+          
+        
+              # Same namespace where the "rhtap" is being released
+              declare -r NAMESPACE="rhtap"
+              # Primary openshift domain name, other apps will be exposed via wildcards
+              declare -r INGRESS_DOMAIN=$(
+                  oc --namespace=openshift-ingress-operator \
+                    get ingresscontrollers.operator.openshift.io default \
+                      --output=jsonpath='{.status.domain}'
+              )
+              # suffix for applications with a fully qualified domain
+              declare -r APP_DOMAIN="-${NAMESPACE}.${INGRESS_DOMAIN}"
+        
+              # Cloning the trustification repository, and resetting to a known commit
+              # before rollout.
+              git clone https://github.com/trustification/trustification.git
+              pushd trustification &&
+                # Desired commit for trustification charts.
+                git reset --hard 8ae6b2c &&
+                  # Adding the bitnami repository for "trustification-infrastructure"
+                  # dependencies.
+                  helm repo add bitnami https://charts.bitnami.com/bitnami
+        
+                  # Preparing Helm dependencies for both charts...
+                  pushd deploy/k8s/charts/trustification-infrastructure &&
+                    helm dependency build
+                  popd
+                  pushd deploy/k8s/charts/trustification &&
+                    helm dependency build
+                  popd
+        
+                  pushd deploy/k8s &&
+                    # Installing the infrastructure needed for trustification first, and
+                    # only when infrastructure is ready the trustification rollout
+                    # starts...
+                    if ! helm upgrade \
+                      --install \
+                      --namespace=${NAMESPACE} \
+                      --values=${TRUSTIFICATION_VALUES} \
+                      --timeout=10m \
+                      --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
+                      --set-string=appDomain=${APP_DOMAIN} \
+                      --debug \
+                      tpa-infrastructure \
+                      charts/trustification-infrastructure; then
+                      echo "ERROR: Installing trustification-infrastructure chart!"
+                      exit 1
+                    fi
+                  
+                    if ! helm upgrade \
+                        --install \
+                        --namespace=${NAMESPACE} \
+                        --values=${TRUSTIFICATION_VALUES} \
+                        --timeout=10m \
+                        --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
+                        --set-string appDomain=${APP_DOMAIN} \
+                        --debug \
+                        tpa \
+                        charts/trustification; then
+                      echo "ERROR: Installing trustification chart!"
+                      exit 1
+                    fi
+                  popd
+              popd
+        
       restartPolicy: Never
       serviceAccountName: helm-manager
 ---

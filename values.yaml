@@ -12,7 +12,6 @@ openshift-gitops:
 openshift-pipelines:
   enabled: true
   channel: pipelines-1.13
-
 # Private values
 # You may want to override those variables in another file (e.g. values-private.yaml)
 acs:
@@ -64,6 +63,175 @@ pipelines:
       private-key: |
         ${GITHUB__APP__PRIVATE_KEY}
       webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
+
+trusted-profile-analyzer:
+  tracing:
+    enabled: false
+  # Enables using cluster's TLS certificates for services communication, this is
+  # required for TPA on OpenShift given it will rely on TLS for internal
+  # communication.
+  openshift:
+    useServiceCa: true
+  ingress:
+    className: openshift-default
+  # TPA's file storage (S3).
+  minio:
+    enabled: true
+    # Minio's administrator (root) password
+    rootPassword: ${TPA__MINIO__ROOT_PASSWORD}
+    podSecurityContext:
+      enabled: false
+    containerSecurityContext:
+      enabled: false
+  # Bitnami's Keycloak IAM.
+  keycloak:
+    enabled: true
+    production: true
+    # Rely on cluster's TLS for the Keycloak's ingress/routes, each endpoint is
+    # "re-encrypted" (`reencrypt`) with cluster's SSL capabilities.
+    proxy: reencrypt
+    podSecurityContext:
+      enabled: false
+    containerSecurityContext:
+      enabled: false
+    auth:
+      adminUser: admin
+      # Keycloak's administrator (admin) password.
+      adminPassword: ${TPA__KEYCLOAK__ADMIN_PASSWORD}
+    tls:
+      enabled: true
+      existingSecret: sso-tls
+      usePem: true
+    service:
+      annotations:
+        # OpenShift's annotation to use the named Secret for SSL communication,
+        # the Secret contains the certificate and key pair for Keycloak.
+        service.beta.openshift.io/serving-cert-secret-name: sso-tls
+    ingress:
+      enabled: true
+      ingressClassName: openshift-default
+      servicePort: https
+      annotations:
+        # Following the same approach taken for Ingress routes on OpenShift,
+        # making sure the endpoint is "re-encrypted" (`reencrypt`).
+        route.openshift.io/termination: reencrypt
+    postgresql:
+      primary:
+        containerSecurityContext:
+          enabled: false
+        podSecurityContext:
+          enabled: false
+  # PostgreSQL database for TPA and GUAC.
+  postgres:
+    enabled: true
+    auth:
+      # PostgreSQL's administrator (postgres) password.
+      postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
+      # Additional user for TPA's database.
+      username: trusted-profile-analyzer
+      # TPA's database user password.
+      password: ${TPA__POSTGRES__TPA_PASSWORD}
+    primary:
+      podSecurityContext:
+        enabled: false
+      containerSecurityContext:
+        enabled: false
+  # TPA's event-bus using Kafka.
+  kafka:
+    enabled: true
+    kraft:
+      clusterId: "3nA2qspzReOmcxqlkmITAA"
+    controller:
+      podSecurityContext:
+        enabled: false
+      containerSecurityContext:
+        enabled: false
+    provisioning:
+      podSecurityContext:
+        enabled: false
+      containerSecurityContext:
+        enabled: false
+  # TPA's file storage configuration, points back to Minio, defined previously.
+  storage:
+    endpoint: http://tpa-infrastructure-minio:9000
+    accessKey:
+      valueFrom:
+        secretKeyRef:
+          name: tpa-infrastructure-minio
+          key: root-user
+    secretKey:
+      valueFrom:
+        secretKeyRef:
+          name: tpa-infrastructure-minio
+          key: root-password
+  # TPA's event-bus configuration, points back to Kafka, defined previously.
+  eventBus:
+    type: kafka
+    bootstrapServers: tpa-infrastructure-kafka:9092
+    config:
+      securityProtocol: SASL_PLAINTEXT
+      username: "user1"
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: tpa-infrastructure-kafka-user-passwords
+            key: client-passwords
+      mechanism: PLAIN
+  # TPA's OIDC (OpenID Connect) configuration.
+  oidc:
+    clients:
+      frontend: {}
+      walker:
+        clientSecret:
+          # OIDC client secret for the Walker module.
+          value: ${TPA__OIDC__WALKER_CLIENT_SECRET}
+      testingUser:
+        clientSecret:
+          # OIDC client secret for the Testing User module.
+          value: ${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
+      testingManager:
+        clientSecret:
+          # OIDC client secret for the Testing Manager module.
+          value: ${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
+  # TPA's modules configuration.
+  modules:
+    bombasticWalker:
+      sources:
+        redhat:
+          url: https://access.redhat.com/security/data/sbom/beta/
+          signingKeyUrl: https://access.redhat.com/security/data/97f5eac4.txt#77E79ABE93673533ED09EBE2DCE3823597F5EAC4
+          acceptV3Signatures: true
+          fixLicenses: true
+          job:
+            schedule: "0 * * * *"
+    vexinationWalker:
+      sources:
+        redhat:
+          url: https://www.redhat.com/.well-known/csaf/provider-metadata.json
+          acceptV3Signatures: true
+          ignoreDistributions:
+            - https://access.redhat.com/security/data/csaf/v2/advisories/
+          job:
+            schedule: "0 * * * *"
+  # TPA's GUAC (Graph for Understanding Artifact Composition) configuration.
+  guac:
+    database:
+      name: guac
+      host: tpa-infrastructure-postgresql
+      sslMode: disable
+      username: guac
+      # GUAC administrator (guac) password.
+      password: ${TPA__GUAC__PASSWORD}
+    initDatabase:
+      name: postgres
+      host: tpa-infrastructure-postgresql
+      username: postgres
+      sslMode: disable
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: tpa-infrastructure-postgresql
+            key: postgres-password
 global:
   # Developer Hub
   dynamic:
@@ -103,177 +271,3 @@ global:
         package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
       - disabled: false
         package: ./dynamic-plugins/dist/backstage-plugin-techdocs
-#
-# Trustification
-#
-trustification:
-  tracing:
-    enabled: false
-  # Enables using cluster's TLS certificates for services communication, this is
-  # required for Trustification on OpenShift given it will rely on TLS for
-  # internal communication.
-  openshift:
-    useServiceCa: true
-  ingress:
-    className: openshift-default
-  # Trustification's file storage.
-  minio:
-    enabled: true
-    # Minio's administrator (root) password
-    rootPassword: ${TRUSTIFICATION__MINIO__ROOT_PASSWORD}
-    podSecurityContext:
-      enabled: false
-    containerSecurityContext:
-      enabled: false
-  # Bitnami's Keycloak IAM.
-  keycloak:
-    enabled: true
-    production: true
-    # Rely on cluster's TLS for the Keycloak's ingress/routes, each endpoint is
-    # "re-encrypted" (`reencrypt`) with cluster's SSL capabilities.
-    proxy: reencrypt
-    podSecurityContext:
-      enabled: false
-    containerSecurityContext:
-      enabled: false
-    auth:
-      adminUser: admin
-      # Keycloak's administrator (admin) password.
-      adminPassword: ${TRUSTIFICATION__KEYCLOAK__ADMIN_PASSWORD}
-    tls:
-      enabled: true
-      existingSecret: sso-tls
-      usePem: true
-    service:
-      annotations:
-        # OpenShift's annotation to use the named Secret for SSL communication,
-        # the Secret contains the certificate and key pair for Keycloak.
-        service.beta.openshift.io/serving-cert-secret-name: sso-tls
-    ingress:
-      enabled: true
-      ingressClassName: openshift-default
-      servicePort: https
-      annotations:
-        # Following the same approach taken For Ingress routes on OpenShift,
-        # making sure the endpoint is "re-encrypted" (`reencrypt`).
-        route.openshift.io/termination: reencrypt
-    postgresql:
-      primary:
-        containerSecurityContext:
-          enabled: false
-        podSecurityContext:
-          enabled: false
-  # PostgreSQL database for Trustification and GUAC.
-  postgres:
-    enabled: true
-    auth:
-      # PostgreSQL's administrator (postgres) password.
-      postgresPassword: ${TRUSTIFICATION__POSTGRES__POSTGRES_PASSWORD}
-      # Additional user for Trustification's database.
-      username: trustification
-      # Trustification's database user password.
-      password: ${TRUSTIFICATION__POSTGRES__TRUSTIFICATION_PASSWORD}
-    primary:
-      podSecurityContext:
-        enabled: false
-      containerSecurityContext:
-        enabled: false
-  # Trustification's event-bus using Kafka.
-  kafka:
-    enabled: true
-    kraft:
-      clusterId: "3nA2qspzReOmcxqlkmITAA"
-    controller:
-      podSecurityContext:
-        enabled: false
-      containerSecurityContext:
-        enabled: false
-    provisioning:
-      podSecurityContext:
-        enabled: false
-      containerSecurityContext:
-        enabled: false
-  # Trustification's file storage configuration, points back to Minio, defined
-  # previously.
-  storage:
-    endpoint: http://trustification-infrastructure-minio:9000
-    accessKey:
-      valueFrom:
-        secretKeyRef:
-          name: trustification-infrastructure-minio
-          key: root-user
-    secretKey:
-      valueFrom:
-        secretKeyRef:
-          name: trustification-infrastructure-minio
-          key: root-password
-  # Trustification's event-bus configuration, points back to Kafka, defined
-  # previously.
-  eventBus:
-    type: kafka
-    bootstrapServers: trustification-infrastructure-kafka:9092
-    config:
-      securityProtocol: SASL_PLAINTEXT
-      username: "user1"
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: trustification-infrastructure-kafka-user-passwords
-            key: client-passwords
-      mechanism: PLAIN
-  # Trustification's OIDC (OpenID Connect) configuration.
-  oidc:
-    clients:
-      frontend: {}
-      walker:
-        clientSecret:
-          # OIDC client secret for the Walker module.
-          value: ${TRUSTIFICATION__OIDC__WALKER_CLIENT_SECRET}
-      testingUser:
-        clientSecret:
-          # OIDC client secret for the Testing User module.
-          value: ${TRUSTIFICATION__OIDC__TESTING_USER_CLIENT_SECRET}
-      testingManager:
-        clientSecret:
-          # OIDC client secret for the Testing Manager module.
-          value: ${TRUSTIFICATION__OIDC__TESTING_MANAGER_CLIENT_SECRET}
-  # Trustification's modules configuration.
-  modules:
-    bombasticWalker:
-      sources:
-        redhat:
-          url: https://access.redhat.com/security/data/sbom/beta/
-          signingKeyUrl: https://access.redhat.com/security/data/97f5eac4.txt#77E79ABE93673533ED09EBE2DCE3823597F5EAC4
-          acceptV3Signatures: true
-          fixLicenses: true
-          job:
-            schedule: "0 * * * *"
-    vexinationWalker:
-      sources:
-        redhat:
-          url: https://www.redhat.com/.well-known/csaf/provider-metadata.json
-          acceptV3Signatures: true
-          ignoreDistributions:
-            - https://access.redhat.com/security/data/csaf/v2/advisories/
-          job:
-            schedule: "0 * * * *"
-  # Trustification's GUAC (Graph for Understanding Artifact Composition)
-  # configuration.
-  guac:
-    database:
-      name: guac
-      host: trustification-infrastructure-postgresql
-      sslMode: disable
-      username: guac
-      # GUAC administrator (guac) password.
-      password: ${TRUSTIFICATION__GUAC__PASSWORD}
-    initDatabase:
-      name: postgres
-      host: trustification-infrastructure-postgresql
-      username: postgres
-      sslMode: disable
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: trustification-infrastructure-postgresql
-            key: postgres-password
