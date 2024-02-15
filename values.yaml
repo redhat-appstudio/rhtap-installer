@@ -57,6 +57,7 @@ developer-hub:
           - Location
           - Template
           - API
+  quay-token: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
 pipelines:
   pipelines-as-code:
     github:

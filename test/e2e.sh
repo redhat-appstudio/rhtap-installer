@@ -91,7 +91,7 @@ template() {
   echo -n "Template: "
 
   cat "$SCRIPT_DIR/data/helm-chart/template.yaml" |
-    diff - <($HELM_CHART/bin/make.sh template) &&
+    diff - <($HELM_CHART/bin/make.sh template -- --set global.host=CLUSTER_HOSTNAME) &&
     echo "OK" ||
     {
       echo "FAIL"
