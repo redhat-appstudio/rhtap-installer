@@ -1,5 +1,5 @@
-{{ define "rhtap.trustification.configure" }}
-- name: configure-trustification
+{{ define "rhtap.trusted-profile-analyzer.configure" }}
+- name: configure-trusted-profile-analyzer
   image: quay.io/codeready-toolchain/oc-client-base:latest
   command:
     - /bin/bash
@@ -19,13 +19,13 @@
         https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
           | bash
       
-      # Storing the attributes ".trustification" from "values.yaml" as a
+      # Storing the attributes ".trusted-profile-analyzer" from "values.yaml" as a
       # standalone file, employed later on as input for the trustification Charts.
       declare -r TRUSTIFICATION_VALUES="/tmp/trustification-values.yaml"
-  {{ if (index .Values "trustification") }}
+  {{ if (index .Values "trusted-profile-analyzer") }}
       cat <<EOF >${TRUSTIFICATION_VALUES}
       ---
-{{ index .Values "trustification" | toYaml | indent 6 }}
+{{ index .Values "trusted-profile-analyzer" | toYaml | indent 6 }}
       EOF
   {{ end }}
 
@@ -62,7 +62,7 @@
             # Installing the infrastructure needed for trustification first, and
             # only when infrastructure is ready the trustification rollout
             # starts...
-            helm upgrade \
+            if ! helm upgrade \
               --install \
               --namespace=${NAMESPACE} \
               --values=${TRUSTIFICATION_VALUES} \
@@ -70,10 +70,13 @@
               --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
               --set-string=appDomain=${APP_DOMAIN} \
               --debug \
-              trustification-infrastructure \
-              charts/trustification-infrastructure &&
+              tpa-infrastructure \
+              charts/trustification-infrastructure; then
+              echo "ERROR: Installing trustification-infrastructure chart!"
+              exit 1
+            fi
           
-              helm upgrade \
+            if ! helm upgrade \
                 --install \
                 --namespace=${NAMESPACE} \
                 --values=${TRUSTIFICATION_VALUES} \
@@ -81,10 +84,11 @@
                 --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
                 --set-string appDomain=${APP_DOMAIN} \
                 --debug \
-                trustification \
-                charts/trustification 
+                tpa \
+                charts/trustification; then
+              echo "ERROR: Installing trustification chart!"
+              exit 1
+            fi
           popd
       popd
-
-
 {{ end }}

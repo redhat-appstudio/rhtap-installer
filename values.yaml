@@ -104,23 +104,23 @@ global:
       - disabled: false
         package: ./dynamic-plugins/dist/backstage-plugin-techdocs
 #
-# Trustification
+# Trusted Profile Analyzer (TPA)
 #
-trustification:
+trusted-profile-analyzer:
   tracing:
     enabled: false
   # Enables using cluster's TLS certificates for services communication, this is
-  # required for Trustification on OpenShift given it will rely on TLS for
-  # internal communication.
+  # required for TPA on OpenShift given it will rely on TLS for internal
+  # communication.
   openshift:
     useServiceCa: true
   ingress:
     className: openshift-default
-  # Trustification's file storage.
+  # TPA's file storage (S3).
   minio:
     enabled: true
     # Minio's administrator (root) password
-    rootPassword: ${TRUSTIFICATION__MINIO__ROOT_PASSWORD}
+    rootPassword: ${TPA__MINIO__ROOT_PASSWORD}
     podSecurityContext:
       enabled: false
     containerSecurityContext:
@@ -139,7 +139,7 @@ trustification:
     auth:
       adminUser: admin
       # Keycloak's administrator (admin) password.
-      adminPassword: ${TRUSTIFICATION__KEYCLOAK__ADMIN_PASSWORD}
+      adminPassword: ${TPA__KEYCLOAK__ADMIN_PASSWORD}
     tls:
       enabled: true
       existingSecret: sso-tls
@@ -154,7 +154,7 @@ trustification:
       ingressClassName: openshift-default
       servicePort: https
       annotations:
-        # Following the same approach taken For Ingress routes on OpenShift,
+        # Following the same approach taken for Ingress routes on OpenShift,
         # making sure the endpoint is "re-encrypted" (`reencrypt`).
         route.openshift.io/termination: reencrypt
     postgresql:
@@ -163,22 +163,22 @@ trustification:
           enabled: false
         podSecurityContext:
           enabled: false
-  # PostgreSQL database for Trustification and GUAC.
+  # PostgreSQL database for TPA and GUAC.
   postgres:
     enabled: true
     auth:
       # PostgreSQL's administrator (postgres) password.
-      postgresPassword: ${TRUSTIFICATION__POSTGRES__POSTGRES_PASSWORD}
-      # Additional user for Trustification's database.
-      username: trustification
-      # Trustification's database user password.
-      password: ${TRUSTIFICATION__POSTGRES__TRUSTIFICATION_PASSWORD}
+      postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
+      # Additional user for TPA's database.
+      username: trusted-profile-analyzer
+      # TPA's database user password.
+      password: ${TPA__POSTGRES__TPA_PASSWORD}
     primary:
       podSecurityContext:
         enabled: false
       containerSecurityContext:
         enabled: false
-  # Trustification's event-bus using Kafka.
+  # TPA's event-bus using Kafka.
   kafka:
     enabled: true
     kraft:
@@ -193,51 +193,49 @@ trustification:
         enabled: false
       containerSecurityContext:
         enabled: false
-  # Trustification's file storage configuration, points back to Minio, defined
-  # previously.
+  # TPA's file storage configuration, points back to Minio, defined previously.
   storage:
-    endpoint: http://trustification-infrastructure-minio:9000
+    endpoint: http://tpa-infrastructure-minio:9000
     accessKey:
       valueFrom:
         secretKeyRef:
-          name: trustification-infrastructure-minio
+          name: tpa-infrastructure-minio
           key: root-user
     secretKey:
       valueFrom:
         secretKeyRef:
-          name: trustification-infrastructure-minio
+          name: tpa-infrastructure-minio
           key: root-password
-  # Trustification's event-bus configuration, points back to Kafka, defined
-  # previously.
+  # TPA's event-bus configuration, points back to Kafka, defined previously.
   eventBus:
     type: kafka
-    bootstrapServers: trustification-infrastructure-kafka:9092
+    bootstrapServers: tpa-infrastructure-kafka:9092
     config:
       securityProtocol: SASL_PLAINTEXT
       username: "user1"
       password:
         valueFrom:
           secretKeyRef:
-            name: trustification-infrastructure-kafka-user-passwords
+            name: tpa-infrastructure-kafka-user-passwords
             key: client-passwords
       mechanism: PLAIN
-  # Trustification's OIDC (OpenID Connect) configuration.
+  # TPA's OIDC (OpenID Connect) configuration.
   oidc:
     clients:
       frontend: {}
       walker:
         clientSecret:
           # OIDC client secret for the Walker module.
-          value: ${TRUSTIFICATION__OIDC__WALKER_CLIENT_SECRET}
+          value: ${TPA__OIDC__WALKER_CLIENT_SECRET}
       testingUser:
         clientSecret:
           # OIDC client secret for the Testing User module.
-          value: ${TRUSTIFICATION__OIDC__TESTING_USER_CLIENT_SECRET}
+          value: ${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
       testingManager:
         clientSecret:
           # OIDC client secret for the Testing Manager module.
-          value: ${TRUSTIFICATION__OIDC__TESTING_MANAGER_CLIENT_SECRET}
-  # Trustification's modules configuration.
+          value: ${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
+  # TPA's modules configuration.
   modules:
     bombasticWalker:
       sources:
@@ -257,23 +255,22 @@ trustification:
             - https://access.redhat.com/security/data/csaf/v2/advisories/
           job:
             schedule: "0 * * * *"
-  # Trustification's GUAC (Graph for Understanding Artifact Composition)
-  # configuration.
+  # TPA's GUAC (Graph for Understanding Artifact Composition) configuration.
   guac:
     database:
       name: guac
-      host: trustification-infrastructure-postgresql
+      host: tpa-infrastructure-postgresql
       sslMode: disable
       username: guac
       # GUAC administrator (guac) password.
-      password: ${TRUSTIFICATION__GUAC__PASSWORD}
+      password: ${TPA__GUAC__PASSWORD}
     initDatabase:
       name: postgres
-      host: trustification-infrastructure-postgresql
+      host: tpa-infrastructure-postgresql
       username: postgres
       sslMode: disable
       password:
         valueFrom:
           secretKeyRef:
-            name: trustification-infrastructure-postgresql
+            name: tpa-infrastructure-postgresql
             key: postgres-password
