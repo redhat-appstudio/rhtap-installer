@@ -1,4 +1,5 @@
 {{ define "rhtap.trusted-profile-analyzer.configure" }}
+{{ if (index .Values "trusted-profile-analyzer") }}
 - name: configure-trusted-profile-analyzer
   image: quay.io/codeready-toolchain/oc-client-base:latest
   command:
@@ -91,4 +92,5 @@
             fi
           popd
       popd
+{{ end }}
 {{ end }}

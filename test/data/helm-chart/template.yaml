@@ -32,15 +32,24 @@ metadata:
   namespace: "rhtap"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0.0-1
+    helm.sh/chart: developer-hub-1.1-79-CI
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.0-200"
+    app.kubernetes.io/version: "1.1-79"
     app.kubernetes.io/component: backstage
   annotations:
 type: Opaque
 data:
   backend-secret: "#masked#"
+---
+# Source: rhtap/templates/developer-hub/quay-token.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rhdh-pull-secret
+data:
+  .dockerconfigjson: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
+type: kubernetes.io/dockerconfigjson
 ---
 # Source: rhtap/charts/developer-hub/charts/upstream/templates/app-config-configmap.yaml
 apiVersion: v1
@@ -50,14 +59,14 @@ metadata:
 data:
   app-config.yaml: |
     app:
-      baseUrl: https://installer-developer-hub-rhtap.apps.example.com
+      baseUrl: https://CLUSTER_HOSTNAME
     backend:
       auth:
         keys:
         - secret: ${BACKEND_SECRET}
-      baseUrl: https://installer-developer-hub-rhtap.apps.example.com
+      baseUrl: https://CLUSTER_HOSTNAME
       cors:
-        origin: https://installer-developer-hub-rhtap.apps.example.com
+        origin: https://CLUSTER_HOSTNAME
       database:
         connection:
           password: ${POSTGRESQL_ADMIN_PASSWORD}
@@ -200,7 +209,7 @@ metadata:
   namespace: "rhtap" 
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: upstream-1.8.0
+    helm.sh/chart: upstream-1.8.2
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: backstage
@@ -226,7 +235,7 @@ metadata:
   namespace: "rhtap"
   labels: 
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: upstream-1.8.0
+    helm.sh/chart: upstream-1.8.2
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: backstage
@@ -243,12 +252,12 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: developer-hub
-        helm.sh/chart: upstream-1.8.0
+        helm.sh/chart: upstream-1.8.2
         app.kubernetes.io/instance: installer
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
       annotations:
-        checksum/app-config: 6b26747d5021d4fb38189114dfc815a692e5074ec940c10981f622fe87475502
+        checksum/app-config: a89734f12c59d1110fc115b24405dfaf0c39fe0861321614114a33a629b18af9
         checksum/dynamic-plugins: '80c632d264227f09a3e292e11657e61fb658e216ea915747c3a0ee720dcb07fa'
     spec:
       serviceAccountName: default
@@ -285,7 +294,7 @@ spec:
           env:
           - name: NPM_CONFIG_USERCONFIG
             value: /opt/app-root/src/.npmrc.dynamic-plugins
-          image: 'registry.redhat.io/rhdh/rhdh-hub-rhel9:1.0-200'
+          image: 'quay.io/rhdh/rhdh-hub-rhel9:1.1-79'
           imagePullPolicy: Always
           name: install-dynamic-plugins
           volumeMounts:
@@ -302,7 +311,7 @@ spec:
           workingDir: /opt/app-root/src
       containers:
         - name: backstage-backend
-          image: registry.redhat.io/rhdh/rhdh-hub-rhel9:1.0-200
+          image: quay.io/rhdh/rhdh-hub-rhel9:1.1-79
           imagePullPolicy: "Always"
           args:
             - "--config"
@@ -533,13 +542,13 @@ metadata:
   namespace: "rhtap"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0.0-1
+    helm.sh/chart: developer-hub-1.1-79-CI
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.0-200"
+    app.kubernetes.io/version: "1.1-79"
     app.kubernetes.io/component: backstage
 spec:
-  host: 
+  host: CLUSTER_HOSTNAME
   path: /
   port:
     targetPort: http-backend
@@ -585,10 +594,10 @@ metadata:
   name: "installer-developer-hub-test-connection"
   labels:
     app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.0.0-1
+    helm.sh/chart: developer-hub-1.1-79-CI
     app.kubernetes.io/instance: installer
     app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.0-200"
+    app.kubernetes.io/version: "1.1-79"
     app.kubernetes.io/component: backstage
   annotations:
       helm.sh/hook: test
@@ -1534,6 +1543,7 @@ spec:
               echo "Configuration successful"
         
                 
+        
         - name: configure-trusted-profile-analyzer
           image: quay.io/codeready-toolchain/oc-client-base:latest
           command:
@@ -1763,6 +1773,7 @@ spec:
                     fi
                   popd
               popd
+        
         
       restartPolicy: Never
       serviceAccountName: helm-manager

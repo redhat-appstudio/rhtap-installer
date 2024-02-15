@@ -25,5 +25,5 @@ appVersion: "2.1.0"
 
 dependencies:
   - name: developer-hub
-    version: "1.0.0-1"
-    repository: https://gist.githubusercontent.com/rhdh-bot/63cef5cb6285889527bd6a67c0e1c2a9/raw/be57b45121ce9206b8b0c88e07ed444ad2710fe8
+    version: "1.1-77-CI"
+    repository: https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
