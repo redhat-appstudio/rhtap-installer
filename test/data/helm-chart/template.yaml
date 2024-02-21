@@ -1,4 +1,11 @@
 ---
+# Source: rhtap/templates/developer-hub/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhdh-kubernetes-plugin
+  namespace: rhtap
+---
 # Source: rhtap/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -14,6 +21,20 @@ metadata:
 data:
   .dockerconfigjson: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
 type: kubernetes.io/dockerconfigjson
+---
+# Source: rhtap/templates/developer-hub/serviceaccount.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhdh-kubernetes-plugin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: rhdh-kubernetes-plugin
+    namespace: rhtap
 ---
 # Source: rhtap/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
@@ -90,179 +111,6 @@ spec:
         helm.sh/chart: "rhtap-0.8.1"
     spec:
       containers:
-                
-        - name: configure-developer-hub
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-            
-        
-        
-              # Installing Helm...
-              curl --fail --silent --show-error --location \
-                https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
-                  | bash
-        
-              YQ_VERSION="v4.40.5"
-              curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
-              chmod +x "/usr/bin/yq"
-        
-              CHART="rhtap"
-              NAMESPACE="rhtap"
-        
-              echo -n "* Generating values.yaml: "
-              HELM_VALUES="/tmp/developer-hub-values.yaml"
-            
-              cat <<EOF >${HELM_VALUES}
-              null
-              EOF
-            
-              echo "OK"
-              cat "${HELM_VALUES}"
-        
-              echo -n "Installing Developer Hub: "
-              helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
-              echo -n "."
-              if ! helm upgrade \
-                --install \
-                --devel \
-                --namespace=${NAMESPACE} \
-                --values="$HELM_VALUES" \
-                developer-hub \
-                developer-hub/developer-hub; then
-                echo "ERROR while installing chart!"
-                exit 1
-              fi
-              echo "OK"
-        
-              echo -n "* Waiting for route: "
-              until kubectl get route "developer-hub" -o name >/dev/null ; do
-                echo -n "."
-                sleep 3
-              done
-              HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
-              echo -n "."
-              if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-                kubectl create secret generic "$CHART-developer-hub-secret" \
-                  --from-literal="hostname=$HOSTNAME" >/dev/null
-              fi
-              echo "OK"
-        
-              echo -n "* Updating app-config.yaml: "
-              kubectl get configmap developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
-              yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
-              touch app-config-update.yaml
-              echo -n "."
-        
-              # Set the base URL
-              URL="https://$HOSTNAME"
-              yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
-              echo -n "."
-        
-            
-              cat << _EOF_ >> app-config-update.yaml
-              auth:
-                environment: development
-                providers:
-                  github:
-                    development:
-                      clientId: ${GITHUB__APP__CLIENT_ID}
-                      clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-              catalog:
-                locations:
-                - target: ${DEVELOPER_HUB__CATALOG__URL}
-                  type: url
-                rules:
-                - allow:
-                  - Component
-                  - System
-                  - Group
-                  - Resource
-                  - Location
-                  - Template
-                  - API
-              integrations:
-                github:
-                - apps:
-                  - appId: ${GITHUB__APP__APP_ID}
-                    clientId: ${GITHUB__APP__CLIENT_ID}
-                    clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-                    privateKey: |
-                      ${GITHUB__APP__PRIVATE_KEY}
-                    webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
-                    webhookUrl: GITHUB__APP__WEBHOOK_URL
-                  host: github.com
-              techdocs:
-                builder: local
-                generator:
-                  runIn: local
-                publisher:
-                  type: local
-              _EOF_
-              echo -n "."
-            
-        
-              # ArgoCD integration
-              while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-                echo -ne "_"
-                sleep 2
-              done
-              kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
-              echo -n "."
-        
-              ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
-              ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
-              ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
-              ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
-              cat << _EOF_ >> app-config-update.yaml
-              argocd:
-                username: $ARGOCD_USER
-                password: $ARGOCD_PASSWORD
-                waitCycles: 25
-                appLocatorMethods:
-                  - type: 'config'
-                    instances:
-                      - name: default
-                        url: https://$ARGOCD_HOSTNAME
-                        token: $ARGOCD_API_TOKEN
-              _EOF_
-        
-              # Tekton integration
-              while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-                echo -ne "_"
-                sleep 2
-              done
-              PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
-              yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
-              echo -n "."
-        
-              # Process app-config update
-              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
-              yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
-              if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
-                echo
-                kubectl apply -f developer-hub-app-config.new.yaml
-                echo "OK"
-                echo -n "* Restarting Developer Hub: "
-                kubectl delete pods -l "app.kubernetes.io/component=backstage"
-              fi
-              echo "OK"
-        
-              echo -n "* Waiting for UI: "
-              until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
-        
-              echo
-              echo "Configuration successful"
-        
       
                 
         - name: configure-acs
@@ -547,6 +395,275 @@ spec:
                 
               EOF
               echo -n "."
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
+        
+                
+        - name: configure-developer-hub
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+            
+        
+        
+              # Installing Helm...
+              curl --fail --silent --show-error --location \
+                https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+                  | bash
+        
+              YQ_VERSION="v4.40.5"
+              curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+              chmod +x "/usr/bin/yq"
+        
+              CHART="rhtap"
+              NAMESPACE="rhtap"
+        
+              echo -n "* Generating values.yaml: "
+              HELM_VALUES="/tmp/developer-hub-values.yaml"
+            
+              cat <<EOF >${HELM_VALUES}
+              global:
+                dynamic:
+                  includes:
+                  - dynamic-plugins.default.yaml
+                  plugins:
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
+                    pluginConfig:
+                      dynamicPlugins:
+                        frontend:
+                          roadiehq.backstage-plugin-argo-cd:
+                            mountPoints:
+                            - config:
+                                if:
+                                  allOf:
+                                  - isArgocdAvailable
+                                layout:
+                                  gridColumnEnd:
+                                    lg: span 8
+                                    xs: span 12
+                              importName: EntityArgoCDOverviewCard
+                              mountPoint: entity.page.overview/cards
+                            - config:
+                                if:
+                                  allOf:
+                                  - isArgocdAvailable
+                                layout:
+                                  gridColumn: 1 / -1
+                              importName: EntityArgoCDHistoryCard
+                              mountPoint: entity.page.cd/cards
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/backstage-plugin-techdocs
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/backstage-plugin-kubernetes
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic
+                    pluginConfig:
+                      kubernetes:
+                        clusterLocatorMethods:
+                        - clusters:
+                          - authProvider: serviceAccount
+                            name: rhdh-kubernetes-plugin
+                            serviceAccountToken: <token>
+                            skipTLSVerify: true
+                            url: https://kubernetes.default.svc
+                          type: config
+                        customResources:
+                        - apiVersion: v1
+                          group: tekton.dev
+                          plural: pipelineruns
+                        - apiVersion: v1
+                          group: tekton.dev
+                          plural: taskruns
+                        serviceLocatorMethod:
+                          type: multiTenant
+                  - disabled: false
+                    package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-tekton
+                    pluginConfig:
+                      dynamicPlugins:
+                        frontend:
+                          janus-idp.backstage-plugin-tekton:
+                            mountPoints:
+                            - config:
+                                if:
+                                  allOf:
+                                  - isTektonCIAvailable
+                                layout:
+                                  gridColumn: 1 / -1
+                                  gridRowStart: 1
+                              importName: TektonCI
+                              mountPoint: entity.page.ci/cards
+              EOF
+            
+              echo "OK"
+        
+              
+              ################################################################################
+              # Tekton plugin configuration
+              ################################################################################
+              export K8S_SA_TOKEN=$(
+                SECRET_NAME=$(kubectl get secrets --namespace "$NAMESPACE" -o name | grep rhdh-kubernetes-plugin-token- | cut -d/ -f2 | head -1)
+                kubectl get secret --namespace "$NAMESPACE" "$SECRET_NAME" -o jsonpath={.data.token} | base64 -d
+              )
+              echo "K8S_SA_TOKEN=$K8S_SA_TOKEN"
+              yq -i '
+                (
+                  (
+                    (.global.dynamic.plugins[] | select(.package == "./dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic")) |
+                    .pluginConfig.kubernetes.clusterLocatorMethods[].clusters[]
+                  ) |
+                  select(.name == "rhdh-kubernetes-plugin") |
+                  .serviceAccountToken
+                ) = strenv(K8S_SA_TOKEN)
+              ' "$HELM_VALUES"
+              
+        
+              echo -n "Installing Developer Hub: "
+              helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
+              echo -n "."
+              if ! helm upgrade \
+                --install \
+                --devel \
+                --namespace=${NAMESPACE} \
+                --values="$HELM_VALUES" \
+                developer-hub \
+                developer-hub/developer-hub; then
+                echo "ERROR while installing chart!"
+                exit 1
+              fi
+              echo "OK"
+        
+              echo -n "* Waiting for route: "
+              until kubectl get route "developer-hub" -o name >/dev/null ; do
+                echo -n "."
+                sleep 3
+              done
+              HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
+              echo -n "."
+              if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+                kubectl create secret generic "$CHART-developer-hub-secret" \
+                  --from-literal="hostname=$HOSTNAME" >/dev/null
+              fi
+              echo "OK"
+        
+              echo -n "* Updating app-config.yaml: "
+              kubectl get configmap developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
+              yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
+              touch app-config-update.yaml
+              echo -n "."
+        
+              # Set the base URL
+              URL="https://$HOSTNAME"
+              yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
+              echo -n "."
+        
+            
+              cat << _EOF_ >> app-config-update.yaml
+              auth:
+                environment: development
+                providers:
+                  github:
+                    development:
+                      clientId: ${GITHUB__APP__CLIENT_ID}
+                      clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+              catalog:
+                locations:
+                - target: ${DEVELOPER_HUB__CATALOG__URL}
+                  type: url
+                rules:
+                - allow:
+                  - Component
+                  - System
+                  - Group
+                  - Resource
+                  - Location
+                  - Template
+                  - API
+              integrations:
+                github:
+                - apps:
+                  - appId: ${GITHUB__APP__APP_ID}
+                    clientId: ${GITHUB__APP__CLIENT_ID}
+                    clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+                    privateKey: |
+                      ${GITHUB__APP__PRIVATE_KEY}
+                    webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
+                    webhookUrl: GITHUB__APP__WEBHOOK_URL
+                  host: github.com
+              techdocs:
+                builder: local
+                generator:
+                  runIn: local
+                publisher:
+                  type: local
+              _EOF_
+              echo -n "."
+            
+        
+              # ArgoCD integration
+              while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+                echo -ne "_"
+                sleep 2
+              done
+              kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
+              echo -n "."
+        
+              ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
+              ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
+              ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
+              ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
+              cat << _EOF_ >> app-config-update.yaml
+              argocd:
+                username: $ARGOCD_USER
+                password: $ARGOCD_PASSWORD
+                waitCycles: 25
+                appLocatorMethods:
+                  - type: 'config'
+                    instances:
+                      - name: default
+                        url: https://$ARGOCD_HOSTNAME
+                        token: $ARGOCD_API_TOKEN
+              _EOF_
+        
+              # Tekton integration
+              while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+                echo -ne "_"
+                sleep 2
+              done
+              PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
+              yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
+              echo -n "."
+        
+              # Process app-config update
+              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
+              yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
+              if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
+                echo
+                kubectl apply -f developer-hub-app-config.new.yaml
+                echo "OK"
+                echo -n "* Restarting Developer Hub: "
+                kubectl delete pods -l "app.kubernetes.io/component=backstage"
+              fi
+              echo "OK"
+        
+              echo -n "* Waiting for UI: "
+              until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
+                echo -n "."
+                sleep 3
+              done
               echo "OK"
         
               echo

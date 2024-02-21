@@ -58,44 +58,85 @@ developer-hub:
           - Template
           - API
   quay-token: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
-  global:
-    dynamic:
-      includes:
-        - dynamic-plugins.default.yaml
-      plugins:
-        - disabled: false
-          package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
-          pluginConfig:
-            dynamicPlugins:
-              frontend:
-                roadiehq.backstage-plugin-argo-cd:
-                  mountPoints:
-                    - mountPoint: entity.page.overview/cards
-                      importName: EntityArgoCDOverviewCard
-                      config:
-                        layout:
-                          gridColumnEnd:
-                            lg: "span 8"
-                            xs: "span 12"
+  values:
+    global:
+      dynamic:
+        includes:
+          - dynamic-plugins.default.yaml
+        plugins:
+          # Installed plugins can be listed at: https://DH_HOSTNAME/api/dynamic-plugins-info/loaded-plugins
+          - disabled: false
+            package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
+            pluginConfig:
+              dynamicPlugins:
+                frontend:
+                  roadiehq.backstage-plugin-argo-cd:
+                    mountPoints:
+                      - mountPoint: entity.page.overview/cards
+                        importName: EntityArgoCDOverviewCard
+                        config:
+                          layout:
+                            gridColumnEnd:
+                              lg: "span 8"
+                              xs: "span 12"
+                          if:
+                            allOf:
+                              - isArgocdAvailable
+                      - mountPoint: entity.page.cd/cards
+                        importName: EntityArgoCDHistoryCard
+                        config:
+                          layout:
+                            gridColumn: "1 / -1"
+                          if:
+                            allOf:
+                              - isArgocdAvailable
+          - disabled: false
+            package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+          - disabled: false
+            package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
+          - disabled: false
+            package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
+          - disabled: false
+            package: ./dynamic-plugins/dist/backstage-plugin-techdocs
+          - disabled: false
+            package: ./dynamic-plugins/dist/backstage-plugin-kubernetes
+          - disabled: false
+            package: ./dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic
+            pluginConfig:
+              kubernetes:
+                serviceLocatorMethod:
+                  type: 'multiTenant'
+                clusterLocatorMethods:
+                  - clusters:
+                    - authProvider: serviceAccount
+                      name: rhdh-kubernetes-plugin
+                      serviceAccountToken: <token>
+                      skipTLSVerify: true
+                      url: https://kubernetes.default.svc
+                    type: config
+                customResources:
+                  - group: 'tekton.dev'
+                    apiVersion: 'v1'
+                    plural: 'pipelineruns'
+                  - group: 'tekton.dev'
+                    apiVersion: 'v1'
+                    plural: 'taskruns'
+          - disabled: false
+            package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-tekton
+            pluginConfig:
+              dynamicPlugins:
+                frontend:
+                  janus-idp.backstage-plugin-tekton:
+                    mountPoints:
+                    - config:
                         if:
                           allOf:
-                            - isArgocdAvailable
-                    - mountPoint: entity.page.cd/cards
-                      importName: EntityArgoCDHistoryCard
-                      config:
+                          - isTektonCIAvailable
                         layout:
-                          gridColumn: "1 / -1"
-                        if:
-                          allOf:
-                            - isArgocdAvailable
-        - disabled: false
-          package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
-        - disabled: false
-          package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
-        - disabled: false
-          package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
-        - disabled: false
-          package: ./dynamic-plugins/dist/backstage-plugin-techdocs
+                          gridColumn: 1 / -1
+                          gridRowStart: 1
+                      importName: TektonCI
+                      mountPoint: entity.page.ci/cards
 pipelines:
   pipelines-as-code:
     github:
