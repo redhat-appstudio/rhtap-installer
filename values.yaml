@@ -58,6 +58,44 @@ developer-hub:
           - Template
           - API
   quay-token: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
+  global:
+    dynamic:
+      includes:
+        - dynamic-plugins.default.yaml
+      plugins:
+        - disabled: false
+          package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
+          pluginConfig:
+            dynamicPlugins:
+              frontend:
+                roadiehq.backstage-plugin-argo-cd:
+                  mountPoints:
+                    - mountPoint: entity.page.overview/cards
+                      importName: EntityArgoCDOverviewCard
+                      config:
+                        layout:
+                          gridColumnEnd:
+                            lg: "span 8"
+                            xs: "span 12"
+                        if:
+                          allOf:
+                            - isArgocdAvailable
+                    - mountPoint: entity.page.cd/cards
+                      importName: EntityArgoCDHistoryCard
+                      config:
+                        layout:
+                          gridColumn: "1 / -1"
+                        if:
+                          allOf:
+                            - isArgocdAvailable
+        - disabled: false
+          package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+        - disabled: false
+          package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
+        - disabled: false
+          package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
+        - disabled: false
+          package: ./dynamic-plugins/dist/backstage-plugin-techdocs
 pipelines:
   pipelines-as-code:
     github:
@@ -234,42 +272,3 @@ trusted-profile-analyzer:
           secretKeyRef:
             name: tpa-infrastructure-postgresql
             key: postgres-password
-global:
-  # Developer Hub
-  dynamic:
-    includes:
-      - dynamic-plugins.default.yaml
-    plugins:
-      - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
-        disabled: false
-        pluginConfig:
-          dynamicPlugins:
-            frontend:
-              roadiehq.backstage-plugin-argo-cd:
-                mountPoints:
-                  - mountPoint: entity.page.overview/cards
-                    importName: EntityArgoCDOverviewCard
-                    config:
-                      layout:
-                        gridColumnEnd:
-                          lg: "span 8"
-                          xs: "span 12"
-                      if:
-                        allOf:
-                          - isArgocdAvailable
-                  - mountPoint: entity.page.cd/cards
-                    importName: EntityArgoCDHistoryCard
-                    config:
-                      layout:
-                        gridColumn: "1 / -1"
-                      if:
-                        allOf:
-                          - isArgocdAvailable
-      - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
-        disabled: false
-      - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
-        disabled: false
-      - disabled: false
-        package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
-      - disabled: false
-        package: ./dynamic-plugins/dist/backstage-plugin-techdocs

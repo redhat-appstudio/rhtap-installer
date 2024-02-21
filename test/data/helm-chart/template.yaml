@@ -6,42 +6,6 @@ metadata:
   name: helm-manager
   namespace: rhtap
 ---
-# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/secrets.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: installer-postgresql
-  namespace: "rhtap"
-  labels:
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 15.4.0
-    helm.sh/chart: postgresql-12.10.0
-type: Opaque
-data:
-  postgres-password: "#masked#"
-  password: "#masked#"
-  # We don't auto-generate LDAP password when it's not provided as we do for other passwords
----
-# Source: rhtap/charts/developer-hub/templates/secrets.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: installer-developer-hub-auth
-  namespace: "rhtap"
-  labels:
-    app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.1-79-CI
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.1-79"
-    app.kubernetes.io/component: backstage
-  annotations:
-type: Opaque
-data:
-  backend-secret: "#masked#"
----
 # Source: rhtap/templates/developer-hub/quay-token.yaml
 apiVersion: v1
 kind: Secret
@@ -50,71 +14,6 @@ metadata:
 data:
   .dockerconfigjson: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
 type: kubernetes.io/dockerconfigjson
----
-# Source: rhtap/charts/developer-hub/charts/upstream/templates/app-config-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: installer-developer-hub-app-config
-data:
-  app-config.yaml: |
-    app:
-      baseUrl: https://CLUSTER_HOSTNAME
-    backend:
-      auth:
-        keys:
-        - secret: ${BACKEND_SECRET}
-      baseUrl: https://CLUSTER_HOSTNAME
-      cors:
-        origin: https://CLUSTER_HOSTNAME
-      database:
-        connection:
-          password: ${POSTGRESQL_ADMIN_PASSWORD}
-          user: postgres
----
-# Source: rhtap/charts/developer-hub/templates/dynamic-plugins-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: dynamic-plugins
-data:
-  dynamic-plugins.yaml: |
-    includes:
-    - dynamic-plugins.default.yaml
-    plugins:
-    - disabled: false
-      package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
-      pluginConfig:
-        dynamicPlugins:
-          frontend:
-            roadiehq.backstage-plugin-argo-cd:
-              mountPoints:
-              - config:
-                  if:
-                    allOf:
-                    - isArgocdAvailable
-                  layout:
-                    gridColumnEnd:
-                      lg: span 8
-                      xs: span 12
-                importName: EntityArgoCDOverviewCard
-                mountPoint: entity.page.overview/cards
-              - config:
-                  if:
-                    allOf:
-                    - isArgocdAvailable
-                  layout:
-                    gridColumn: 1 / -1
-                importName: EntityArgoCDHistoryCard
-                mountPoint: entity.page.cd/cards
-    - disabled: false
-      package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
-    - disabled: false
-      package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
-    - disabled: false
-      package: ./dynamic-plugins/dist/backstage-plugin-techdocs-backend-dynamic
-    - disabled: false
-      package: ./dynamic-plugins/dist/backstage-plugin-techdocs
 ---
 # Source: rhtap/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
@@ -139,427 +38,6 @@ subjects:
   - kind: ServiceAccount
     name: helm-manager
     namespace: rhtap
----
-# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc-headless.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: installer-postgresql-hl
-  namespace: "rhtap"
-  labels:
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 15.4.0
-    helm.sh/chart: postgresql-12.10.0
-    app.kubernetes.io/component: primary
-  annotations:
-    # Use this annotation in addition to the actual publishNotReadyAddresses
-    # field below because the annotation will stop being respected soon but the
-    # field is broken in some versions of Kubernetes:
-    # https://github.com/kubernetes/kubernetes/issues/58662
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-spec:
-  type: ClusterIP
-  clusterIP: None
-  # We want all pods in the StatefulSet to have their addresses published for
-  # the sake of the other Postgresql pods even before they're ready, since they
-  # have to be able to talk to each other in order to become ready.
-  publishNotReadyAddresses: true
-  ports:
-    - name: tcp-postgresql
-      port: 5432
-      targetPort: tcp-postgresql
-  selector:
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/component: primary
----
-# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/svc.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: installer-postgresql
-  namespace: "rhtap"
-  labels:
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 15.4.0
-    helm.sh/chart: postgresql-12.10.0
-    app.kubernetes.io/component: primary
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-  ports:
-    - name: tcp-postgresql
-      port: 5432
-      targetPort: tcp-postgresql
-      nodePort: null
-  selector:
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/component: primary
----
-# Source: rhtap/charts/developer-hub/charts/upstream/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: installer-developer-hub
-  namespace: "rhtap" 
-  labels:
-    app.kubernetes.io/name: developer-hub
-    helm.sh/chart: upstream-1.8.2
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/component: backstage
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-  ports:
-    - name: http-backend
-      port: 7007
-      targetPort: backend
-      protocol: TCP
-      nodePort: null  
-  selector:
-    app.kubernetes.io/name: developer-hub
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/component: backstage
----
-# Source: rhtap/charts/developer-hub/charts/upstream/templates/backstage-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: installer-developer-hub
-  namespace: "rhtap"
-  labels: 
-    app.kubernetes.io/name: developer-hub
-    helm.sh/chart: upstream-1.8.2
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/component: backstage
-  annotations:
-spec:
-  replicas: 1
-  revisionHistoryLimit: 10
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: developer-hub
-      app.kubernetes.io/instance: installer
-      app.kubernetes.io/component: backstage
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: developer-hub
-        helm.sh/chart: upstream-1.8.2
-        app.kubernetes.io/instance: installer
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/component: backstage
-      annotations:
-        checksum/app-config: a89734f12c59d1110fc115b24405dfaf0c39fe0861321614114a33a629b18af9
-        checksum/dynamic-plugins: '80c632d264227f09a3e292e11657e61fb658e216ea915747c3a0ee720dcb07fa'
-    spec:
-      serviceAccountName: default
-      volumes:
-        - ephemeral:
-            volumeClaimTemplate:
-              spec:
-                accessModes:
-                - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: 1Gi
-          name: dynamic-plugins-root
-        - configMap:
-            defaultMode: 420
-            name: dynamic-plugins
-            optional: true
-          name: dynamic-plugins
-        - name: dynamic-plugins-npmrc
-          secret:
-            defaultMode: 420
-            optional: true
-            secretName: dynamic-plugins-npmrc
-        - name: backstage-app-config
-          configMap:
-            name: installer-developer-hub-app-config
-      
-      imagePullSecrets:
-        - name: rhdh-pull-secret
-      initContainers:
-        - command:
-          - ./install-dynamic-plugins.sh
-          - /dynamic-plugins-root
-          env:
-          - name: NPM_CONFIG_USERCONFIG
-            value: /opt/app-root/src/.npmrc.dynamic-plugins
-          image: 'quay.io/rhdh/rhdh-hub-rhel9:1.1-79'
-          imagePullPolicy: Always
-          name: install-dynamic-plugins
-          volumeMounts:
-          - mountPath: /dynamic-plugins-root
-            name: dynamic-plugins-root
-          - mountPath: /opt/app-root/src/dynamic-plugins.yaml
-            name: dynamic-plugins
-            readOnly: true
-            subPath: dynamic-plugins.yaml
-          - mountPath: /opt/app-root/src/.npmrc.dynamic-plugins
-            name: dynamic-plugins-npmrc
-            readOnly: true
-            subPath: .npmrc
-          workingDir: /opt/app-root/src
-      containers:
-        - name: backstage-backend
-          image: quay.io/rhdh/rhdh-hub-rhel9:1.1-79
-          imagePullPolicy: "Always"
-          args:
-            - "--config"
-            - "dynamic-plugins-root/app-config.dynamic-plugins.yaml"
-            - "--config"
-            - "/opt/app-root/src/app-config-from-configmap.yaml"
-          readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /healthcheck
-              port: 7007
-              scheme: HTTP
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            successThreshold: 2
-            timeoutSeconds: 2
-          livenessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /healthcheck
-              port: 7007
-              scheme: HTTP
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 2
-          env:
-            - name: APP_CONFIG_backend_listen_port
-              value: "7007"
-            - name: POSTGRES_HOST
-              value: installer-postgresql
-            - name: POSTGRES_PORT
-              value: "5432"
-            - name: POSTGRES_USER
-              value: bn_backstage
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: installer-postgresql
-                  key: password
-            - name: BACKEND_SECRET
-              valueFrom:
-                secretKeyRef:
-                  key: backend-secret
-                  name: 'installer-developer-hub-auth'
-            - name: POSTGRESQL_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  key: postgres-password
-                  name: 'installer-postgresql'
-          ports:
-            - name: backend
-              containerPort: 7007
-              protocol: TCP
-          volumeMounts:
-            - name: backstage-app-config
-              mountPath: "/opt/app-root/src/app-config-from-configmap.yaml"
-              subPath: app-config.yaml
-            - mountPath: /opt/app-root/src/dynamic-plugins-root
-              name: dynamic-plugins-root
----
-# Source: rhtap/charts/developer-hub/charts/upstream/charts/postgresql/templates/primary/statefulset.yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: installer-postgresql
-  namespace: "rhtap"
-  labels:
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 15.4.0
-    helm.sh/chart: postgresql-12.10.0
-    app.kubernetes.io/component: primary
-spec:
-  replicas: 1
-  serviceName: installer-postgresql-hl
-  updateStrategy:
-    rollingUpdate: {}
-    type: RollingUpdate
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: installer
-      app.kubernetes.io/name: postgresql
-      app.kubernetes.io/component: primary
-  template:
-    metadata:
-      name: installer-postgresql
-      labels:
-        app.kubernetes.io/instance: installer
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: postgresql
-        app.kubernetes.io/version: 15.4.0
-        helm.sh/chart: postgresql-12.10.0
-        app.kubernetes.io/component: primary
-    spec:
-      serviceAccountName: default
-      
-      affinity:
-        podAffinity:
-          
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/instance: installer
-                    app.kubernetes.io/name: postgresql
-                    app.kubernetes.io/component: primary
-                topologyKey: kubernetes.io/hostname
-              weight: 1
-        nodeAffinity:
-          
-      hostNetwork: false
-      hostIPC: false
-      containers:
-        - name: postgresql
-          image: registry.redhat.io/rhel9/postgresql-15:latest
-          imagePullPolicy: "IfNotPresent"
-          env:
-            - name: BITNAMI_DEBUG
-              value: "false"
-            - name: POSTGRESQL_PORT_NUMBER
-              value: "5432"
-            - name: POSTGRESQL_VOLUME_DIR
-              value: "/var/lib/pgsql/data"
-            - name: PGDATA
-              value: "/var/lib/pgsql/data/userdata"
-            # Authentication
-            - name: POSTGRES_USER
-              value: "bn_backstage"
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: installer-postgresql
-                  key: password
-            - name: POSTGRES_POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: installer-postgresql
-                  key: postgres-password
-            # Replication
-            # Initdb
-            # Standby
-            # LDAP
-            - name: POSTGRESQL_ENABLE_LDAP
-              value: "no"
-            # TLS
-            - name: POSTGRESQL_ENABLE_TLS
-              value: "no"
-            # Audit
-            - name: POSTGRESQL_LOG_HOSTNAME
-              value: "false"
-            - name: POSTGRESQL_LOG_CONNECTIONS
-              value: "false"
-            - name: POSTGRESQL_LOG_DISCONNECTIONS
-              value: "false"
-            - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
-              value: "off"
-            # Others
-            - name: POSTGRESQL_CLIENT_MIN_MESSAGES
-              value: "error"
-            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
-              value: "pgaudit"
-            - name: POSTGRESQL_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  key: postgres-password
-                  name: 'installer-postgresql'
-          ports:
-            - name: tcp-postgresql
-              containerPort: 5432
-          livenessProbe:
-            failureThreshold: 6
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - exec pg_isready -U "bn_backstage" -h 127.0.0.1 -p 5432
-          readinessProbe:
-            failureThreshold: 6
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - -e
-                - |
-                  exec pg_isready -U "bn_backstage" -h 127.0.0.1 -p 5432
-          resources:
-            limits: {}
-            requests:
-              cpu: 250m
-              memory: 256Mi
-          volumeMounts:
-            - name: dshm
-              mountPath: /dev/shm
-            - name: data
-              mountPath: /var/lib/pgsql/data
-      volumes:
-        - name: dshm
-          emptyDir:
-            medium: Memory
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: data
-      spec:
-        accessModes:
-          - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: "1Gi"
----
-# Source: rhtap/charts/developer-hub/templates/route.yaml
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: installer-developer-hub
-  namespace: "rhtap"
-  labels:
-    app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.1-79-CI
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.1-79"
-    app.kubernetes.io/component: backstage
-spec:
-  host: CLUSTER_HOSTNAME
-  path: /
-  port:
-    targetPort: http-backend
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
-  to:
-    kind: Service
-    name: installer-developer-hub
-    weight: 100
-  wildcardPolicy: None
 ---
 # Source: rhtap/templates/openshift-gitops/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
@@ -587,30 +65,6 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
-# Source: rhtap/charts/developer-hub/templates/tests/test-connection.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: "installer-developer-hub-test-connection"
-  labels:
-    app.kubernetes.io/name: developer-hub
-    helm.sh/chart: developer-hub-1.1-79-CI
-    app.kubernetes.io/instance: installer
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "1.1-79"
-    app.kubernetes.io/component: backstage
-  annotations:
-      helm.sh/hook: test
-spec:
-  containers:
-    - name: curl
-      image: registry.redhat.io/ubi9:latest
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          curl --connect-timeout 5 --max-time 20 --retry 20 --retry-delay 10 --retry-max-time 60 --retry-all-errors installer-developer-hub:7007
-  restartPolicy: Never
----
 # Source: rhtap/templates/configure.yaml
 apiVersion: batch/v1
 kind: Job
@@ -636,6 +90,179 @@ spec:
         helm.sh/chart: "rhtap-0.8.1"
     spec:
       containers:
+                
+        - name: configure-developer-hub
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+            
+        
+        
+              # Installing Helm...
+              curl --fail --silent --show-error --location \
+                https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+                  | bash
+        
+              YQ_VERSION="v4.40.5"
+              curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+              chmod +x "/usr/bin/yq"
+        
+              CHART="rhtap"
+              NAMESPACE="rhtap"
+        
+              echo -n "* Generating values.yaml: "
+              HELM_VALUES="/tmp/developer-hub-values.yaml"
+            
+              cat <<EOF >${HELM_VALUES}
+              null
+              EOF
+            
+              echo "OK"
+              cat "${HELM_VALUES}"
+        
+              echo -n "Installing Developer Hub: "
+              helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
+              echo -n "."
+              if ! helm upgrade \
+                --install \
+                --devel \
+                --namespace=${NAMESPACE} \
+                --values="$HELM_VALUES" \
+                developer-hub \
+                developer-hub/developer-hub; then
+                echo "ERROR while installing chart!"
+                exit 1
+              fi
+              echo "OK"
+        
+              echo -n "* Waiting for route: "
+              until kubectl get route "developer-hub" -o name >/dev/null ; do
+                echo -n "."
+                sleep 3
+              done
+              HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
+              echo -n "."
+              if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+                kubectl create secret generic "$CHART-developer-hub-secret" \
+                  --from-literal="hostname=$HOSTNAME" >/dev/null
+              fi
+              echo "OK"
+        
+              echo -n "* Updating app-config.yaml: "
+              kubectl get configmap developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
+              yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
+              touch app-config-update.yaml
+              echo -n "."
+        
+              # Set the base URL
+              URL="https://$HOSTNAME"
+              yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
+              echo -n "."
+        
+            
+              cat << _EOF_ >> app-config-update.yaml
+              auth:
+                environment: development
+                providers:
+                  github:
+                    development:
+                      clientId: ${GITHUB__APP__CLIENT_ID}
+                      clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+              catalog:
+                locations:
+                - target: ${DEVELOPER_HUB__CATALOG__URL}
+                  type: url
+                rules:
+                - allow:
+                  - Component
+                  - System
+                  - Group
+                  - Resource
+                  - Location
+                  - Template
+                  - API
+              integrations:
+                github:
+                - apps:
+                  - appId: ${GITHUB__APP__APP_ID}
+                    clientId: ${GITHUB__APP__CLIENT_ID}
+                    clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+                    privateKey: |
+                      ${GITHUB__APP__PRIVATE_KEY}
+                    webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
+                    webhookUrl: GITHUB__APP__WEBHOOK_URL
+                  host: github.com
+              techdocs:
+                builder: local
+                generator:
+                  runIn: local
+                publisher:
+                  type: local
+              _EOF_
+              echo -n "."
+            
+        
+              # ArgoCD integration
+              while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+                echo -ne "_"
+                sleep 2
+              done
+              kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
+              echo -n "."
+        
+              ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
+              ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
+              ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
+              ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
+              cat << _EOF_ >> app-config-update.yaml
+              argocd:
+                username: $ARGOCD_USER
+                password: $ARGOCD_PASSWORD
+                waitCycles: 25
+                appLocatorMethods:
+                  - type: 'config'
+                    instances:
+                      - name: default
+                        url: https://$ARGOCD_HOSTNAME
+                        token: $ARGOCD_API_TOKEN
+              _EOF_
+        
+              # Tekton integration
+              while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+                echo -ne "_"
+                sleep 2
+              done
+              PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
+              yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
+              echo -n "."
+        
+              # Process app-config update
+              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
+              yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
+              if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
+                echo
+                kubectl apply -f developer-hub-app-config.new.yaml
+                echo "OK"
+                echo -n "* Restarting Developer Hub: "
+                kubectl delete pods -l "app.kubernetes.io/component=backstage"
+              fi
+              echo "OK"
+        
+              echo -n "* Waiting for UI: "
+              until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
+                echo -n "."
+                sleep 3
+              done
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
+        
       
                 
         - name: configure-acs
@@ -920,150 +547,6 @@ spec:
                 
               EOF
               echo -n "."
-              echo "OK"
-        
-              echo
-              echo "Configuration successful"
-        
-                
-        - name: configure-developer-hub
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-            
-        
-              YQ_VERSION="v4.40.5"
-              curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
-              chmod +x "/usr/bin/yq"
-        
-              CHART="rhtap"
-        
-              echo -n "* Waiting for route: "
-            
-              PREFIX="installer-"
-            
-              until kubectl get route "${PREFIX}developer-hub" -o name >/dev/null ; do
-                echo -n "."
-                sleep 3
-              done
-              HOSTNAME="$(kubectl get routes "${PREFIX}developer-hub" -o jsonpath="{.spec.host}")"
-              echo -n "."
-              if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-                kubectl create secret generic "$CHART-developer-hub-secret" \
-                  --from-literal="hostname=$HOSTNAME" >/dev/null
-              fi
-              echo "OK"
-        
-              echo -n "* Updating app-config.yaml: "
-              kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
-              yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
-              touch app-config-update.yaml
-              echo -n "."
-        
-              # Set the base URL
-              URL="https://$HOSTNAME"
-              yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
-              echo -n "."
-        
-            
-              cat << _EOF_ >> app-config-update.yaml
-              auth:
-                environment: development
-                providers:
-                  github:
-                    development:
-                      clientId: ${GITHUB__APP__CLIENT_ID}
-                      clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-              catalog:
-                locations:
-                - target: ${DEVELOPER_HUB__CATALOG__URL}
-                  type: url
-                rules:
-                - allow:
-                  - Component
-                  - System
-                  - Group
-                  - Resource
-                  - Location
-                  - Template
-                  - API
-              integrations:
-                github:
-                - apps:
-                  - appId: ${GITHUB__APP__APP_ID}
-                    clientId: ${GITHUB__APP__CLIENT_ID}
-                    clientSecret: ${GITHUB__APP__CLIENT_SECRET}
-                    privateKey: |
-                      ${GITHUB__APP__PRIVATE_KEY}
-                    webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
-                    webhookUrl: GITHUB__APP__WEBHOOK_URL
-                  host: github.com
-              techdocs:
-                builder: local
-                generator:
-                  runIn: local
-                publisher:
-                  type: local
-              _EOF_
-              echo -n "."
-            
-        
-              # ArgoCD integration
-              while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-                echo -ne "_"
-                sleep 2
-              done
-              kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
-              echo -n "."
-        
-              ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
-              ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
-              ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
-              ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
-              cat << _EOF_ >> app-config-update.yaml
-              argocd:
-                username: $ARGOCD_USER
-                password: $ARGOCD_PASSWORD
-                waitCycles: 25
-                appLocatorMethods:
-                  - type: 'config'
-                    instances:
-                      - name: default
-                        url: https://$ARGOCD_HOSTNAME
-                        token: $ARGOCD_API_TOKEN
-              _EOF_
-        
-              # Tekton integration
-              while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-                echo -ne "_"
-                sleep 2
-              done
-              PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
-              yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
-              echo -n "."
-        
-              # Process app-config update
-              yq -i '. *= load("app-config-update.yaml")' app-config.yaml
-              yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
-              if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
-                echo
-                kubectl apply -f developer-hub-app-config.new.yaml
-                echo "OK"
-                echo -n "* Restarting Developer Hub: "
-                kubectl delete pods -l "app.kubernetes.io/component=backstage"
-              fi
-              echo "OK"
-        
-              echo -n "* Waiting for UI: "
-              until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
-                echo -n "."
-                sleep 3
-              done
               echo "OK"
         
               echo

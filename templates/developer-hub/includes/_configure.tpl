@@ -12,23 +12,53 @@
       set -x
     {{ end }}
 
+
+      # Installing Helm...
+      curl --fail --silent --show-error --location \
+        https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+          | bash
+
       YQ_VERSION="v4.40.5"
       curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
       chmod +x "/usr/bin/yq"
 
       CHART="{{ .Chart.Name }}"
+      NAMESPACE="{{ .Release.Namespace }}"
+
+      echo -n "* Generating values.yaml: "
+      HELM_VALUES="/tmp/developer-hub-values.yaml"
+    {{ if (index .Values "developer-hub") }}
+      cat <<EOF >${HELM_VALUES}
+{{ index .Values "developer-hub" "values" | toYaml | indent 6 }}
+      EOF
+    {{ else }}
+      echo 'Expected "developer-hub" in the values.yaml' >&2
+      exit 1
+    {{ end }}
+      echo "OK"
+      cat "${HELM_VALUES}"
+
+      echo -n "Installing Developer Hub: "
+      helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
+      echo -n "."
+      if ! helm upgrade \
+        --install \
+        --devel \
+        --namespace=${NAMESPACE} \
+        --values="$HELM_VALUES" \
+        developer-hub \
+        developer-hub/developer-hub; then
+        echo "ERROR while installing chart!"
+        exit 1
+      fi
+      echo "OK"
 
       echo -n "* Waiting for route: "
-    {{ if eq .Release.Name "developer-hub" }}
-      PREFIX=""
-    {{ else }}
-      PREFIX="{{ .Release.Name }}-"
-    {{ end }}
-      until kubectl get route "${PREFIX}developer-hub" -o name >/dev/null ; do
+      until kubectl get route "developer-hub" -o name >/dev/null ; do
         echo -n "."
         sleep 3
       done
-      HOSTNAME="$(kubectl get routes "${PREFIX}developer-hub" -o jsonpath="{.spec.host}")"
+      HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
       echo -n "."
       if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         kubectl create secret generic "$CHART-developer-hub-secret" \
@@ -37,7 +67,7 @@
       echo "OK"
 
       echo -n "* Updating app-config.yaml: "
-      kubectl get configmap ${PREFIX}developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
+      kubectl get configmap developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
       yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
       touch app-config-update.yaml
       echo -n "."
