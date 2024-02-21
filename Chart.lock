@@ -1,6 +1,0 @@
-dependencies:
-- name: developer-hub
-  repository: https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
-  version: 1.1-79-CI
-digest: sha256:e50c4bc96fa3b8b8f022b9f852f515429a1e5d48ac8b058dea77b65a767b4626
-generated: "2024-02-15T17:10:29.180153813-05:00"
