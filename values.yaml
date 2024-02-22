@@ -137,6 +137,8 @@ developer-hub:
                           gridRowStart: 1
                       importName: TektonCI
                       mountPoint: entity.page.ci/cards
+          - disabled: false
+            package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-topology
 pipelines:
   pipelines-as-code:
     github:

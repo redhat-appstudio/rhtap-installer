@@ -39,7 +39,7 @@
 
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
 
-      echo -n "Installing Developer Hub: "
+      echo -n "* Installing Developer Hub: "
       helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
       echo -n "."
       if ! helm upgrade \
