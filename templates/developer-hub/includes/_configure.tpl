@@ -54,6 +54,8 @@
       fi
       echo "OK"
 
+{{ include "rhtap.developer-hub.configure.configure_tls" . | indent 6 }}
+
       echo -n "* Waiting for route: "
       until kubectl get route "developer-hub" -o name >/dev/null ; do
         echo -n "."
