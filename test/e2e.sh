@@ -37,7 +37,7 @@ set_defaults() {
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
   )"
-  NAMESPACE="rhtap-installer"
+  export NAMESPACE="rhtap-installer"
 }
 
 parse_args() {
@@ -49,7 +49,7 @@ parse_args() {
       ;;
     -d | --debug)
       set -x
-      DEBUG="--debug"
+      export DEBUG="--debug"
       ;;
     -h | --help)
       usage
@@ -58,7 +58,7 @@ parse_args() {
     --)
       # End of arguments
       shift
-      PASSTHROUGH_ARGS=($@)
+      PASSTHROUGH_ARGS=("$@")
       break
       ;;
     *)
@@ -73,7 +73,7 @@ parse_args() {
 
 init() {
   if
-    [ "$(echo "${ACTIONS[*]}" | grep -c "install")" = "1" -a "$(echo "${ACTIONS[*]}" | grep -c "upgrade")" = "1" ]
+    [ "$(echo "${ACTIONS[*]}" | grep -c "install")" = "1" ] && [ "$(echo "${ACTIONS[*]}" | grep -c "upgrade")" = "1" ]
   then
     echo "Cannot run 'install' and 'upgrade' together" >&2
     exit 1
@@ -84,38 +84,37 @@ apply() {
   # Because the chart is idempotent there is no
   # need to track if the chart as already been
   # applied.
-  $HELM_CHART/bin/make.sh apply -- "${PASSTHROUGH_ARGS[@]}"
+  "$HELM_CHART/bin/make.sh" apply -- "${PASSTHROUGH_ARGS[@]}"
 }
 
 template() {
   echo -n "Template: "
 
-  cat "$SCRIPT_DIR/data/helm-chart/template.yaml" |
-    diff - <($HELM_CHART/bin/make.sh template) &&
-    echo "OK" ||
-    {
-      echo "FAIL"
-      echo "You must update '$SCRIPT_DIR/data/helm-chart/template.yaml'." >&2
-      exit 1
-    }
+  if diff "$SCRIPT_DIR/data/helm-chart/template.yaml" <("$HELM_CHART/bin/make.sh" template); then
+    echo "OK"
+  else
+    echo "FAIL"
+    echo "You must update '$SCRIPT_DIR/data/helm-chart/template.yaml'." >&2
+    exit 1
+  fi
 }
 
 test() {
-  $HELM_CHART/bin/make.sh test
+  "$HELM_CHART/bin/make.sh" test
 }
 
 upgrade() {
   BASE_VERSION="0.x"
   echo "## Installing base version '$BASE_VERSION'"
-  $HELM_CHART/bin/make.sh apply -- --version "$BASE_VERSION" "${PASSTHROUGH_ARGS[@]}"
+  "$HELM_CHART/bin/make.sh" apply -- --version "$BASE_VERSION" "${PASSTHROUGH_ARGS[@]}"
   echo "## Applying upgrade"
-  $HELM_CHART/bin/make.sh template --version "$BASE_VERSION" | diff - <($HELM_CHART/bin/make.sh template) || true
+  "$HELM_CHART/bin/make.sh" template --version "$BASE_VERSION" | diff - <("$HELM_CHART/bin/make.sh" template) || true
   apply
 }
 
 version() {
   echo -n "Version: "
-  VERSION="$(cat "$HELM_CHART/Chart.yaml" | grep "^version:" | sed 's:.* ::')"
+  VERSION="$(grep "^version:" "$HELM_CHART/Chart.yaml" | sed 's:.* ::')"
   if [ "$(git ls-remote --tags https://github.com/redhat-appstudio/helm-repository.git "$VERSION" | wc -l)" != "0" ]; then
     echo "Version '$VERSION' already exists."
     echo "You must update 'version' in 'Chart.yaml'." >&2

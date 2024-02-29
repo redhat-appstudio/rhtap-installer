@@ -91,7 +91,7 @@ parse_args() {
       ;;
     -d | --debug)
       set -x
-      DEBUG="--debug"
+      export DEBUG="--debug"
       ;;
     -h | --help)
       usage
@@ -100,7 +100,7 @@ parse_args() {
     --)
       # End of arguments
       shift
-      PASSTHROUGH_ARGS=($@)
+      PASSTHROUGH_ARGS=("$@")
       break
       ;;
     *)
@@ -201,9 +201,10 @@ test() {
 values() {
   cd "$HELM_CHART"
   touch "private.env"
+  # shellcheck source=/dev/null
   source "private.env"
   echo >"private.env"
-  mapfile -t ENV_VARS < <(grep --only-matching "\${[^}]*" values.yaml | cut -d{ -f2 | sort -u)
+  mapfile -t ENV_VARS < <(grep --only-matching "\${[^}]*" values.yaml | cut -d'{' -f2 | sort -u)
   for ENV_VAR in "${ENV_VARS[@]}"; do
     if [ -z "${!ENV_VAR:-}" ]; then
       case $ENV_VAR in
@@ -212,7 +213,7 @@ values() {
         VALUE=$(sed '/^$/q')
         ;;
       *)
-        read -p "Enter value for $ENV_VAR: " VALUE
+        read -r -p "Enter value for $ENV_VAR: " VALUE
         ;;
       esac
     else
@@ -221,6 +222,7 @@ values() {
     fi
     echo "export $ENV_VAR='$VALUE'" >>"private.env"
   done
+  # shellcheck source=/dev/null
   source "private.env"
   yq "
     .developer-hub.app-config.integrations.github[0].apps[0].privateKey = \"$GITHUB__APP__PRIVATE_KEY\",
@@ -248,7 +250,7 @@ _get_versions() {
   done
 
   major_minor="$(echo "$version" | cut -d. -f 1,2)"
-  patch="$(echo "$(($(echo "$version" | cut -d. -f 3) + 1))")"
+  patch="$(($(echo "$version" | cut -d. -f 3) + 1))"
   next_version="$major_minor.$patch"
 }
 
