@@ -213,7 +213,23 @@ values() {
         VALUE=$(sed '/^$/q')
         ;;
       *)
-        read -r -p "Enter value for $ENV_VAR: " VALUE
+        PROMPT="1"
+        case $ENV_VAR in
+        TAS__SECURESIGN__FULCIO__OIDC_*)
+          if [ -z "${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID:-}" ] && [ "$ENV_VAR" != "TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID" ]; then
+            PROMPT="0"
+          fi
+          ;;
+        TPA__*)
+          if [ -z "${TPA__GUAC__PASSWORD:-}" ] && [ "$ENV_VAR" != "TPA__GUAC__PASSWORD" ]; then
+            PROMPT="0"
+          fi
+          ;;
+        *) ;;
+        esac
+        if [ "$PROMPT" == "1" ]; then
+          read -r -p "Enter value for $ENV_VAR: " VALUE
+        fi
         ;;
       esac
     else
@@ -228,6 +244,16 @@ values() {
     .developer-hub.app-config.integrations.github[0].apps[0].privateKey = \"$GITHUB__APP__PRIVATE_KEY\",
     .pipelines.pipelines-as-code.github.private-key = \"$GITHUB__APP__PRIVATE_KEY\"
     " "values.yaml" | envsubst >"private-values.yaml"
+
+  if [ -z "$TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID" ] || [ -z "$TAS__SECURESIGN__FULCIO__OIDC__TYPE" ] || [ -z "$TAS__SECURESIGN__FULCIO__OIDC__URL" ]; then
+    yq -i ".trusted-artifact-signer.securesign.fulcio.config = null" "private-values.yaml"
+  fi
+  if [ -z "$TAS__SECURESIGN__FULCIO__ORG_EMAIL" ]; then
+    yq -i ".trusted-artifact-signer = null" "private-values.yaml"
+  fi
+  if [ -z "$TPA__GUAC__PASSWORD" ]; then
+    yq -i ".trusted-profile-analyzer = null" "private-values.yaml"
+  fi
 }
 
 _get_versions() {
