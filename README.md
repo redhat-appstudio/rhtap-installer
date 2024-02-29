@@ -3,14 +3,14 @@
 This helm chart installs and configures the following projects/products :
 
 
-| Product | Installation    | Configuration   |
-| :---:   | :---: | :---: |
-| OpenShift GitOps | Operator `Subscription`   | Sets up an Argo CD in the `developer-argo` namespace for developer teams   |
-| OpenShift Pipelines | Operator  `Subscription` | (TODO) Enables Tekton Chains & sets up signing keys   |
-| Quay | (TODO) Operator `Subscription`  |    |
-| ACS | (TODO)   |    |
-| Trusted Artifact Signer | (TODO) Helm Dependency   |    |
-| Trusted Profile Analyzer | (TODO) Helm Dependecy   |    |
+| Product                   | Installation            | Configuration |
+| :---:                     | :---:                   | :---:         |
+| OpenShift GitOps          | Operator `Subscription` | Sets up the default Argo CD instance |
+| OpenShift Pipelines       | Operator `Subscription` | Enables Tekton Chains & sets up the signing secret |
+| Quay                      | (TODO)                  |    |
+| Advanced Cluster Security | (TODO)                  |    |
+| Trusted Artifact Signer   | Operator `Subscription` | Default operator install & SecureSign instance |
+| Trusted Profile Analyzer  | (TODO) Helm Dependecy   |    |
 
 
 # Try it
@@ -39,7 +39,7 @@ This helm chart installs and configures the following projects/products :
     
     If you've already added this, run a `helm repo update` time to time to pull the latest packages.
 
-2. Edit `values.yaml` to set your configuration parameters.
+2. Edit `values.yaml` to set your configuration parameters. You have the option to use `bin/make.sh values` to generate the configuration YAML.
 
 3. Install/upgrade RHTAP
 
@@ -68,7 +68,9 @@ This helm chart installs and configures the following projects/products :
 
     `helm uninstall --namespace rhtap installer`
 
-## UI ( a.k.a OpenShift Console )
+## UI ( a.k.a OpenShift Console - UNSUPPORTED)
+
+Currently unsupported as the user does not have the option to modify the default values.
 
 1. Add the Helm Chart Repository to OpenShift 
 
@@ -88,20 +90,19 @@ spec:
 <img width="1365" alt="image" src="https://user-images.githubusercontent.com/545280/283235252-c3dfc4d7-c11b-43ff-8a52-8b1321727b3e.png">
 
 
+# Development
 
-## Development
-
-### "Inner loop"
+## "Inner loop"
 
 1. Download/Clone this Git Repository: `git clone https://github.com/redhat-appstudio/rhtap-installer`.
 2. Install/upgrade the chart on your cluster: `./bin/make.sh apply -- --values values-private.yaml`
 3. Run tests: `./test/e2e.sh -- --values values-private.yaml`
 
-### Continuous integration
+## Continuous integration
 
 TODO
 
-### Release a new version of RHTAP
+## Release a new version of RHTAP
 
 ```
 $ git clone https://github.com/redhat-appstudio/rhtap-installer

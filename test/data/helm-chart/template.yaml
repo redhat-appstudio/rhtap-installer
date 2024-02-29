@@ -86,6 +86,22 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
+# Source: rhtap/templates/trusted-artifact-signer/subscription.yaml
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/rhtas-operator.openshift-operators: ""
+  name: rhtas-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: rhtas-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: rhtas-operator.v0.0.2
+---
 # Source: rhtap/templates/configure.yaml
 apiVersion: batch/v1
 kind: Job
@@ -1189,6 +1205,110 @@ spec:
               fi
               echo "OK"
             
+        
+              echo
+              echo "Configuration successful"
+        
+                
+        - name: configure-trusted-artifact-signer
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+          
+        
+              CHART="rhtap"
+        
+              echo -n "* Configure OIDC: "
+            
+              git clone https://github.com/securesign/sigstore-ocp.git >/dev/null
+              echo -n "."
+              oc apply --kustomize sigstore-ocp/keycloak/operator/base
+              echo -n "."
+              for CR in keycloaks keycloakclients keycloakrealms keycloakusers; do
+                while [ $(kubectl api-resources | grep -c "^$CR ") = "0" ] ; do
+                  echo -n "_"
+                  sleep 2
+                done
+                echo -n "."
+              done
+              oc apply --kustomize sigstore-ocp/keycloak/resources/base --dry-run=client -o yaml
+              oc apply --kustomize sigstore-ocp/keycloak/resources/base
+              echo -n "."
+              export FULCIO__OIDC__CLIENT_ID="trusted-artifact-signer"
+              export FULCIO__OIDC__TYPE="email"
+              FULCIO__OIDC__URL=""
+              while [ -z "$FULCIO__OIDC__URL" ]; do
+                FULCIO__OIDC__URL="$(kubectl get routes -n keycloak-system keycloak -o jsonpath="{.spec.host}" --ignore-not-found)"
+                sleep 2
+              done
+              export FULCIO__OIDC__URL="https://$FULCIO__OIDC__URL/auth/realms/trusted-artifact-signer"
+            
+              export FULCIO__ORG_EMAIL="${TAS__SECURESIGN__FULCIO__ORG_EMAIL}"
+              export FULCIO__ORG_NAME="${TAS__SECURESIGN__FULCIO__ORG_NAME}"
+              echo "OK"
+        
+              CRDS=( securesigns )
+              for CRD in "${CRDS[@]}"; do
+                echo -n "* Waiting for '$CRD' CRD: "
+                while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                  echo -n "_"
+                  sleep 2
+                done
+                echo "OK"
+              done
+        
+              echo -n "* Configure SecureSign instance: "
+              cat <<EOF | kubectl apply -f - >/dev/null
+              
+              apiVersion: rhtas.redhat.com/v1alpha1
+              kind: Securesign
+              metadata:
+                name: rhtap-securesign
+                labels:
+                  app.kubernetes.io/instance: securesign-sample
+                  app.kubernetes.io/name: securesign-sample
+                  app.kubernetes.io/part-of: trusted-artifact-signer
+                namespace: rhtap
+              spec:
+                fulcio:
+                  certificate:
+                    commonName: fulcio.hostname
+                    organizationEmail: ${FULCIO__ORG_EMAIL}
+                    organizationName: ${FULCIO__ORG_NAME}
+                  config:
+                    OIDCIssuers:
+                      "${FULCIO__OIDC__URL}":
+                        ClientID: ${FULCIO__OIDC__CLIENT_ID}
+                        IssuerURL: "${FULCIO__OIDC__URL}"
+                        Type: ${FULCIO__OIDC__TYPE}
+                  externalAccess:
+                    enabled: true
+                  monitoring: false
+                rekor:
+                  externalAccess:
+                    enabled: true
+                  signer:
+                    kms: secret
+                  monitoring: false
+                trillian:
+                  database:
+                    create: true
+                tuf:
+                  externalAccess:
+                    enabled: true
+                  keys:
+                    - name: rekor.pub
+                    - name: ctfe.pub
+                    - name: fulcio_v1.crt.pem
+                  port: 80
+              
+              EOF
+              echo "OK"
         
               echo
               echo "Configuration successful"

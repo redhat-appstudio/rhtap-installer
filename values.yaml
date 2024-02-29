@@ -149,7 +149,21 @@ pipelines:
       private-key: |
         ${GITHUB__APP__PRIVATE_KEY}
       webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
-
+trusted-artifact-signer:
+  enabled: true
+  operator:
+    channel: stable
+  securesign:
+    fulcio:
+      certificate:
+        commonName: fulcio.hostname
+        organizationEmail: ${TAS__SECURESIGN__FULCIO__ORG_EMAIL}
+        organizationName: ${TAS__SECURESIGN__FULCIO__ORG_NAME}
+      config:
+        OIDCIssuer:
+          ClientID: ${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID}
+          IssuerURL: '${TAS__SECURESIGN__FULCIO__OIDC__URL}'
+          Type: ${TAS__SECURESIGN__FULCIO__OIDC__TYPE}
 trusted-profile-analyzer:
   tracing:
     enabled: false
