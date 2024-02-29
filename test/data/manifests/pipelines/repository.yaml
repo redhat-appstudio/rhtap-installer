@@ -1,3 +1,4 @@
+---
 apiVersion: pipelinesascode.tekton.dev/v1alpha1
 kind: Repository
 metadata:

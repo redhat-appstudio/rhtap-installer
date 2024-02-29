@@ -186,6 +186,8 @@ release() {
 }
 
 template() {
+  echo "# yamllint disable rule:line-length"
+  echo "# yamllint disable rule:trailing-spaces"
   $helm template "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}" |
     {
       sed 's|^  backend-secret:.*|  backend-secret: "#masked#"|' |

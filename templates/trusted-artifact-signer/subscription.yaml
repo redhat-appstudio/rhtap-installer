@@ -1,5 +1,5 @@
-
-{{ if and (index .Values "trusted-artifact-signer") (eq (index .Values "trusted-artifact-signer" "enabled") true) }}
+---
+{{if and (index .Values "trusted-artifact-signer") (eq (index .Values "trusted-artifact-signer" "enabled") true)}}
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -8,10 +8,10 @@ metadata:
   name: rhtas-operator
   namespace: openshift-operators
 spec:
-  channel: {{ index .Values "trusted-artifact-signer" "operator" "channel" }}
+  channel: {{ index .Values "trusted-artifact-signer" "operator" "channel"}}
   installPlanApproval: Automatic
   name: rhtas-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
   startingCSV: rhtas-operator.v0.0.2
-{{ end }}
+{{ end}}
