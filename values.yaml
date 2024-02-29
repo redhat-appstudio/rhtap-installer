@@ -13,7 +13,7 @@ openshift-gitops:
     - default
 openshift-pipelines:
   enabled: true
-  channel: pipelines-1.13
+  channel: pipelines-1.14
 # Private values
 # You may want to override those variables in another file (e.g. values-private.yaml)
 acs:
