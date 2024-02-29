@@ -111,7 +111,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.8.3"
+    helm.sh/chart: "rhtap-0.9.0"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -124,7 +124,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.8.3"
+        helm.sh/chart: "rhtap-0.9.0"
     spec:
       containers:
       
@@ -498,6 +498,9 @@ spec:
                             url: https://kubernetes.default.svc
                           type: config
                         customResources:
+                        - apiVersion: v1
+                          group: route.openshift.io
+                          plural: routes
                         - apiVersion: v1
                           group: tekton.dev
                           plural: pipelineruns
@@ -1558,7 +1561,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.8.3"
+    helm.sh/chart: "rhtap-0.9.0"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1570,7 +1573,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.8.3"
+        helm.sh/chart: "rhtap-0.9.0"
     spec:
       containers:
                 
