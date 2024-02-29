@@ -37,7 +37,7 @@ set_defaults() {
     cd "$SCRIPT_DIR/.." >/dev/null
     pwd
   )"
-  export NAMESPACE="rhtap-installer"
+  export NAMESPACE="rhtap"
 }
 
 parse_args() {
