@@ -46,6 +46,7 @@ spec:
         {{ include "rhtap.gitops.configure" . | indent 8 }}
         {{ include "rhtap.namespace.configure" . | indent 8 }}
         {{ include "rhtap.pipelines.configure" . | indent 8 }}
+        {{ include "rhtap.trusted-artifact-signer.configure" . | indent 8 }}
         {{ include "rhtap.trusted-profile-analyzer.configure" . | indent 8 }}
       restartPolicy: Never
       serviceAccountName: helm-manager
