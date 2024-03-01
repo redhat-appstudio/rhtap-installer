@@ -1,3 +1,4 @@
+---
 apiVersion: v2
 name: rhtap
 description: A Helm chart for Kubernetes

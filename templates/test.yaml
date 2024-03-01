@@ -1,12 +1,13 @@
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ .Chart.Name }}-{{ .Release.Name }}-test"
+  name: "{{.Chart.Name}}-{{.Release.Name}}-test"
   labels:
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
-    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    app.kubernetes.io/managed-by: {{.Release.Service | quote}}
+    app.kubernetes.io/instance: {{.Release.Name | quote}}
+    app.kubernetes.io/version: {{.Chart.AppVersion}}
+    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -14,13 +15,13 @@ metadata:
 spec:
   template:
     metadata:
-      name: "{{ .Release.Name }}-test"
+      name: "{{.Release.Name}}-test"
       labels:
-        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-        app.kubernetes.io/instance: {{ .Release.Name | quote }}
-        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        app.kubernetes.io/managed-by: {{.Release.Service | quote}}
+        app.kubernetes.io/instance: {{.Release.Name | quote}}
+        helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
     spec:
       containers:
-        {{ include "rhtap.namespace.test" . | indent 8 }}
+        {{include "rhtap.namespace.test" . | indent 8}}
       restartPolicy: Never
       serviceAccountName: helm-manager

@@ -1,3 +1,5 @@
+# yamllint disable rule:line-length
+# yamllint disable rule:trailing-spaces
 ---
 # Source: rhtap/templates/developer-hub/serviceaccount.yaml
 apiVersion: v1
