@@ -1,8 +1,10 @@
-{{ define "rhtap.namespace.dev_setup_pipelinerun" }}
+{{define "rhtap.namespace.dev_setup_pipelinerun"}}
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: {{ .Chart.Name }}-dev-namespace-setup-
+  generateName: {{.Chart.Name}}-dev-namespace-setup-
+  annotations:
+    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
 spec:
   pipelineSpec:
     tasks:
@@ -13,12 +15,7 @@ spec:
             - name: kind
               value: task
             - name: name
-              value: {{ .Chart.Name }}-dev-namespace-setup
+              value: {{.Chart.Name}}-dev-namespace-setup
             - name: namespace
-              value: {{ .Release.Namespace }}
-        params:
-          - name: acs_central_endpoint
-            value: {{ (index .Values "acs" "central-endpoint") }}
-          - name: acs_api_token
-            value: {{ (index .Values "acs" "api-token") }}
-{{ end }}
+              value: {{.Release.Namespace}}
+{{end}}

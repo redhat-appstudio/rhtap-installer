@@ -1,0 +1,14 @@
+{{ define "rhtap.namespace.developer.configure" }}
+NAMESPACE_LIST=(
+{{range .Values.debug.namespaces}} {{. | quote}}{{end}}
+)
+
+for NAMESPACE in "${NAMESPACE_LIST[@]}"; do
+  echo -n "* Configuring '$NAMESPACE' namespace: "
+  echo "1"
+  cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $NAMESPACE|" | kubectl create --filename -
+{{include "rhtap.namespace.dev_setup_pipelinerun" .}}
+EOF
+  echo "OK"
+done
+{{end}}

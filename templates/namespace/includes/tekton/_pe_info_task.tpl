@@ -3,6 +3,8 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: {{ .Chart.Name }}-pe-info
+  annotations:
+    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
 spec:
   description: >-
     Display the configuration information needed by the Platform
