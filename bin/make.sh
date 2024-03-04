@@ -130,7 +130,7 @@ delete() {
 }
 
 apply() {
-  $helm upgrade --install --create-namespace --timeout 10m "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
+  $helm upgrade --install --create-namespace --timeout=20m "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
   $helm list
 }
 
@@ -219,11 +219,6 @@ values() {
         case $ENV_VAR in
         TAS__SECURESIGN__FULCIO__OIDC_*)
           if [ -z "${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID:-}" ] && [ "$ENV_VAR" != "TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID" ]; then
-            PROMPT="0"
-          fi
-          ;;
-        TPA__*)
-          if [ -z "${TPA__GUAC__PASSWORD:-}" ] && [ "$ENV_VAR" != "TPA__GUAC__PASSWORD" ]; then
             PROMPT="0"
           fi
           ;;
