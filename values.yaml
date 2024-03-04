@@ -217,27 +217,20 @@ trusted-profile-analyzer:
         # Following the same approach taken for Ingress routes on OpenShift,
         # making sure the endpoint is "re-encrypted" (`reencrypt`).
         route.openshift.io/termination: reencrypt
+    # PostgreSQL database for TPA and GUAC.
     postgresql:
+      auth:
+        # PostgreSQL's administrator (postgres) password.
+        postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
+        # Additional user for TPA's database.
+        username: trusted-profile-analyzer
+        # TPA's database user password.
+        password: ${TPA__POSTGRES__TPA_PASSWORD}
       primary:
         containerSecurityContext:
           enabled: false
         podSecurityContext:
           enabled: false
-  # PostgreSQL database for TPA and GUAC.
-  postgres:
-    enabled: true
-    auth:
-      # PostgreSQL's administrator (postgres) password.
-      postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
-      # Additional user for TPA's database.
-      username: trusted-profile-analyzer
-      # TPA's database user password.
-      password: ${TPA__POSTGRES__TPA_PASSWORD}
-    primary:
-      podSecurityContext:
-        enabled: false
-      containerSecurityContext:
-        enabled: false
   # TPA's event-bus using Kafka.
   kafka:
     enabled: true

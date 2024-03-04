@@ -3,15 +3,15 @@
 This helm chart installs and configures the following projects/products :
 
 
-| Product                   | Installation            | Configuration |
-| :---:                     | :---:                   | :---:         |
-| OpenShift GitOps          | Operator `Subscription` | Sets up the default Argo CD instance |
-| OpenShift Pipelines       | Operator `Subscription` | Enables Tekton Chains & sets up the signing secret |
-| Quay                      | (TODO)                  |    |
-| Advanced Cluster Security | (TODO)                  |    |
-| Trusted Artifact Signer   | Operator `Subscription` | Default operator install & SecureSign instance |
-| Trusted Profile Analyzer  | (TODO) Helm Dependecy   |    |
-
+|          Product          |                       Installation                        |                   Configuration                    |
+| :-----------------------: | :-------------------------------------------------------: | :------------------------------------------------: |
+|     OpenShift GitOps      |                  Operator `Subscription`                  |        Sets up the default Argo CD instance        |
+|    OpenShift Pipelines    |                  Operator `Subscription`                  | Enables Tekton Chains & sets up the signing secret |
+|           Quay            |                          (TODO)                           |                                                    |
+| Advanced Cluster Security |                          (TODO)                           |                                                    |
+|  Trusted Artifact Signer  |                  Operator `Subscription`                  |   Default operator install & SecureSign instance   |
+| Trusted Profile Analyzer  |                  (TODO) Helm Dependency                   |                                                    |
+| Trusted Profile Analyzer  | Rolled out via Helm Charts `tpa-infrastructure` and `tpa` |                                                    |
 
 # Try it
 

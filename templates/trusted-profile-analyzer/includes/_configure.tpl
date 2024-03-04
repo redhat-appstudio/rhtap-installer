@@ -46,7 +46,7 @@
       git clone https://github.com/trustification/trustification.git
       pushd trustification &&
         # Desired commit for trustification charts.
-        git reset --hard 8ae6b2c &&
+        git reset --hard 9abcf0a6 &&
           # Adding the bitnami repository for "trustification-infrastructure"
           # dependencies.
           helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -66,8 +66,8 @@
             if ! helm upgrade \
               --install \
               --namespace=${NAMESPACE} \
-              --values=${TRUSTIFICATION_VALUES} \
               --timeout=10m \
+              --values=${TRUSTIFICATION_VALUES} \
               --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
               --set-string=appDomain=${APP_DOMAIN} \
               --debug \
@@ -80,8 +80,8 @@
             if ! helm upgrade \
                 --install \
                 --namespace=${NAMESPACE} \
-                --values=${TRUSTIFICATION_VALUES} \
                 --timeout=10m \
+                --values=${TRUSTIFICATION_VALUES} \
                 --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
                 --set-string appDomain=${APP_DOMAIN} \
                 --debug \
