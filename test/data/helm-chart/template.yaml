@@ -129,193 +129,6 @@ spec:
         helm.sh/chart: "rhtap-0.9.2"
     spec:
       containers:
-                
-        - name: configure-namespace
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-            
-        
-                    
-              echo -n "* Waiting for openshift-pipelines: "
-              while ! kubectl get namespace openshift-pipelines --ignore-not-found > /dev/null; do
-                echo -n "."
-                sleep 2
-              done
-              echo "OK"
-              
-              CRDS=( pipelines tasks )
-              for CRD in "${CRDS[@]}"; do
-                echo -n "* Waiting for '$CRD' CRD: "
-                while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
-                  echo -n "."
-                  sleep 2
-                done
-                echo "OK"
-              done
-              
-              echo -n "* Waiting for openshift-pipelines webhook service: "
-              while true; do
-                # Try instanciating a task
-                cat << EOF | kubectl apply -f - --dry-run=server >/dev/null 2>&1 && break
-              apiVersion: tekton.dev/v1
-              kind: Task
-              metadata:
-                name: deleteme-task
-              spec:
-                description: >-
-                  Test task to validate that Tekton is installed.
-                steps:
-                  - image: "k8s.gcr.io/hyperkube:v1.12.1"
-                    name: setup
-                    script: |
-                      #!/usr/bin/env bash
-                      echo "OK"
-                    workingDir: /tmp
-              EOF
-                echo -n "."
-                sleep 2
-              done
-              echo "OK"
-              
-        
-              echo -n "* Configuring Tasks: "
-              cat << EOF | kubectl apply -f - >/dev/null
-                      
-                apiVersion: tekton.dev/v1
-                kind: Task
-                metadata:
-                  name: rhtap-dev-namespace-setup
-                  annotations:
-                    helm.sh/chart: "rhtap-0.9.2"
-                spec:
-                  description: >-
-                    Create the required resources for rhtap tasks to run in a namespace.
-                  params:
-                    - default: ${ACS__CENTRAL_ENDPOINT}
-                      description: |
-                        Secret containing the address:port tuple for StackRox Central
-                        (example - rox.stackrox.io:443)
-                      name: acs_central_endpoint
-                      type: string
-                    - default: ${ACS__API_TOKEN}
-                      description: |
-                        Secret containing the StackRox API token with CI permissions
-                      name: acs_api_token
-                      type: string
-                  steps:
-                    - env:
-                      - name: ROX_API_TOKEN
-                        value: \$(params.acs_api_token)
-                      - name: ROX_ENDPOINT
-                        value: \$(params.acs_central_endpoint)
-                      image: "k8s.gcr.io/hyperkube:v1.12.1"
-                      name: setup
-                      script: |
-                        #!/usr/bin/env bash
-                        set -o errexit
-                        set -o nounset
-                        set -o pipefail
-                        
-                        SECRET_NAME="rox-api-token"
-                        if [ -n "\$ROX_API_TOKEN" ] && [ -n "\$ROX_ENDPOINT" ]; then
-                          echo -n "* \$SECRET_NAME secret: "
-                          kubectl create secret generic "\$SECRET_NAME" \
-                            --from-literal=rox_central_endpoint=\$ROX_ENDPOINT \
-                            --from-literal=rox_api_token=\$ROX_API_TOKEN \
-                            --dry-run -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.9.2" >/dev/null
-                          echo "OK"
-                        fi
-                
-                        echo "Namespace is ready to execute rhtap pipelines"
-                      workingDir: /tmp
-                
-              EOF
-              echo -n "."
-              cat << EOF | kubectl apply -f - >/dev/null
-                      
-                apiVersion: tekton.dev/v1
-                kind: Task
-                metadata:
-                  name: rhtap-pe-info
-                  annotations:
-                    helm.sh/chart: "rhtap-0.9.2"
-                spec:
-                  description: >-
-                    Display the configuration information needed by the Platform
-                    Engineer to configure the RHDH.
-                  steps:
-                    - env:
-                      - name: ARGOCD_HOSTNAME
-                        valueFrom:
-                          secretKeyRef:
-                            name: rhtap-argocd-secret
-                            key: hostname
-                      - name: ARGOCD_TOKEN
-                        valueFrom:
-                          secretKeyRef:
-                            name: rhtap-argocd-secret
-                            key: api-token
-                      - name: DEVELOPER_HUB_HOSTNAME
-                        valueFrom:
-                          secretKeyRef:
-                            name: rhtap-developer-hub-secret
-                            key: hostname
-                      - name: PIPELINES_PAC_GH_SECRET
-                        valueFrom:
-                          secretKeyRef:
-                            name: rhtap-pipelines-secret
-                            key: webhook-github-secret
-                      - name: PIPELINES_PAC_URL
-                        valueFrom:
-                          secretKeyRef:
-                            name: rhtap-pipelines-secret
-                            key: webhook-url
-                      image: "k8s.gcr.io/hyperkube:v1.12.1"
-                      name: setup
-                      script: |
-                        #!/usr/bin/env bash
-                        set -o errexit
-                        set -o nounset
-                        set -o pipefail
-                
-                        # Output information in YAML so that it can easily be
-                        # post-processed if necessary.
-                        cat << _EOF_
-                        gitops:
-                          api-token: \$ARGOCD_TOKEN
-                          hostname: \$ARGOCD_HOSTNAME
-                        developer-hub:
-                          hostname: \$DEVELOPER_HUB_HOSTNAME
-                        pipelines:
-                          pipelines-as-code:
-                            github:
-                              # The docs URL explains how to setup the GitHub Application.
-                              # Set dummy values for the homepage URL and webhook URL, and
-                              # replace them with the final values after the chart is installed.
-                              docs-url: https://pipelinesascode.com/docs/install/github_apps/
-                              homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
-                              callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
-                              webhook-url: \$PIPELINES_PAC_URL
-                              secret: \$PIPELINES_PAC_GH_SECRET
-                        _EOF_
-                      workingDir: /tmp
-                
-              EOF
-              echo -n "."
-              echo "OK"
-        
-            
-        
-              echo
-              echo "Configuration successful"
-        
       
                 
         - name: configure-acs
@@ -1105,6 +918,227 @@ spec:
               
               EOF
               echo "OK"
+        
+              echo
+              echo "Configuration successful"
+        
+                
+        - name: configure-namespace
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+            
+        
+                    
+              echo -n "* Waiting for openshift-pipelines: "
+              while ! kubectl get namespace openshift-pipelines --ignore-not-found > /dev/null; do
+                echo -n "."
+                sleep 2
+              done
+              echo "OK"
+              
+              CRDS=( pipelines tasks )
+              for CRD in "${CRDS[@]}"; do
+                echo -n "* Waiting for '$CRD' CRD: "
+                while [ $(kubectl api-resources | grep -c "^$CRD ") = "0" ] ; do
+                  echo -n "."
+                  sleep 2
+                done
+                echo "OK"
+              done
+              
+              echo -n "* Waiting for openshift-pipelines webhook service: "
+              while true; do
+                # Try instanciating a task
+                cat << EOF | kubectl apply -f - --dry-run=server >/dev/null 2>&1 && break
+              apiVersion: tekton.dev/v1
+              kind: Task
+              metadata:
+                name: deleteme-task
+              spec:
+                description: >-
+                  Test task to validate that Tekton is installed.
+                steps:
+                  - image: "k8s.gcr.io/hyperkube:v1.12.1"
+                    name: setup
+                    script: |
+                      #!/usr/bin/env bash
+                      echo "OK"
+                    workingDir: /tmp
+              EOF
+                echo -n "."
+                sleep 2
+              done
+              echo "OK"
+              
+        
+              echo -n "* Configuring Tasks: "
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1
+                kind: Task
+                metadata:
+                  name: rhtap-dev-namespace-setup
+                  annotations:
+                    helm.sh/chart: "rhtap-0.9.2"
+                spec:
+                  description: >-
+                    Create the required resources for rhtap tasks to run in a namespace.
+                  params:
+                    - default: ${ACS__CENTRAL_ENDPOINT}
+                      description: |
+                        StackRox Central address:port tuple
+                        (example - rox.stackrox.io:443)
+                      name: acs_central_endpoint
+                      type: string
+                    - default: ${ACS__API_TOKEN}
+                      description: |
+                        StackRox API token with CI permissions
+                      name: acs_api_token
+                      type: string
+                    - default: ${QUAY__TOKEN}
+                      description: |
+                        Image registry token
+                      name: quay_token
+                      type: string
+                  steps:
+                    - env:
+                      - name: ROX_API_TOKEN
+                        value: \$(params.acs_api_token)
+                      - name: ROX_ENDPOINT
+                        value: \$(params.acs_central_endpoint)
+                      - name: QUAY_TOKEN
+                        value: \$(params.quay_token)
+                      image: "quay.io/codeready-toolchain/oc-client-base:latest"
+                      name: setup
+                      script: |
+                        #!/usr/bin/env bash
+                        set -o errexit
+                        set -o nounset
+                        set -o pipefail
+                      
+                        
+                        SECRET_NAME="rhtap-image-registry-token"
+                        if [ -n "\$QUAY_TOKEN" ]; then
+                          echo -n "* \$SECRET_NAME secret: "
+                          DATA=$(mktemp)
+                          echo -n "\$QUAY_TOKEN" | base64 -d >"\$DATA"
+                          kubectl create secret docker-registry "\$SECRET_NAME" \
+                            --from-file=.dockerconfigjson="\$DATA" --dry-run=client -o yaml | \
+                            kubectl apply --filename - --overwrite=true >/dev/null || sleep 600
+                          rm "\$DATA"
+                          echo -n "."
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.9.2" >/dev/null
+                          echo -n "."
+                          while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
+                            sleep 2
+                            echo -n "_"
+                          done
+                          kubectl patch serviceaccounts pipeline --patch "
+                        secrets:
+                          - name: \$SECRET_NAME
+                        imagePullSecrets:
+                          - name: \$SECRET_NAME
+                        " >/dev/null
+                          echo "OK"
+                          kubectl get serviceaccount pipeline -o yaml
+                        fi
+                        
+                        SECRET_NAME="rox-api-token"
+                        if [ -n "\$ROX_API_TOKEN" ] && [ -n "\$ROX_ENDPOINT" ]; then
+                          echo -n "* \$SECRET_NAME secret: "
+                          kubectl create secret generic "\$SECRET_NAME" \
+                            --from-literal=rox_central_endpoint=\$ROX_ENDPOINT \
+                            --from-literal=rox_api_token=\$ROX_API_TOKEN \
+                            --dry-run -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.9.2" >/dev/null
+                          echo "OK"
+                        fi
+                
+                        echo "Namespace is ready to execute rhtap pipelines"
+                      workingDir: /tmp
+                
+              EOF
+              echo -n "."
+              cat << EOF | kubectl apply -f - >/dev/null
+                      
+                apiVersion: tekton.dev/v1
+                kind: Task
+                metadata:
+                  name: rhtap-pe-info
+                  annotations:
+                    helm.sh/chart: "rhtap-0.9.2"
+                spec:
+                  description: >-
+                    Display the configuration information needed by the Platform
+                    Engineer to configure the RHDH.
+                  steps:
+                    - env:
+                      - name: ARGOCD_HOSTNAME
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-argocd-secret
+                            key: hostname
+                      - name: ARGOCD_TOKEN
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-argocd-secret
+                            key: api-token
+                      - name: DEVELOPER_HUB_HOSTNAME
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-developer-hub-secret
+                            key: hostname
+                      - name: PIPELINES_PAC_GH_SECRET
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-pipelines-secret
+                            key: webhook-github-secret
+                      - name: PIPELINES_PAC_URL
+                        valueFrom:
+                          secretKeyRef:
+                            name: rhtap-pipelines-secret
+                            key: webhook-url
+                      image: "k8s.gcr.io/hyperkube:v1.12.1"
+                      name: setup
+                      script: |
+                        #!/usr/bin/env bash
+                        set -o errexit
+                        set -o nounset
+                        set -o pipefail
+                
+                        # Output information in YAML so that it can easily be
+                        # post-processed if necessary.
+                        cat << _EOF_
+                        gitops:
+                          api-token: \$ARGOCD_TOKEN
+                          hostname: \$ARGOCD_HOSTNAME
+                        developer-hub:
+                          hostname: \$DEVELOPER_HUB_HOSTNAME
+                        pipelines:
+                          pipelines-as-code:
+                            github:
+                              # The docs URL explains how to setup the GitHub Application.
+                              # Set dummy values for the homepage URL and webhook URL, and
+                              # replace them with the final values after the chart is installed.
+                              docs-url: https://pipelinesascode.com/docs/install/github_apps/
+                              homepage-url: https://\$DEVELOPER_HUB_HOSTNAME
+                              callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
+                              webhook-url: \$PIPELINES_PAC_URL
+                              secret: \$PIPELINES_PAC_GH_SECRET
+                        _EOF_
+                      workingDir: /tmp
+                
+              EOF
+              echo -n "."
+              echo "OK"
+        
+            
         
               echo
               echo "Configuration successful"

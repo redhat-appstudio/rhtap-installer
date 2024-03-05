@@ -11,14 +11,19 @@ spec:
   params:
     - default: {{index .Values "acs" "central-endpoint"}}
       description: |
-        Secret containing the address:port tuple for StackRox Central
+        StackRox Central address:port tuple
         (example - rox.stackrox.io:443)
       name: acs_central_endpoint
       type: string
     - default: {{index .Values "acs" "api-token"}}
       description: |
-        Secret containing the StackRox API token with CI permissions
+        StackRox API token with CI permissions
       name: acs_api_token
+      type: string
+    - default: {{index .Values "quay" "token"}}
+      description: |
+        Image registry token
+      name: quay_token
       type: string
   steps:
     - env:
@@ -26,13 +31,44 @@ spec:
         value: \$(params.acs_api_token)
       - name: ROX_ENDPOINT
         value: \$(params.acs_central_endpoint)
-      image: "k8s.gcr.io/hyperkube:v1.12.1"
+      - name: QUAY_TOKEN
+        value: \$(params.quay_token)
+      image: "quay.io/codeready-toolchain/oc-client-base:latest"
       name: setup
       script: |
         #!/usr/bin/env bash
         set -o errexit
         set -o nounset
         set -o pipefail
+      {{if eq .Values.debug.script true}}
+        set -x
+      {{end}}
+        
+        SECRET_NAME="rhtap-image-registry-token"
+        if [ -n "\$QUAY_TOKEN" ]; then
+          echo -n "* \$SECRET_NAME secret: "
+          DATA=$(mktemp)
+          echo -n "\$QUAY_TOKEN" | base64 -d >"\$DATA"
+          kubectl create secret docker-registry "\$SECRET_NAME" \
+            --from-file=.dockerconfigjson="\$DATA" --dry-run=client -o yaml | \
+            kubectl apply --filename - --overwrite=true >/dev/null || sleep 600
+          rm "\$DATA"
+          echo -n "."
+          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart={{.Chart.Name}}-{{.Chart.Version}}" >/dev/null
+          echo -n "."
+          while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
+            sleep 2
+            echo -n "_"
+          done
+          kubectl patch serviceaccounts pipeline --patch "
+        secrets:
+          - name: \$SECRET_NAME
+        imagePullSecrets:
+          - name: \$SECRET_NAME
+        " >/dev/null
+          echo "OK"
+          kubectl get serviceaccount pipeline -o yaml
+        fi
         
         SECRET_NAME="rox-api-token"
         if [ -n "\$ROX_API_TOKEN" ] && [ -n "\$ROX_ENDPOINT" ]; then
