@@ -25,6 +25,10 @@
       echo -n "."
       echo "OK"
 
+    {{if .Values.debug.namespaces}}
+      {{include "rhtap.namespace.developer.configure" . | indent 6}}
+    {{ end }}
+
       echo
       echo "Configuration successful"
 {{ end }}

@@ -3,6 +3,8 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   generateName: rhtap-test-config-
+  annotations:
+    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
 spec:
   pipelineSpec:
     tasks:
