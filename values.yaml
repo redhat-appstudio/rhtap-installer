@@ -151,6 +151,8 @@ pipelines:
       private-key: |
         ${GITHUB__APP__PRIVATE_KEY}
       webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
+quay:
+  token: ${QUAY__TOKEN}  # Token to push images.
 trusted-artifact-signer:
   enabled: true
   operator:
