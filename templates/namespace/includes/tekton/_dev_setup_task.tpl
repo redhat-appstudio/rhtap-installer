@@ -9,23 +9,23 @@ spec:
   description: >-
     Create the required resources for {{.Chart.Name}} tasks to run in a namespace.
   params:
-    - default: {{index .Values "openshift-gitops" "git-token"}}
+    - default: {{index .Values "openshift-gitops" "git-token" | replace "$" "\\$"}}
       description: |
         Git token
       name: git_token
       type: string
-    - default: {{index .Values "quay" "token"}}
+    - default: {{index .Values "quay" "token" | replace "$" "\\$"}}
       description: |
         Image registry token
       name: quay_token
       type: string
-    - default: {{index .Values "acs" "central-endpoint"}}
+    - default: {{index .Values "acs" "central-endpoint" | replace "$" "\\$"}}
       description: |
         StackRox Central address:port tuple
         (example - rox.stackrox.io:443)
       name: acs_central_endpoint
       type: string
-    - default: {{index .Values "acs" "api-token"}}
+    - default: {{index .Values "acs" "api-token" | replace "$" "\\$"}}
       description: |
         StackRox API token with CI permissions
       name: acs_api_token
