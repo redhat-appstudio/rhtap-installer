@@ -38,17 +38,16 @@
       done
       echo "OK"
 
-      echo -n "* Configure ArgoCD default instance: "
-      # 'while' loop is necessary because sometimes the patch was failing
-      # even though the resource was just verified to exist
-      while ! kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '{{ include "rhtap.argocd.configuration" . | indent 8 }}' >/dev/null 2>&1; do
-        echo -n "."
-        sleep 3
-      done
-      echo "OK"
+      RHTAP_ARGOCD_NAMESPACE="{{ .Release.Namespace}}"
+      RHTAP_ARGOCD_INSTANCE="{{ .Chart.Name }}-argocd"
+
+      echo -n "* Creating ArgoCD instance for RHTAP: "
+      cat <<EOF | kubectl apply -n "${RHTAP_ARGOCD_NAMESPACE}" -f -
+      {{ include "rhtap.include.argocd" . | indent 6 }}
+      EOF
 
       echo -n "* ArgoCD dashboard: "
-      test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "openshift-gitops-server" --ignore-not-found -o jsonpath={.spec.host}"
+      test_cmd="kubectl get route -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-server" --ignore-not-found -o jsonpath={.spec.host}"
       ARGOCD_HOSTNAME="$(${test_cmd})"
       until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
         echo -n "."
@@ -59,7 +58,7 @@
 
       echo -n " * ArgoCD admin user: "
       if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-          ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "openshift-gitops-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+          ARGOCD_PASSWORD="$(kubectl get secret -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
           ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
           echo -n "."
           ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"

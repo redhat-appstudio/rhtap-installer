@@ -1,4 +1,5 @@
 {{ define "rhtap.trusted-artifact-signer.configure" }}
+{{ if (index .Values "trusted-artifact-signer") }}
 - name: configure-trusted-artifact-signer
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -65,4 +66,5 @@
 
       echo
       echo "Configuration successful"
+{{ end }}
 {{ end }}
