@@ -129,13 +129,29 @@
         kubectl apply -f developer-hub-app-config.new.yaml
         echo "OK"
         echo -n "* Restarting Developer Hub: "
-        kubectl delete pods -l "app.kubernetes.io/component=backstage"
+        ##################################################
+        # This should help with DB migration issues.
+        # Ultimately this should be a bug on DH, as the node could go down
+        # unexpectedly when the pod starts.
+        #
+        until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
+          echo -n "_"
+          sleep 3
+        done
+        echo -n "."
+        for _ in $(seq 1 20); do
+          echo -n "_"
+          sleep 3
+        done
+        #
+        ##################################################
+        kubectl delete pods -l "app.kubernetes.io/component=backstage" >/dev/null
       fi
       echo "OK"
 
       echo -n "* Waiting for UI: "
       until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
-        echo -n "."
+        echo -n "_"
         sleep 3
       done
       echo "OK"

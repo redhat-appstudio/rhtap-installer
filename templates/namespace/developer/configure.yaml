@@ -5,8 +5,7 @@ NAMESPACE_LIST=(
 
 for NAMESPACE in "${NAMESPACE_LIST[@]}"; do
   echo -n "* Configuring '$NAMESPACE' namespace: "
-  echo "1"
-  cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $NAMESPACE|" | kubectl create --filename -
+  cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $NAMESPACE|" | kubectl create --filename - >/dev/null
 {{include "rhtap.namespace.dev_setup_pipelinerun" .}}
 EOF
   echo "OK"

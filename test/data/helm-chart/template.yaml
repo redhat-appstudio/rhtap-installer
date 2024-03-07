@@ -74,6 +74,10 @@ spec:
   name: openshift-gitops-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
+  config:
+    env:
+      - name: ARGOCD_CLUSTER_CONFIG_NAMESPACES
+        value: openshift-gitops,rhtap
 ---
 # Source: rhtap/templates/openshift-pipelines/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
@@ -541,7 +545,6 @@ spec:
                 SECRET_NAME=$(kubectl get secrets --namespace "$NAMESPACE" -o name | grep rhdh-kubernetes-plugin-token- | cut -d/ -f2 | head -1)
                 kubectl get secret --namespace "$NAMESPACE" "$SECRET_NAME" -o jsonpath={.data.token} | base64 -d
               )
-              echo "K8S_SA_TOKEN=$K8S_SA_TOKEN"
               yq -i '
                 (
                   (
@@ -727,13 +730,29 @@ spec:
                 kubectl apply -f developer-hub-app-config.new.yaml
                 echo "OK"
                 echo -n "* Restarting Developer Hub: "
-                kubectl delete pods -l "app.kubernetes.io/component=backstage"
+                ##################################################
+                # This should help with DB migration issues.
+                # Ultimately this should be a bug on DH, as the node could go down
+                # unexpectedly when the pod starts.
+                #
+                until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
+                  echo -n "_"
+                  sleep 3
+                done
+                echo -n "."
+                for _ in $(seq 1 20); do
+                  echo -n "_"
+                  sleep 3
+                done
+                #
+                ##################################################
+                kubectl delete pods -l "app.kubernetes.io/component=backstage" >/dev/null
               fi
               echo "OK"
         
               echo -n "* Waiting for UI: "
               until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
-                echo -n "."
+                echo -n "_"
                 sleep 3
               done
               echo "OK"
@@ -779,33 +798,145 @@ spec:
               done
               echo "OK"
         
-              echo -n "* Configure ArgoCD default instance: "
-              # 'while' loop is necessary because sometimes the patch was failing
-              # even though the resource was just verified to exist
-              while ! kubectl patch argocd -n "$ARGOCD_NAMESPACE" "openshift-gitops" --type 'merge' --patch '        
-                {
-                  "spec": {
-                    "server": {
-                      "route":{
-                        "tls": {
-                          "insecureEdgeTerminationPolicy": "Redirect",
-                          "termination": "reencrypt"
-                        }
-                      }
-                    },
-                    "extraConfig": {
-                      "accounts.admin": "apiKey, login"
-                    }
-                  }
-                }
-                ' >/dev/null 2>&1; do
-                echo -n "."
-                sleep 3
-              done
-              echo "OK"
+              RHTAP_ARGOCD_NAMESPACE="rhtap"
+              RHTAP_ARGOCD_INSTANCE="rhtap-argocd"
+        
+              echo -n "* Creating ArgoCD instance for RHTAP: "
+              cat <<EOF | kubectl apply -n "${RHTAP_ARGOCD_NAMESPACE}" -f -
+                    
+              ---
+              apiVersion: argoproj.io/v1beta1
+              kind: ArgoCD
+              metadata:
+                name: rhtap-argocd
+              spec:
+                server:
+                  autoscale:
+                    enabled: false
+                  grpc:
+                    ingress:
+                      enabled: false
+                  ingress:
+                    enabled: false
+                  resources:
+                    limits:
+                      cpu: 500m
+                      memory: 256Mi
+                    requests:
+                      cpu: 125m
+                      memory: 128Mi
+                  route:
+                    enabled: true
+                    tls:
+                      insecureEdgeTerminationPolicy: Redirect
+                      termination: reencrypt
+                  service:
+                    type: ''
+                grafana:
+                  enabled: false
+                  ingress:
+                    enabled: false
+                  resources:
+                    limits:
+                      cpu: 500m
+                      memory: 256Mi
+                    requests:
+                      cpu: 250m
+                      memory: 128Mi
+                  route:
+                    enabled: false
+                monitoring:
+                  enabled: false
+                notifications:
+                  enabled: false
+                prometheus:
+                  enabled: false
+                  ingress:
+                    enabled: false
+                  route:
+                    enabled: false
+                initialSSHKnownHosts: {}
+                sso:
+                  dex:
+                    openShiftOAuth: true
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 250m
+                        memory: 128Mi
+                  provider: dex
+                applicationSet:
+                  resources:
+                    limits:
+                      cpu: '2'
+                      memory: 1Gi
+                    requests:
+                      cpu: 250m
+                      memory: 512Mi
+                  webhookServer:
+                    ingress:
+                      enabled: false
+                    route:
+                      enabled: false
+                rbac:
+                  defaultPolicy: ''
+                  policy: |
+                    g, system:cluster-admins, role:admin
+                    g, cluster-admins, role:admin
+                  scopes: '[groups]'
+                repo:
+                  resources:
+                    limits:
+                      cpu: '1'
+                      memory: 1Gi
+                    requests:
+                      cpu: 250m
+                      memory: 256Mi
+                resourceExclusions: |
+                  - apiGroups:
+                    - tekton.dev
+                    clusters:
+                    - '*'
+                    kinds:
+                    - TaskRun
+                    - PipelineRun
+                ha:
+                  enabled: false
+                  resources:
+                    limits:
+                      cpu: 500m
+                      memory: 256Mi
+                    requests:
+                      cpu: 250m
+                      memory: 128Mi
+                tls:
+                  ca: {}
+                redis:
+                  resources:
+                    limits:
+                      cpu: 500m
+                      memory: 256Mi
+                    requests:
+                      cpu: 250m
+                      memory: 128Mi
+                controller:
+                  processors: {}
+                  resources:
+                    limits:
+                      cpu: '2'
+                      memory: 2Gi
+                    requests:
+                      cpu: 250m
+                      memory: 1Gi
+                extraConfig:
+                  accounts.admin: apiKey, login
+              
+              EOF
         
               echo -n "* ArgoCD dashboard: "
-              test_cmd="kubectl get route -n "$ARGOCD_NAMESPACE" "openshift-gitops-server" --ignore-not-found -o jsonpath={.spec.host}"
+              test_cmd="kubectl get route -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-server" --ignore-not-found -o jsonpath={.spec.host}"
               ARGOCD_HOSTNAME="$(${test_cmd})"
               until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
                 echo -n "."
@@ -816,7 +947,7 @@ spec:
         
               echo -n " * ArgoCD admin user: "
               if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-                  ARGOCD_PASSWORD="$(kubectl get secret -n "$ARGOCD_NAMESPACE" "openshift-gitops-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+                  ARGOCD_PASSWORD="$(kubectl get secret -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
                   ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
                   echo -n "."
                   ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"
@@ -990,23 +1121,23 @@ spec:
                   description: >-
                     Create the required resources for rhtap tasks to run in a namespace.
                   params:
-                    - default: ${GITOPS__GIT_TOKEN}
+                    - default: \${GITOPS__GIT_TOKEN}
                       description: |
                         Git token
                       name: git_token
                       type: string
-                    - default: ${QUAY__TOKEN}
+                    - default: \${QUAY__TOKEN}
                       description: |
                         Image registry token
                       name: quay_token
                       type: string
-                    - default: ${ACS__CENTRAL_ENDPOINT}
+                    - default: \${ACS__CENTRAL_ENDPOINT}
                       description: |
                         StackRox Central address:port tuple
                         (example - rox.stackrox.io:443)
                       name: acs_central_endpoint
                       type: string
-                    - default: ${ACS__API_TOKEN}
+                    - default: \${ACS__API_TOKEN}
                       description: |
                         StackRox API token with CI permissions
                       name: acs_api_token
@@ -1257,7 +1388,7 @@ spec:
               echo -n "* Configuring Pipelines-as-Code: "
               if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
-                WEBHOOK_SECRET="${GITHUB__APP__WEBHOOK_SECRET}"
+                WEBHOOK_SECRET="\${GITHUB__APP__WEBHOOK_SECRET}"
                 kubectl create secret generic "$CHART-pipelines-secret" \
                   --from-literal="webhook-github-secret=$WEBHOOK_SECRET" \
                   --from-literal="webhook-url=$(kubectl get routes -n "$PIPELINES_NAMESPACE" pipelines-as-code-controller -o jsonpath="https://{.spec.host}")" >/dev/null
@@ -1279,6 +1410,7 @@ spec:
               echo "Configuration successful"
         
                 
+        
         - name: configure-trusted-artifact-signer
           image: "quay.io/codeready-toolchain/oc-client-base:latest"
           command:
@@ -1381,6 +1513,7 @@ spec:
         
               echo
               echo "Configuration successful"
+        
         
                 
         
@@ -1606,6 +1739,10 @@ spec:
                     fi
                   popd
               popd
+              echo "OK"
+        
+              echo
+              echo "Configuration successful"
         
         
       restartPolicy: Never

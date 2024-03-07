@@ -92,5 +92,9 @@
             fi
           popd
       popd
+      echo "OK"
+
+      echo
+      echo "Configuration successful"
 {{ end }}
 {{ end }}
