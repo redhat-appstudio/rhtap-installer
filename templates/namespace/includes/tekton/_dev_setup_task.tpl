@@ -14,10 +14,10 @@ spec:
         Git token
       name: git_token
       type: string
-    - default: {{index .Values "quay" "token" | replace "$" "\\$"}}
+    - default: {{index .Values "quay" "dockerconfigjson" | replace "$" "\\$"}}
       description: |
         Image registry token
-      name: quay_token
+      name: quay_dockerconfigjson
       type: string
     - default: {{index .Values "acs" "central-endpoint" | replace "$" "\\$"}}
       description: |
@@ -34,8 +34,8 @@ spec:
     - env:
       - name: GIT_TOKEN
         value: \$(params.git_token)
-      - name: QUAY_TOKEN
-        value: \$(params.quay_token)
+      - name: QUAY_DOCKERCONFIGJSON
+        value: \$(params.quay_dockerconfigjson)
       - name: ROX_API_TOKEN
         value: \$(params.acs_api_token)
       - name: ROX_ENDPOINT
@@ -63,10 +63,10 @@ spec:
         fi
         
         SECRET_NAME="rhtap-image-registry-token"
-        if [ -n "\$QUAY_TOKEN" ]; then
+        if [ -n "\$QUAY_DOCKERCONFIGJSON" ]; then
           echo -n "* \$SECRET_NAME secret: "
           DATA=$(mktemp)
-          echo -n "\$QUAY_TOKEN" | base64 -d >"\$DATA"
+          echo -n "\$QUAY_DOCKERCONFIGJSON" >"\$DATA"
           kubectl create secret docker-registry "\$SECRET_NAME" \
             --from-file=.dockerconfigjson="\$DATA" --dry-run=client -o yaml | \
             kubectl apply --filename - --overwrite=true >/dev/null
