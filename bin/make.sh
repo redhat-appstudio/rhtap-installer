@@ -173,9 +173,9 @@ release() {
   Changes from $previous_version:
   $(
     git -C "$HELM_CHART" log \
-      --reverse --format="  - %s" "$previous_version^..$version" \
+      --reverse --format="- %s" "$previous_version^..$version" \
       -- Chart.yaml values.yaml templates |
-      tail -n +2
+      tail -n +3
   )
   "
   git push
@@ -222,6 +222,11 @@ values() {
             PROMPT="0"
           fi
           ;;
+        TPA__*)
+          if [ -z "${TPA__GUAC__PASSWORD:-}" ] && [ "$ENV_VAR" != "TPA__GUAC__PASSWORD" ]; then
+            PROMPT="0"
+          fi
+          ;;
         *) ;;
         esac
         if [ "$PROMPT" == "1" ]; then
@@ -233,7 +238,8 @@ values() {
       echo "$ENV_VAR: OK"
       VALUE=${!ENV_VAR}
     fi
-    echo "export $ENV_VAR='$VALUE'" >>"private.env"
+    # shellcheck disable=SC2001
+    echo "export $ENV_VAR='$(echo "$VALUE" | sed 's: *::')'" >>"private.env"
   done
   # shellcheck source=/dev/null
   source "private.env"
