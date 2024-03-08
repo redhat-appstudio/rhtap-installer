@@ -201,12 +201,78 @@ test() {
 }
 
 values() {
+  # The process is to
+  # * Ask the user a bunch of questions about what they want to install.
+  # * Generate a values file based of the default value file with only
+  #   the relevant content.
+  # * Use the generated file to only ask the user about relevant data.
+  # * Use the generated file and the user's responses to generate the final
+  #   values file.
   cd "$HELM_CHART"
   touch "private.env"
   # shellcheck source=/dev/null
   source "private.env"
   echo >"private.env"
-  mapfile -t ENV_VARS < <(grep --only-matching "\${[^}]*" values.yaml | cut -d'{' -f2 | sort -u)
+
+  #
+  # Enable/disable components in temporary value file
+  #
+  ENABLE_VARS=(
+    "RHTAP_ENABLE_GITHUB"
+    "RHTAP_ENABLE_GITLAB"
+    "RHTAP_ENABLE_DEVELOPER_HUB"
+    "RHTAP_ENABLE_TAS"
+    "RHTAP_ENABLE_TAS_FULCIO_OIDC_DEFAULT_VALUES"
+    "RHTAP_ENABLE_TPA"
+  )
+  for ENV_VAR in "${ENABLE_VARS[@]}"; do
+    VALUE="${!ENV_VAR:-}"
+    while [ -z "$VALUE" ]; do
+      read -r -p "Enable ${ENV_VAR:13} (y/N): " VALUE
+      case "${VALUE}" in
+      y | Y)
+        VALUE="true"
+        ;;
+      n | N | "")
+        VALUE="false"
+        ;;
+      *)
+        echo "Invalid value: $VALUE"
+        VALUE=""
+        ;;
+      esac
+    done
+    echo "export $ENV_VAR='$VALUE'" >>"private.env"
+  done
+  # shellcheck source=/dev/null
+  source private.env
+
+  TMP_VALUES="private-values.yaml.tmp"
+  cp values.yaml "$TMP_VALUES"
+  if [ "$RHTAP_ENABLE_GITHUB" == false ]; then
+    yq -i ".developer-hub.app-config.auth.providers.github = null" "$TMP_VALUES"
+    yq -i ".developer-hub.app-config.integrations.github = null" "$TMP_VALUES"
+    yq -i ".openshift-gitops.git-token = null" "$TMP_VALUES"
+    yq -i ".pipelines.pipelines-as-code.github = null" "$TMP_VALUES"
+  fi
+  if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == false ]; then
+    yq -i ".developer-hub = null" "$TMP_VALUES"
+  fi
+  if [ "$RHTAP_ENABLE_TAS" == false ]; then
+    yq -i ".trusted-artifact-signer = null" "$TMP_VALUES"
+  else
+    if [ "${RHTAP_ENABLE_TAS_FULCIO_OIDC_DEFAULT_VALUES}" == true ]; then
+      yq -i ".trusted-artifact-signer.securesign.fulcio.config = null" "$TMP_VALUES"
+    fi
+  fi
+  if [ "$RHTAP_ENABLE_TPA" == false ]; then
+    yq -i ".trusted-profile-analyzer = null" "$TMP_VALUES"
+  fi
+
+  #
+  # Get variable values based on the content of the temporary value file
+  #
+  mapfile -t ENV_VARS < <(grep --only-matching "\${[^}]*" "$TMP_VALUES" | cut -d'{' -f2 | sort -u)
   for ENV_VAR in "${ENV_VARS[@]}"; do
     if [ -z "${!ENV_VAR:-}" ]; then
       case $ENV_VAR in
@@ -215,48 +281,33 @@ values() {
         VALUE=$(sed '/^$/q')
         ;;
       *)
-        PROMPT="1"
-        case $ENV_VAR in
-        TAS__SECURESIGN__FULCIO__OIDC_*)
-          if [ -z "${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID:-}" ] && [ "$ENV_VAR" != "TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID" ]; then
-            PROMPT="0"
-          fi
-          ;;
-        TPA__*)
-          if [ -z "${TPA__GUAC__PASSWORD:-}" ] && [ "$ENV_VAR" != "TPA__GUAC__PASSWORD" ]; then
-            PROMPT="0"
-          fi
-          ;;
-        *) ;;
-        esac
-        if [ "$PROMPT" == "1" ]; then
-          read -r -p "Enter value for $ENV_VAR: " VALUE
-        fi
+        read -r -p "Enter value for $ENV_VAR: " VALUE
         ;;
       esac
     else
       echo "$ENV_VAR: OK"
       VALUE=${!ENV_VAR}
     fi
+    export VALUE
     # shellcheck disable=SC2001
-    echo "export $ENV_VAR='$(echo "$VALUE" | sed 's: *::')'" >>"private.env"
+    echo "export $ENV_VAR='$(echo "$VALUE" | sed 's:^ *::')'" >>"private.env"
+    case $ENV_VAR in
+    GITHUB__APP__PRIVATE_KEY)
+      yq -i "
+      .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE),
+      .pipelines.pipelines-as-code.github.private-key = strenv(VALUE)
+      " "$TMP_VALUES"
+      ;;
+    esac
   done
   # shellcheck source=/dev/null
   source "private.env"
-  yq "
-    .developer-hub.app-config.integrations.github[0].apps[0].privateKey = \"$GITHUB__APP__PRIVATE_KEY\",
-    .pipelines.pipelines-as-code.github.private-key = \"$GITHUB__APP__PRIVATE_KEY\"
-    " "values.yaml" | envsubst >"private-values.yaml"
 
-  if [ -z "$TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID" ] || [ -z "$TAS__SECURESIGN__FULCIO__OIDC__TYPE" ] || [ -z "$TAS__SECURESIGN__FULCIO__OIDC__URL" ]; then
-    yq -i ".trusted-artifact-signer.securesign.fulcio.config = null" "private-values.yaml"
-  fi
-  if [ -z "$TAS__SECURESIGN__FULCIO__ORG_EMAIL" ]; then
-    yq -i ".trusted-artifact-signer = null" "private-values.yaml"
-  fi
-  if [ -z "$TPA__GUAC__PASSWORD" ]; then
-    yq -i ".trusted-profile-analyzer = null" "private-values.yaml"
-  fi
+  #
+  # Generate the private value file
+  #
+  envsubst <"$TMP_VALUES" >"private-values.yaml"
+  rm "$TMP_VALUES"
 }
 
 _get_versions() {
