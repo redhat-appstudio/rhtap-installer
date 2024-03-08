@@ -212,7 +212,7 @@ values() {
   touch "private.env"
   # shellcheck source=/dev/null
   source "private.env"
-  echo >"private.env"
+  echo -n >"private.env"
 
   #
   # Enable/disable components in temporary value file
@@ -254,6 +254,10 @@ values() {
     yq -i ".developer-hub.app-config.integrations.github = null" "$TMP_VALUES"
     yq -i ".openshift-gitops.git-token = null" "$TMP_VALUES"
     yq -i ".pipelines.pipelines-as-code.github = null" "$TMP_VALUES"
+  fi
+  if [ "$RHTAP_ENABLE_GITLAB" == false ]; then
+    yq -i ".developer-hub.app-config.auth.providers.gitlab = null" "$TMP_VALUES"
+    yq -i ".developer-hub.app-config.integrations.gitlab = null" "$TMP_VALUES"
   fi
   if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == false ]; then
     yq -i ".developer-hub = null" "$TMP_VALUES"
