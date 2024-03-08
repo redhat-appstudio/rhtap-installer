@@ -59,6 +59,19 @@ developer-hub:
             - Location
             - Template
             - API
+  proxy:
+    '/quay/api':
+      target: 'https://quay.io'
+      headers:
+        X-Requested-With: 'XMLHttpRequest'
+        # Uncomment the following line to access a private Quay Repository using a token
+        # Authorization: 'Bearer ${QUAY__TOKEN}'
+      changeOrigin: true
+      # Change to "false" in case of using self hosted quay instance with a self-signed certificate
+      secure: true
+  quay:
+    # The UI url for Quay, used to generate the link to Quay
+    uiUrl: 'https://quay.io'
   quay-token: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
   values:
     global:
@@ -127,6 +140,8 @@ developer-hub:
                   - apiVersion: 'v1'
                     group: 'tekton.dev'
                     plural: 'taskruns'
+          - disabled: false
+            package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-quay
           - disabled: false
             package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-tekton
             pluginConfig:
