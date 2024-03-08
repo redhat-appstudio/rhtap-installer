@@ -43,7 +43,7 @@ This helm chart installs and configures the following projects/products :
 
 3. Install/upgrade RHTAP
 
-    `helm upgrade installer rhtap/rhtap --install --create-namespace --namespace rhtap --timeout 10m --values values.yaml`
+    `helm upgrade installer rhtap/rhtap --install --create-namespace --namespace rhtap --timeout 20m --values values.yaml`
 
     Sample output:
     
