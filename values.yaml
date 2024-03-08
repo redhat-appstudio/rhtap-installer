@@ -35,6 +35,10 @@ developer-hub:
           development:
             clientId: ${GITHUB__APP__CLIENT_ID}
             clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+        gitlab:
+          development:
+            clientId: ${GITLAB__OAUTH__CLIENT_ID}
+            clientSecret: ${GITLAB__OAUTH__CLIENT_SECRET}
     integrations:
       github:
         - host: github.com
@@ -46,6 +50,9 @@ developer-hub:
               webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
               privateKey: |
                 ${GITHUB__APP__PRIVATE_KEY}
+      gitlab:
+        - host: gitlab.com
+          token: ${GITLAB_TOKEN}
     catalog:
       locations:
         - type: url
