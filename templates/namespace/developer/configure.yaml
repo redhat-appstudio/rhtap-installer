@@ -1,6 +1,7 @@
 {{ define "rhtap.namespace.developer.configure" }}
 NAMESPACE_LIST=(
-{{range .Values.debug.namespaces}} {{. | quote}}{{end}}
+{{range .Values.debug.namespaces}} {{printf "%s-development" . | quote}} {{printf "%s-stage" . | quote}} {{printf "%s-prod" . | quote}}
+{{end}}
 )
 
 for NAMESPACE in "${NAMESPACE_LIST[@]}"; do
