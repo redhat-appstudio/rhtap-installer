@@ -119,12 +119,7 @@ spec:
   controller:
     processors: {}
     resources:
-      limits:
-        cpu: '2'
-        memory: 2Gi
-      requests:
-        cpu: 250m
-        memory: 1Gi
+{{ index .Values "openshift-gitops" "argoCD" "controller" "resources" | toYaml | indent 6 }}
   extraConfig:
     accounts.admin: apiKey, login
 {{ end }}
