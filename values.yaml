@@ -72,7 +72,7 @@ developer-hub:
       headers:
         X-Requested-With: 'XMLHttpRequest'
         # Uncomment the following line to access a private Quay Repository using a token
-        # Authorization: 'Bearer ${QUAY__TOKEN}'
+        # Authorization: 'Bearer QUAY_TOKEN'
       changeOrigin: true
       # Change to "false" in case of using self hosted quay instance with a self-signed certificate
       secure: true
@@ -175,7 +175,9 @@ pipelines:
         ${GITHUB__APP__PRIVATE_KEY}
       webhook-secret: ${GITHUB__APP__WEBHOOK_SECRET}
 quay:
-  token: ${QUAY__TOKEN}  # Token to push images.
+  # Authentication information to push images.
+  dockerconfigjson: |-
+    ${QUAY__DOCKERCONFIGJSON}
 trusted-artifact-signer:
   enabled: true
   operator:

@@ -280,7 +280,7 @@ values() {
   for ENV_VAR in "${ENV_VARS[@]}"; do
     if [ -z "${!ENV_VAR:-}" ]; then
       case $ENV_VAR in
-      GITHUB__APP__PRIVATE_KEY)
+      GITHUB__APP__PRIVATE_KEY | QUAY__DOCKERCONFIGJSON)
         echo "Enter value for $ENV_VAR (end with a blank line):"
         VALUE=$(sed '/^$/q')
         ;;
@@ -293,8 +293,6 @@ values() {
       VALUE=${!ENV_VAR}
     fi
     export VALUE
-    # shellcheck disable=SC2001
-    echo "export $ENV_VAR='$(echo "$VALUE" | sed 's:^ *::')'" >>"private.env"
     case $ENV_VAR in
     GITHUB__APP__PRIVATE_KEY)
       yq -i "
@@ -302,7 +300,13 @@ values() {
       .pipelines.pipelines-as-code.github.private-key = strenv(VALUE)
       " "$TMP_VALUES"
       ;;
+    QUAY__DOCKERCONFIGJSON)
+      VALUE=$(echo "$VALUE" | tr -d '\n' | sed 's:  *: :g')
+      yq -i ".quay.dockerconfigjson = strenv(VALUE)" "$TMP_VALUES"
+      ;;
     esac
+    # shellcheck disable=SC2001
+    echo "export $ENV_VAR='$(echo "$VALUE" | sed 's:^ *::')'" >>"private.env"
   done
   # shellcheck source=/dev/null
   source "private.env"

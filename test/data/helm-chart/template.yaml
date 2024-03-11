@@ -656,6 +656,10 @@ spec:
                     development:
                       clientId: ${GITHUB__APP__CLIENT_ID}
                       clientSecret: ${GITHUB__APP__CLIENT_SECRET}
+                  gitlab:
+                    development:
+                      clientId: ${GITLAB__OAUTH__CLIENT_ID}
+                      clientSecret: ${GITLAB__OAUTH__CLIENT_SECRET}
               catalog:
                 locations:
                 - target: ${DEVELOPER_HUB__CATALOG__URL}
@@ -680,6 +684,9 @@ spec:
                     webhookSecret: ${GITHUB__APP__WEBHOOK_SECRET}
                     webhookUrl: GITHUB__APP__WEBHOOK_URL
                   host: github.com
+                gitlab:
+                - host: gitlab.com
+                  token: ${GITLAB_TOKEN}
               techdocs:
                 builder: local
                 generator:
@@ -1128,10 +1135,10 @@ spec:
                         Git token
                       name: git_token
                       type: string
-                    - default: \${QUAY__TOKEN}
+                    - default: \${QUAY__DOCKERCONFIGJSON}
                       description: |
                         Image registry token
-                      name: quay_token
+                      name: quay_dockerconfigjson
                       type: string
                     - default: \${ACS__CENTRAL_ENDPOINT}
                       description: |
@@ -1148,8 +1155,8 @@ spec:
                     - env:
                       - name: GIT_TOKEN
                         value: \$(params.git_token)
-                      - name: QUAY_TOKEN
-                        value: \$(params.quay_token)
+                      - name: QUAY_DOCKERCONFIGJSON
+                        value: \$(params.quay_dockerconfigjson)
                       - name: ROX_API_TOKEN
                         value: \$(params.acs_api_token)
                       - name: ROX_ENDPOINT
@@ -1175,10 +1182,10 @@ spec:
                         fi
                         
                         SECRET_NAME="rhtap-image-registry-token"
-                        if [ -n "\$QUAY_TOKEN" ]; then
+                        if [ -n "\$QUAY_DOCKERCONFIGJSON" ]; then
                           echo -n "* \$SECRET_NAME secret: "
                           DATA=$(mktemp)
-                          echo -n "\$QUAY_TOKEN" | base64 -d >"\$DATA"
+                          echo -n "\$QUAY_DOCKERCONFIGJSON" >"\$DATA"
                           kubectl create secret docker-registry "\$SECRET_NAME" \
                             --from-file=.dockerconfigjson="\$DATA" --dry-run=client -o yaml | \
                             kubectl apply --filename - --overwrite=true >/dev/null
