@@ -78,14 +78,16 @@ spec:
             sleep 2
             echo -n "_"
           done
-          kubectl patch serviceaccounts pipeline --patch "
-        secrets:
-          - name: \$SECRET_NAME
-        imagePullSecrets:
-          - name: \$SECRET_NAME
-        " >/dev/null
+          for SA in default pipeline; do
+            kubectl patch serviceaccounts "\$SA" --patch "
+          secrets:
+            - name: \$SECRET_NAME
+          imagePullSecrets:
+            - name: \$SECRET_NAME
+          " >/dev/null
+            echo -n "."
+          done
           echo "OK"
-          kubectl get serviceaccount pipeline -o yaml
         fi
         
         SECRET_NAME="rox-api-token"
@@ -94,11 +96,12 @@ spec:
           kubectl create secret generic "\$SECRET_NAME" \
             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
             --from-literal=rox-api-token=\$ROX_API_TOKEN \
-            --dry-run -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
+            --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
           kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart={{.Chart.Name}}-{{.Chart.Version}}" >/dev/null
           echo "OK"
         fi
 
+        echo
         echo "Namespace is ready to execute {{ .Chart.Name }} pipelines"
       workingDir: /tmp
 {{ end }}
