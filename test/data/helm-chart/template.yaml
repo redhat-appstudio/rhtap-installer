@@ -1220,7 +1220,7 @@ spec:
                         if [ -n "\$ROX_API_TOKEN" ] && [ -n "\$ROX_ENDPOINT" ]; then
                           echo -n "* \$SECRET_NAME secret: "
                           kubectl create secret generic "\$SECRET_NAME" \
-                            --from-literal=rox-central-endpoint=\$ROX_ENDPOINT \
+                            --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
                           kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.9.5" >/dev/null
