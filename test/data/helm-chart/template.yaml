@@ -943,11 +943,11 @@ spec:
                   processors: {}
                   resources:
                     limits:
-                      cpu: '2'
-                      memory: 2Gi
+                      cpu: "2"
+                      memory: 6Gi
                     requests:
-                      cpu: 250m
-                      memory: 1Gi
+                      cpu: "1"
+                      memory: 3Gi
                 extraConfig:
                   accounts.admin: apiKey, login
               
