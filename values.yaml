@@ -12,9 +12,20 @@ openshift-gitops:
   workload-namespaces:
     - default
   git-token: ${GITOPS__GIT_TOKEN}  # Token to create/push repositories.
+  argoCD:
+    # ArgoCD's application-controller resource limits.
+    controller:
+      resources:
+        limits:
+          cpu: "2"
+          memory: 6Gi
+        requests:
+          cpu: "1"
+          memory: 3Gi
 openshift-pipelines:
   enabled: true
   channel: pipelines-1.14
+
 # Private values
 # You may want to override those variables in another file (e.g. values-private.yaml)
 acs:
