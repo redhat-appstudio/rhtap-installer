@@ -5,7 +5,7 @@
 debug:
   container: false  # Creates a long running container to easily open a terminal for troubleshooting.
   script: false  # Prints commands before executing them.
-  namespaces: [] # List of namespace managed by ArgoCD. Temporary workaround.
+  namespaces: [rhtap-app] # List of namespace managed by ArgoCD. Temporary workaround.
 openshift-gitops:
   enabled: true
   channel: gitops-1.11
