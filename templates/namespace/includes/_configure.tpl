@@ -25,7 +25,7 @@
       echo -n "."
       echo "OK"
 
-    {{if .Values.debug.namespaces}}
+    {{if (unset .Values "" | dig "trusted-application-pipeline" "namespaces" false)}}
       {{include "rhtap.namespace.developer.configure" . | indent 6}}
     {{ end }}
 

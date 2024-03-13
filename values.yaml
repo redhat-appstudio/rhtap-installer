@@ -5,7 +5,6 @@
 debug:
   container: false  # Creates a long running container to easily open a terminal for troubleshooting.
   script: false  # Prints commands before executing them.
-  namespaces: [] # List of namespace managed by ArgoCD. Temporary workaround.
 openshift-gitops:
   enabled: true
   channel: gitops-1.11
@@ -204,6 +203,9 @@ trusted-artifact-signer:
           ClientID: ${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID}
           IssuerURL: '${TAS__SECURESIGN__FULCIO__OIDC__URL}'
           Type: ${TAS__SECURESIGN__FULCIO__OIDC__TYPE}
+trusted-application-pipeline:
+  namespaces:
+    - rhtap-app
 trusted-profile-analyzer:
   tracing:
     enabled: false

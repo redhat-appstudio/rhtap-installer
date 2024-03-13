@@ -1,5 +1,5 @@
-{{if .Values.debug.namespaces}}
-{{range .Values.debug.namespaces}}
+{{if (unset .Values "" | dig "trusted-application-pipeline" "namespaces" false)}}
+{{range (index .Values "trusted-application-pipeline" "namespaces")}}
 ---
 apiVersion: v1
 kind: Namespace
