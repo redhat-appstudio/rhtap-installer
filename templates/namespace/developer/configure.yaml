@@ -1,6 +1,6 @@
 {{ define "rhtap.namespace.developer.configure" }}
 NAMESPACE_LIST=(
-{{range .Values.debug.namespaces}} {{printf "%s-development" . | quote}} {{printf "%s-stage" . | quote}} {{printf "%s-prod" . | quote}}
+{{range (index .Values "trusted-application-pipeline" "namespaces")}} {{printf "%s-development" . | quote}} {{printf "%s-stage" . | quote}} {{printf "%s-prod" . | quote}}
 {{end}}
 )
 

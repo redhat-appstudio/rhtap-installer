@@ -1,6 +1,30 @@
 # yamllint disable rule:line-length
 # yamllint disable rule:trailing-spaces
 ---
+# Source: rhtap/templates/namespace/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rhtap-app-development
+  labels:
+    argocd.argoproj.io/managed-by: rhtap
+---
+# Source: rhtap/templates/namespace/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rhtap-app-stage
+  labels:
+    argocd.argoproj.io/managed-by: rhtap
+---
+# Source: rhtap/templates/namespace/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rhtap-app-prod
+  labels:
+    argocd.argoproj.io/managed-by: rhtap
+---
 # Source: rhtap/templates/developer-hub/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -1308,6 +1332,41 @@ spec:
               echo -n "."
               echo "OK"
         
+            
+                    
+              NAMESPACE_LIST=(
+               "rhtap-app-development" "rhtap-app-stage" "rhtap-app-prod"
+              
+              )
+              
+              for NAMESPACE in "${NAMESPACE_LIST[@]}"; do
+                echo -n "* Configuring '$NAMESPACE' namespace: "
+                cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $NAMESPACE|" | kubectl create --filename - >/dev/null
+              
+              apiVersion: tekton.dev/v1
+              kind: PipelineRun
+              metadata:
+                generateName: rhtap-dev-namespace-setup-
+                annotations:
+                  helm.sh/chart: "rhtap-0.9.5"
+              spec:
+                pipelineSpec:
+                  tasks:
+                    - name: configure-namespace
+                      taskRef:
+                        resolver: cluster
+                        params:
+                          - name: kind
+                            value: task
+                          - name: name
+                            value: rhtap-dev-namespace-setup
+                          - name: namespace
+                            value: rhtap
+              
+              EOF
+                echo "OK"
+              done
+              
             
         
               echo
