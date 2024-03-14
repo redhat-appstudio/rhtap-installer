@@ -16,7 +16,7 @@
       "artifacts.taskrun.format": "in-toto",
       "artifacts.taskrun.storage": "oci",
       "transparency.enabled": "true",
-      "transparency.url": "http://rekor-server.rekor.svc"
+      "transparency.url": "http://rekor-server.{{.Release.Namespace}}.svc"
     }
   }
 }
