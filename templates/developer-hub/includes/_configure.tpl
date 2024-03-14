@@ -25,6 +25,51 @@
       CHART="{{ .Chart.Name }}"
       NAMESPACE="{{ .Release.Namespace }}"
 
+      echo -n "Generating 'app-config.extra.yaml': "
+      APPCONFIGEXTRA="app-config.extra.yaml"
+      touch "$APPCONFIGEXTRA"
+      echo -n "."
+    {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
+      cat << _EOF_ >> "$APPCONFIGEXTRA"
+{{ index .Values "developer-hub" "app-config" | toYaml | indent 6 }}
+      _EOF_
+      echo -n "."
+    {{ end }}
+
+      # ArgoCD integration
+      while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+        echo -ne "_"
+        sleep 2
+      done
+      kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
+      echo -n "."
+
+      ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
+      ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
+      ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
+      ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
+      cat << _EOF_ >> "$APPCONFIGEXTRA"
+      argocd:
+        username: $ARGOCD_USER
+        password: $ARGOCD_PASSWORD
+        waitCycles: 25
+        appLocatorMethods:
+          - type: 'config'
+            instances:
+              - name: default
+                url: https://$ARGOCD_HOSTNAME
+                token: $ARGOCD_API_TOKEN
+      _EOF_
+
+      # Tekton integration
+      while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
+        echo -ne "_"
+        sleep 2
+      done
+      PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
+      yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" "$APPCONFIGEXTRA"
+      echo -n "OK"
+
       echo -n "* Generating values.yaml: "
       HELM_VALUES="/tmp/developer-hub-values.yaml"
     {{ if (index .Values "developer-hub") }}
@@ -37,9 +82,21 @@
     {{ end }}
       echo "OK"
 
+      echo "$APPCONFIGEXTRA"
+      cat "$APPCONFIGEXTRA"
+      echo
+      echo "developer-hub-values.yaml"
+      cat developer-hub-values.yaml
+      echo
+
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
 
       echo -n "* Installing Developer Hub: "
+      kubectl create configmap developer-hub-app-config-extra \
+        --from-file=app-config.extra.yaml="$APPCONFIGEXTRA" \
+        -o yaml \
+        --dry-run=client | kubectl apply -f -
+      echo "."
       helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
       echo -n "."
       if ! helm upgrade \
@@ -69,88 +126,8 @@
       fi
       echo "OK"
 
-      echo -n "* Updating app-config.yaml: "
-      kubectl get configmap developer-hub-app-config -o yaml > developer-hub-app-config.current.yaml
-      yq '.data.["app-config.yaml"]' developer-hub-app-config.current.yaml > app-config.yaml
-      touch app-config-update.yaml
-      echo -n "."
-
-      # Set the base URL
-      URL="https://$HOSTNAME"
-      yq -i ".app.baseUrl = \"$URL\" | .backend.baseUrl = \"$URL\" |.backend.cors.origin = \"$URL\"" app-config.yaml
-      echo -n "."
-
-    {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
-      cat << _EOF_ >> app-config-update.yaml
-{{ index .Values "developer-hub" "app-config" | toYaml | indent 6 }}
-      _EOF_
-      echo -n "."
-    {{ end }}
-
-      # ArgoCD integration
-      while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-        echo -ne "_"
-        sleep 2
-      done
-      kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
-      echo -n "."
-
-      ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
-      ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
-      ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
-      ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
-      cat << _EOF_ >> app-config-update.yaml
-      argocd:
-        username: $ARGOCD_USER
-        password: $ARGOCD_PASSWORD
-        waitCycles: 25
-        appLocatorMethods:
-          - type: 'config'
-            instances:
-              - name: default
-                url: https://$ARGOCD_HOSTNAME
-                token: $ARGOCD_API_TOKEN
-      _EOF_
-
-      # Tekton integration
-      while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-        echo -ne "_"
-        sleep 2
-      done
-      PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
-      yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" app-config-update.yaml
-      echo -n "."
-
-      # Process app-config update
-      yq -i '. *= load("app-config-update.yaml")' app-config.yaml
-      yq ".data.[\"app-config.yaml\"] = \"$(cat app-config.yaml | sed 's:":\\":g')\"" developer-hub-app-config.current.yaml > developer-hub-app-config.new.yaml
-      if [ "$(md5sum developer-hub-app-config.current.yaml | cut -d' ' -f1)" != "$(md5sum developer-hub-app-config.new.yaml | cut -d' ' -f1)" ]; then
-        echo
-        kubectl apply -f developer-hub-app-config.new.yaml
-        echo "OK"
-        echo -n "* Restarting Developer Hub: "
-        ##################################################
-        # This should help with DB migration issues.
-        # Ultimately this should be a bug on DH, as the node could go down
-        # unexpectedly when the pod starts.
-        #
-        until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
-          echo -n "_"
-          sleep 3
-        done
-        echo -n "."
-        for _ in $(seq 1 20); do
-          echo -n "_"
-          sleep 3
-        done
-        #
-        ##################################################
-        kubectl delete pods -l "app.kubernetes.io/component=backstage" >/dev/null
-      fi
-      echo "OK"
-
       echo -n "* Waiting for UI: "
-      until curl --fail --insecure --location --output /dev/null --silent "$URL"; do
+      until curl --fail --insecure --location --output /dev/null --silent "https://$HOSTNAME"; do
         echo -n "_"
         sleep 3
       done
