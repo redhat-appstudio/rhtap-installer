@@ -141,7 +141,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.10.0"
+    helm.sh/chart: "rhtap-0.10.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -154,7 +154,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.10.0"
+        helm.sh/chart: "rhtap-0.10.1"
     spec:
       containers:
       
@@ -867,7 +867,7 @@ spec:
                 metadata:
                   name: rhtap-dev-namespace-setup
                   annotations:
-                    helm.sh/chart: "rhtap-0.10.0"
+                    helm.sh/chart: "rhtap-0.10.1"
                 spec:
                   description: >-
                     Create the required resources for rhtap tasks to run in a namespace.
@@ -919,7 +919,7 @@ spec:
                             --from-literal=password=\$GIT_TOKEN \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.1" >/dev/null
                           echo "OK"
                         fi
                         
@@ -933,7 +933,7 @@ spec:
                             kubectl apply --filename - --overwrite=true >/dev/null
                           rm "\$DATA"
                           echo -n "."
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.1" >/dev/null
                           echo -n "."
                           while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
                             sleep 2
@@ -958,7 +958,7 @@ spec:
                             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -975,7 +975,7 @@ spec:
                 metadata:
                   name: rhtap-pe-info
                   annotations:
-                    helm.sh/chart: "rhtap-0.10.0"
+                    helm.sh/chart: "rhtap-0.10.1"
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1057,7 +1057,7 @@ spec:
               metadata:
                 generateName: rhtap-dev-namespace-setup-
                 annotations:
-                  helm.sh/chart: "rhtap-0.10.0"
+                  helm.sh/chart: "rhtap-0.10.1"
               spec:
                 pipelineSpec:
                   tasks:
@@ -1141,7 +1141,7 @@ spec:
                       "artifacts.taskrun.format": "in-toto",
                       "artifacts.taskrun.storage": "oci",
                       "transparency.enabled": "true",
-                      "transparency.url": "http://rekor-server.rekor.svc"
+                      "transparency.url": "http://rekor-server.rhtap.svc"
                     }
                   }
                 }
@@ -1546,7 +1546,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.10.0"
+    helm.sh/chart: "rhtap-0.10.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1558,7 +1558,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.10.0"
+        helm.sh/chart: "rhtap-0.10.1"
     spec:
       containers:
                 
@@ -1579,7 +1579,7 @@ spec:
                 metadata:
                   generateName: rhtap-test-config-
                   annotations:
-                    helm.sh/chart: "rhtap-0.10.0"
+                    helm.sh/chart: "rhtap-0.10.1"
                 spec:
                   pipelineSpec:
                     tasks:
