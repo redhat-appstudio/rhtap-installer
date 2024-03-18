@@ -39,15 +39,6 @@ metadata:
   name: helm-manager
   namespace: rhtap
 ---
-# Source: rhtap/templates/developer-hub/quay-token.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rhdh-pull-secret
-data:
-  .dockerconfigjson: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
-type: kubernetes.io/dockerconfigjson
----
 # Source: rhtap/templates/developer-hub/serviceaccount.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -383,13 +374,6 @@ spec:
             
               echo "OK"
         
-              echo "$APPCONFIGEXTRA"
-              cat "$APPCONFIGEXTRA"
-              echo
-              echo "developer-hub-values.yaml"
-              cat developer-hub-values.yaml
-              echo
-        
               
               ################################################################################
               # Tekton plugin configuration
@@ -416,7 +400,7 @@ spec:
                 -o yaml \
                 --dry-run=client | kubectl apply -f -
               echo "."
-              helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
+              helm repo add developer-hub https://charts.openshift.io/
               echo -n "."
               if ! helm upgrade \
                 --install \
@@ -424,7 +408,7 @@ spec:
                 --namespace=${NAMESPACE} \
                 --values="$HELM_VALUES" \
                 developer-hub \
-                developer-hub/developer-hub; then
+                developer-hub/redhat-developer-hub; then
                 echo "ERROR while installing chart!"
                 exit 1
               fi
@@ -1413,6 +1397,8 @@ spec:
                 containerSecurityContext:
                   enabled: false
                 enabled: true
+                persistence:
+                  size: 5Gi
                 podSecurityContext:
                   enabled: false
                 rootPassword: ${TPA__MINIO__ROOT_PASSWORD}

@@ -82,13 +82,6 @@
     {{ end }}
       echo "OK"
 
-      echo "$APPCONFIGEXTRA"
-      cat "$APPCONFIGEXTRA"
-      echo
-      echo "developer-hub-values.yaml"
-      cat developer-hub-values.yaml
-      echo
-
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
 
       echo -n "* Installing Developer Hub: "
@@ -97,7 +90,7 @@
         -o yaml \
         --dry-run=client | kubectl apply -f -
       echo "."
-      helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation
+      helm repo add developer-hub https://charts.openshift.io/
       echo -n "."
       if ! helm upgrade \
         --install \
@@ -105,7 +98,7 @@
         --namespace=${NAMESPACE} \
         --values="$HELM_VALUES" \
         developer-hub \
-        developer-hub/developer-hub; then
+        developer-hub/redhat-developer-hub; then
         echo "ERROR while installing chart!"
         exit 1
       fi
