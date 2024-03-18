@@ -230,6 +230,9 @@ trusted-profile-analyzer:
       enabled: false
     containerSecurityContext:
       enabled: false
+    persistence:
+      # MinIO PVC size.
+      size: 5Gi
   # Bitnami's Keycloak IAM.
   keycloak:
     enabled: true
