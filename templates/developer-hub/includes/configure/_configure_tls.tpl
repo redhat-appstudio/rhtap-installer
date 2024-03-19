@@ -10,7 +10,7 @@ done
 echo "OK"
 
 DEPLOYMENT="/tmp/deployment.yaml"
-oc get deployment/developer-hub --namespace "rhtap" -o yaml >"$DEPLOYMENT"
+oc get deployment/developer-hub --namespace "$NAMESPACE" -o yaml >"$DEPLOYMENT"
 
 echo -n "* Configure TLS:"
 # Update env var.
