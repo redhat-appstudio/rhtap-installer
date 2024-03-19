@@ -25,7 +25,7 @@
       CHART="{{ .Chart.Name }}"
       NAMESPACE="{{ .Release.Namespace }}"
 
-      echo -n "Generating 'app-config.extra.yaml': "
+      echo -n "* Generating 'app-config.extra.yaml': "
       APPCONFIGEXTRA="app-config.extra.yaml"
       touch "$APPCONFIGEXTRA"
       echo -n "."
@@ -68,7 +68,7 @@
       done
       PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
       yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" "$APPCONFIGEXTRA"
-      echo -n "OK"
+      echo "OK"
 
       echo -n "* Generating values.yaml: "
       HELM_VALUES="/tmp/developer-hub-values.yaml"
@@ -88,9 +88,9 @@
       kubectl create configmap developer-hub-app-config-extra \
         --from-file=app-config.extra.yaml="$APPCONFIGEXTRA" \
         -o yaml \
-        --dry-run=client | kubectl apply -f -
-      echo "."
-      helm repo add developer-hub https://charts.openshift.io/
+        --dry-run=client | kubectl apply -f - >/dev/null
+      echo -n "."
+      helm repo add developer-hub https://charts.openshift.io/ >/dev/null
       echo -n "."
       if ! helm upgrade \
         --install \
@@ -98,13 +98,11 @@
         --namespace=${NAMESPACE} \
         --values="$HELM_VALUES" \
         developer-hub \
-        developer-hub/redhat-developer-hub; then
+        developer-hub/redhat-developer-hub >/dev/null; then
         echo "ERROR while installing chart!"
         exit 1
       fi
       echo "OK"
-
-{{ include "rhtap.developer-hub.configure.configure_tls" . | indent 6 }}
 
       echo -n "* Waiting for route: "
       until kubectl get route "developer-hub" -o name >/dev/null ; do
@@ -118,6 +116,18 @@
           --from-literal="hostname=$HOSTNAME" >/dev/null
       fi
       echo "OK"
+
+      # Wait for the UI to fully boot once before modifying the configuration.
+      # This should avoid issues with DB migrations being interrupted and generating locks.
+      # Once RHIDP-1691 is solved that safeguard could be removed.
+      echo -n "* Waiting for UI: "
+      until curl --fail --insecure --location --output /dev/null --silent "https://$HOSTNAME"; do
+        echo -n "_"
+        sleep 3
+      done
+      echo "OK"
+
+{{ include "rhtap.developer-hub.configure.configure_tls" . | indent 6 }}
 
       echo -n "* Waiting for UI: "
       until curl --fail --insecure --location --output /dev/null --silent "https://$HOSTNAME"; do
