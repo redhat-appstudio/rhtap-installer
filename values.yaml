@@ -89,7 +89,6 @@ developer-hub:
   quay:
     # The UI url for Quay, used to generate the link to Quay
     uiUrl: 'https://quay.io'
-  quay-token: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
   values:
     upstream:
       backstage:
@@ -230,6 +229,9 @@ trusted-profile-analyzer:
       enabled: false
     containerSecurityContext:
       enabled: false
+    persistence:
+      # MinIO PVC size.
+      size: 5Gi
   # Bitnami's Keycloak IAM.
   keycloak:
     enabled: true
