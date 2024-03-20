@@ -4,13 +4,15 @@
 ################################################################################
 echo -n "* Waiting for deployment: "
 until kubectl get deployment developer-hub -o name >/dev/null ; do
-  echo -n "."
+  echo -n "_"
   sleep 3
 done
 echo "OK"
 
+ORIGNAL_POD=$(kubectl get pods -l app.kubernetes.io/name=developer-hub -o name)
+
 DEPLOYMENT="/tmp/deployment.yaml"
-oc get deployment/developer-hub --namespace "rhtap" -o yaml >"$DEPLOYMENT"
+oc get deployment/developer-hub -o yaml >"$DEPLOYMENT"
 
 echo -n "* Configure TLS:"
 # Update env var.
@@ -52,6 +54,14 @@ else
 fi
 yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT"
 echo -n "."
-oc apply -f "$DEPLOYMENT" >/dev/null
+oc apply -f "$DEPLOYMENT" >/dev/null 2>&1
+
+# Wait for the configuration to be deployed
+while kubectl get "$ORIGNAL_POD" -o name >/dev/null 2>&1 ; do
+    echo -n "_"
+    sleep 2
+done
+echo -n "."
+
 echo "OK"
 {{ end }}
