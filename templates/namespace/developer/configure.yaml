@@ -12,6 +12,11 @@ done
 echo "OK"
 
 for DEV_NAMESPACE in "${DEV_NAMESPACE_LIST[@]}"; do
+  echo -n "* Creating '$DEV_NAMESPACE' namespace: "
+  kubectl create namespace "$DEV_NAMESPACE" >/dev/null
+  echo -n "."
+  kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$NAMESPACE" >/dev/null
+  echo "OK"
   echo -n "* Configuring '$DEV_NAMESPACE' namespace: "
   cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $DEV_NAMESPACE|" | kubectl create --filename - >/dev/null
 {{include "rhtap.namespace.dev_setup_pipelinerun" .}}

@@ -175,7 +175,7 @@ release() {
   git add .
   git commit -m "Release $version
   
-  Changes from $previous_version:
+Changes from $previous_version:
 $(
     git -C "$HELM_CHART" log \
       --reverse --format="- %s" "$previous_version^..$version" \
