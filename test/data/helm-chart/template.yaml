@@ -863,6 +863,8 @@ spec:
               echo "OK"
               
         
+              CHART="rhtap"
+        
               echo -n "* Configuring Tasks: "
               cat << EOF | kubectl apply -f - >/dev/null
                       
@@ -1047,14 +1049,21 @@ spec:
         
             
                     
-              NAMESPACE_LIST=(
+              DEV_NAMESPACE_LIST=(
                "rhtap-app-development" "rhtap-app-stage" "rhtap-app-prod"
               
               )
               
-              for NAMESPACE in "${NAMESPACE_LIST[@]}"; do
-                echo -n "* Configuring '$NAMESPACE' namespace: "
-                cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $NAMESPACE|" | kubectl create --filename - >/dev/null
+              echo -n "* Waiting for resources: "
+              while ! kubectl get tasks "$CHART-dev-namespace-setup" >/dev/null 2>&1; do
+                echo -n "_"
+                sleep 2
+              done
+              echo "OK"
+              
+              for DEV_NAMESPACE in "${DEV_NAMESPACE_LIST[@]}"; do
+                echo -n "* Configuring '$DEV_NAMESPACE' namespace: "
+                cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $DEV_NAMESPACE|" | kubectl create --filename - >/dev/null
               
               apiVersion: tekton.dev/v1
               kind: PipelineRun

@@ -1,12 +1,19 @@
 {{ define "rhtap.namespace.developer.configure" }}
-NAMESPACE_LIST=(
+DEV_NAMESPACE_LIST=(
 {{range (index .Values "trusted-application-pipeline" "namespaces")}} {{printf "%s-development" . | quote}} {{printf "%s-stage" . | quote}} {{printf "%s-prod" . | quote}}
 {{end}}
 )
 
-for NAMESPACE in "${NAMESPACE_LIST[@]}"; do
-  echo -n "* Configuring '$NAMESPACE' namespace: "
-  cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $NAMESPACE|" | kubectl create --filename - >/dev/null
+echo -n "* Waiting for resources: "
+while ! kubectl get tasks "$CHART-dev-namespace-setup" >/dev/null 2>&1; do
+  echo -n "_"
+  sleep 2
+done
+echo "OK"
+
+for DEV_NAMESPACE in "${DEV_NAMESPACE_LIST[@]}"; do
+  echo -n "* Configuring '$DEV_NAMESPACE' namespace: "
+  cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $DEV_NAMESPACE|" | kubectl create --filename - >/dev/null
 {{include "rhtap.namespace.dev_setup_pipelinerun" .}}
 EOF
   echo "OK"
