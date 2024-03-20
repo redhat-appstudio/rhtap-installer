@@ -843,6 +843,17 @@ spec:
               NAMESPACE="rhtap"
         
               echo -n "* Configuring Tasks: "
+              while ! kubectl get secrets -n openshift-pipelines signing-secrets >/dev/null 2>&1; do
+                echo -n "_"
+                sleep 2
+              done
+              echo -n "."
+              COSIGN_SIGNING_PUBLIC_KEY=""
+              while [ -z "${COSIGN_SIGNING_PUBLIC_KEY:-}" ]; do
+                echo -n "_"
+                sleep 2
+                COSIGN_SIGNING_PUBLIC_KEY=$(kubectl get secrets -n openshift-pipelines signing-secrets -o jsonpath='{.data.cosign\.pub}' 2>/dev/null)
+              done
               cat << EOF | kubectl apply -f - >/dev/null
                       
                 apiVersion: tekton.dev/v1
@@ -894,6 +905,26 @@ spec:
                         set -o nounset
                         set -o pipefail
                       
+                
+                        SECRET_NAME="cosign-pub"
+                        if [ -n "$COSIGN_SIGNING_PUBLIC_KEY" ]; then
+                          echo -n "* \$SECRET_NAME secret: "
+                          cat <<EOF | kubectl apply -f - >/dev/null
+                        apiVersion: v1
+                        data:
+                          cosign.pub: $COSIGN_SIGNING_PUBLIC_KEY
+                        kind: Secret
+                        metadata:
+                          labels:
+                            app.kubernetes.io/instance: default
+                            app.kubernetes.io/part-of: tekton-chains
+                            helm.sh/chart: rhtap-0.10.2
+                            operator.tekton.dev/operand-name: tektoncd-chains
+                          name: \$SECRET_NAME
+                        type: Opaque
+                        EOF
+                          echo "OK"
+                        fi
                 
                         SECRET_NAME="gitops-auth-secret"
                         if [ -n "\$GIT_TOKEN" ]; then
