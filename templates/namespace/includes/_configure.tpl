@@ -14,6 +14,8 @@
 
       {{ include "rhtap.openshift-pipelines.wait" . | indent 6 }}
 
+      CHART="{{.Chart.Name}}"
+
       echo -n "* Configuring Tasks: "
       cat << EOF | kubectl apply -f - >/dev/null
       {{ include "rhtap.namespace.dev_setup_task" . | indent 8 }}
