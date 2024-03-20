@@ -51,6 +51,26 @@ spec:
         set -x
       {{end}}
 
+        SECRET_NAME="cosign-pub"
+        if [ -n "$COSIGN_SIGNING_PUBLIC_KEY" ]; then
+          echo -n "* \$SECRET_NAME secret: "
+          cat <<EOF | kubectl apply -f - >/dev/null
+        apiVersion: v1
+        data:
+          cosign.pub: $COSIGN_SIGNING_PUBLIC_KEY
+        kind: Secret
+        metadata:
+          labels:
+            app.kubernetes.io/instance: default
+            app.kubernetes.io/part-of: tekton-chains
+            helm.sh/chart: {{.Chart.Name}}-{{.Chart.Version}}
+            operator.tekton.dev/operand-name: tektoncd-chains
+          name: \$SECRET_NAME
+        type: Opaque
+        EOF
+          echo "OK"
+        fi
+
         SECRET_NAME="gitops-auth-secret"
         if [ -n "\$GIT_TOKEN" ]; then
           echo -n "* \$SECRET_NAME secret: "

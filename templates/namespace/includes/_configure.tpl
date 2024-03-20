@@ -18,6 +18,17 @@
       NAMESPACE="{{.Release.Namespace}}"
 
       echo -n "* Configuring Tasks: "
+      while ! kubectl get secrets -n openshift-pipelines signing-secrets >/dev/null 2>&1; do
+        echo -n "_"
+        sleep 2
+      done
+      echo -n "."
+      COSIGN_SIGNING_PUBLIC_KEY=""
+      while [ -z "${COSIGN_SIGNING_PUBLIC_KEY:-}" ]; do
+        echo -n "_"
+        sleep 2
+        COSIGN_SIGNING_PUBLIC_KEY=$(kubectl get secrets -n openshift-pipelines signing-secrets -o jsonpath='{.data.cosign\.pub}' 2>/dev/null)
+      done
       cat << EOF | kubectl apply -f - >/dev/null
       {{ include "rhtap.namespace.dev_setup_task" . | indent 8 }}
       EOF
