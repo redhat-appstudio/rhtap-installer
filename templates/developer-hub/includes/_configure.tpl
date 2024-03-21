@@ -12,11 +12,15 @@
       set -x
     {{ end }}
 
+      echo -n "Installing utils: "
+      dnf install -y diffutils > /dev/null 2>/dev/null
+      echo -n "."
 
       # Installing Helm...
       curl --fail --silent --show-error --location \
         https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
-          | bash
+          | bash >/dev/null
+      echo "OK"
 
       YQ_VERSION="v4.40.5"
       curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
