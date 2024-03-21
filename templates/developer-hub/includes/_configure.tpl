@@ -1,4 +1,5 @@
 {{ define "rhtap.developer-hub.configure" }}
+{{ if (index .Values "developer-hub") }}
 - name: configure-developer-hub
   image: "quay.io/codeready-toolchain/oc-client-base:latest"
   command:
@@ -142,4 +143,5 @@
 
       echo
       echo "Configuration successful"
+{{ end }}
 {{ end }}
