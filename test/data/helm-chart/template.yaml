@@ -141,6 +141,7 @@ spec:
               echo "Configuration successful"
         
                 
+        
         - name: configure-developer-hub
           image: "quay.io/codeready-toolchain/oc-client-base:latest"
           command:
@@ -502,6 +503,7 @@ spec:
         
               echo
               echo "Configuration successful"
+        
         
                 
         - name: configure-gitops
