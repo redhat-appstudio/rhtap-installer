@@ -12,11 +12,13 @@ echo "OK"
 ORIGNAL_POD=$(kubectl get pods -l app.kubernetes.io/name=developer-hub -o name)
 
 DEPLOYMENT="/tmp/deployment.yaml"
+DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
 oc get deployment/developer-hub -o yaml >"$DEPLOYMENT"
+cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
 
-echo -n "* Configure TLS:"
+echo -n "* Configuring TLS:"
 # Update env var.
-if [ "$(yq '.spec.template.spec.containers[0].env[] | select(.name == "NODE_EXTRA_CA_CERTS") | length' "$DEPLOYMENT")" == "2" ]; then
+if [ "$(yq '.spec.template.spec.containers[0].env[] | select(.name == "NODE_EXTRA_CA_CERTS") | length' "$DEPLOYMENT_PATCHED")" == "2" ]; then
     YQ_EXPRESSION='
 (
     .spec.template.spec.containers[].env[] |
@@ -26,10 +28,10 @@ if [ "$(yq '.spec.template.spec.containers[0].env[] | select(.name == "NODE_EXTR
 else
     YQ_EXPRESSION='.spec.template.spec.containers[0].env += {"name": "NODE_EXTRA_CA_CERTS", "value": "/ingress-cert/ca.crt"}'
 fi
-yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT"
+yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT_PATCHED"
 echo -n "."
 # Update volume mount
-if [ "$(yq '.spec.template.spec.containers[0].volumeMounts[] | select(.name == "kube-root-ca") | length' "$DEPLOYMENT")" == "2" ]; then
+if [ "$(yq '.spec.template.spec.containers[0].volumeMounts[] | select(.name == "kube-root-ca") | length' "$DEPLOYMENT_PATCHED")" == "2" ]; then
     YQ_EXPRESSION='
 (
     .spec.template.spec.containers[].volumeMounts[] |
@@ -39,10 +41,10 @@ if [ "$(yq '.spec.template.spec.containers[0].volumeMounts[] | select(.name == "
 else
     YQ_EXPRESSION='.spec.template.spec.containers[0].volumeMounts += {"name": "kube-root-ca", "mountPath": "/ingress-cert"}'
 fi
-yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT"
+yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT_PATCHED"
 echo -n "."
 # Update volume
-if [ "$(yq '.spec.template.spec.volumes[] | select(.name == "kube-root-ca") | length' "$DEPLOYMENT")" == "2" ]; then
+if [ "$(yq '.spec.template.spec.volumes[] | select(.name == "kube-root-ca") | length' "$DEPLOYMENT_PATCHED")" == "2" ]; then
     YQ_EXPRESSION='
 (
     .spec.template.spec.volumes[] |
@@ -52,16 +54,22 @@ if [ "$(yq '.spec.template.spec.volumes[] | select(.name == "kube-root-ca") | le
 else
     YQ_EXPRESSION='.spec.template.spec.volumes += {"name": "kube-root-ca", "configMap": {"name": "kube-root-ca.crt", "defaultMode": 420}}'
 fi
-yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT"
-echo -n "."
-oc apply -f "$DEPLOYMENT" >/dev/null 2>&1
-
-# Wait for the configuration to be deployed
-while kubectl get "$ORIGNAL_POD" -o name >/dev/null 2>&1 ; do
-    echo -n "_"
-    sleep 2
-done
-echo -n "."
-
+yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT_PATCHED"
 echo "OK"
+
+echo -n "* Updating deployment: "
+yq -i 'sort_keys(..)' "$DEPLOYMENT"
+yq -i 'sort_keys(..)' "$DEPLOYMENT_PATCHED"
+if ! diff --brief "$DEPLOYMENT" "$DEPLOYMENT_PATCHED" >/dev/null; then
+    oc apply -f "$DEPLOYMENT_PATCHED" >/dev/null 2>&1
+
+    # Wait for the configuration to be deployed
+    while kubectl get "$ORIGNAL_POD" -o name >/dev/null 2>&1 ; do
+        echo -n "_"
+        sleep 2
+    done
+    echo -n "OK"
+else
+    echo "Configuration already up to date"
+fi
 {{ end }}
