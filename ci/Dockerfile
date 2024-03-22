@@ -21,4 +21,7 @@ RUN dnf install -y -q --allowerasing --nobest nodejs-devel nodejs-libs python3-p
     mv shellcheck-v$SHELLCHECK_VERSION/shellcheck /usr/local/bin/shellcheck && chmod 755 /usr/local/bin/shellcheck && rm -rf "shellcheck-v$SHELLCHECK_VERSION" && \
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh && rm -rf get_helm.sh && \
     curl -Lso /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 && chmod +x /usr/local/bin/yq && \
-    curl -fsSL -o tkn.tgz "https://github.com/tektoncd/cli/releases/download/${TEKTONCD_CLI_VERSION}/tkn_${TEKTONCD_CLI_VERSION:1}_Linux_x86_64.tar.gz" && tar -C "/usr/local/bin" --no-same-owner -xzf "tkn.tgz" tkn && rm -rf "tkn.tgz"
+    curl -fsSL -o tkn.tgz "https://github.com/tektoncd/cli/releases/download/${TEKTONCD_CLI_VERSION}/tkn_${TEKTONCD_CLI_VERSION:1}_Linux_x86_64.tar.gz" && tar -C "/usr/local/bin" --no-same-owner -xzf "tkn.tgz" tkn && rm -rf "tkn.tgz" && \
+    curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 &&\
+    install -m 555 argocd-linux-amd64 /usr/local/bin/argocd && \
+    rm argocd-linux-amd64
