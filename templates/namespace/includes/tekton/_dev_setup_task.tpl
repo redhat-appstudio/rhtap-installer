@@ -51,7 +51,7 @@ spec:
         set -x
       {{end}}
 
-        SECRET_NAME="cosign-pub"
+        SECRET_NAME="cosign-pubs"
         if [ -n "$COSIGN_SIGNING_PUBLIC_KEY" ]; then
           echo -n "* \$SECRET_NAME secret: "
           cat <<EOF | kubectl apply -f - >/dev/null
