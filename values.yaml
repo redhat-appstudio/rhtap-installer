@@ -7,7 +7,7 @@ debug:
   script: false  # Prints commands before executing them.
 openshift-gitops:
   enabled: true
-  channel: gitops-1.11
+  channel: gitops-1.12
   workload-namespaces:
     - default
   git-token: ${GITOPS__GIT_TOKEN}  # Token to create/push repositories.

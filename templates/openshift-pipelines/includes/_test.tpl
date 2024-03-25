@@ -49,4 +49,8 @@
       }
 
       check_rhtap_pipelines_health
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
 {{ end }}

@@ -60,7 +60,7 @@ metadata:
   name: openshift-gitops-operator
   namespace: openshift-operators
 spec:
-  channel: gitops-1.11
+  channel: gitops-1.12
   installPlanApproval: Automatic
   name: openshift-gitops-operator
   source: redhat-operators
@@ -1689,6 +1689,132 @@ spec:
                 echo "Failed"
                 exit 1
               fi
+        
+                
+        - name: test-openshift-gitops
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              rollout_status() {
+                local namespace="${1}"
+                local deployment="${2}"
+        
+                if ! kubectl --namespace="${namespace}" --timeout="5m" \
+                  rollout status deployment "${deployment}"; then
+                  fail "'${namespace}/${deployment}' is not deployed as expected!"
+                fi
+              }
+        
+              check_rhtap_gitops_health() {
+                echo "[INFO] Checking OpenShift GitOps health..."
+        
+                # wait until tekton pipelines operator is created
+                echo "Waiting for OpenShift Pipelines Operator to be created..."
+                timeout 2m bash <<-EOF
+                until oc get deployment openshift-gitops-operator-controller-manager -n openshift-operators; do
+                  echo -n "."
+                  sleep 5
+                done
+              EOF
+                oc rollout status -n openshift-operators deployment/openshift-gitops-operator-controller-manager --timeout 10m
+        
+                # wait until all the deployments in the openshift-gitops namespace are ready:
+                rollout_status "openshift-gitops" "cluster"
+                rollout_status "openshift-gitops" "kam"
+                rollout_status "openshift-gitops" "openshift-gitops-applicationset-controller"
+                rollout_status "openshift-gitops" "openshift-gitops-dex-server"
+                rollout_status "openshift-gitops" "openshift-gitops-redis"
+                rollout_status "openshift-gitops" "openshift-gitops-repo-server"
+                rollout_status "openshift-gitops" "openshift-gitops-server"
+        
+        
+                # Check argocd instance creation
+                oc delete ns test-argocd --ignore-not-found --wait
+                oc create ns test-argocd
+        
+                cat << EOF | oc apply -f -
+                apiVersion: argoproj.io/v1beta1
+                kind: ArgoCD
+                metadata:
+                    name: argocd
+                    namespace: test-argocd
+              EOF
+        
+                while [ "$(oc -n test-argocd get pod | grep -c argocd-)" -ne 4 ]; do
+                  sleep 5
+                done
+                oc wait --for=condition=Ready -n test-argocd pod --timeout=15m  -l 'app.kubernetes.io/name in (argocd-application-controller,argocd-redis,argocd-repo-server,argocd-server)'
+        
+                oc delete ns test-argocd
+              }
+              
+              check_rhtap_gitops_health
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+        
+                
+        - name: test-openshift-pipelines
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              rollout_status() {
+                local namespace="${1}"
+                local deployment="${2}"
+        
+                if ! kubectl --namespace="${namespace}" --timeout="5m" \
+                  rollout status deployment "${deployment}"; then
+                  fail "'${namespace}/${deployment}' is not deployed as expected!"
+                fi
+              }
+              
+              check_rhtap_pipelines_health() {
+                echo "[INFO] Checking OpenShift Pipelines health..."
+        
+                # wait until tekton pipelines operator is created
+                echo "Waiting for OpenShift Pipelines Operator to be created..."
+                timeout 2m bash <<-EOF
+                until oc get deployment openshift-pipelines-operator -n openshift-operators; do
+                  echo -n "."
+                  sleep 5
+                done
+              EOF
+                oc rollout status -n openshift-operators deployment/openshift-pipelines-operator --timeout 10m
+        
+                # wait until clustertasks tekton CRD is properly deployed
+                timeout 10m bash <<-EOF
+                until oc get crd tasks.tekton.dev; do
+                  sleep 5
+                done
+              EOF
+        
+                timeout 2m bash <<-EOF
+                until oc get deployment tekton-pipelines-controller -n openshift-pipelines; do
+                  sleep 5
+                done
+              EOF
+                rollout_status "openshift-pipelines" "tekton-pipelines-controller"
+                rollout_status "openshift-pipelines" "tekton-pipelines-webhook"
+              }
+        
+              check_rhtap_pipelines_health
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
         
       restartPolicy: Never
       serviceAccountName: helm-manager
