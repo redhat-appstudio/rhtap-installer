@@ -177,14 +177,14 @@ spec:
             
               cat << _EOF_ >> "$APPCONFIGEXTRA"
               auth:
-                environment: development
+                environment: production
                 providers:
                   github:
-                    development:
+                    production:
                       clientId: ${GITHUB__APP__CLIENT_ID}
                       clientSecret: ${GITHUB__APP__CLIENT_SECRET}
                   gitlab:
-                    development:
+                    production:
                       clientId: ${GITLAB__OAUTH__CLIENT_ID}
                       clientSecret: ${GITLAB__OAUTH__CLIENT_SECRET}
               catalog:
