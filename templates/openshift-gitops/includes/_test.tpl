@@ -43,10 +43,11 @@
 
 
         # Check argocd instance creation
+        oc delete ns test-argocd --ignore-not-found --wait
         oc create ns test-argocd
 
         cat << EOF | oc apply -f -
-        apiVersion: argoproj.io/v1alpha1
+        apiVersion: argoproj.io/v1beta1
         kind: ArgoCD
         metadata:
             name: argocd
@@ -58,9 +59,12 @@
         done
         oc wait --for=condition=Ready -n test-argocd pod --timeout=15m  -l 'app.kubernetes.io/name in (argocd-application-controller,argocd-redis,argocd-repo-server,argocd-server)'
 
-
         oc delete ns test-argocd
       }
       
       check_rhtap_gitops_health
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
 {{ end }}
