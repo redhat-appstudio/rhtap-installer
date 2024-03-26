@@ -9,6 +9,8 @@
       set -o nounset
       set -o pipefail
 
+      ERRORS=()
+
       rollout_status() {
         local namespace="${1}"
         local deployment="${2}"
@@ -19,7 +21,7 @@
         fi
       }
 
-      check_rhtap_gitops_health() {
+      check_gitops_operator_health() {
         echo "[INFO] Checking OpenShift GitOps health..."
 
         # wait until tekton pipelines operator is created
@@ -61,8 +63,35 @@
 
         oc delete ns test-argocd
       }
-      
-      check_rhtap_gitops_health
+
+      check_rhtap_argocd_health() {
+        echo "[INFO] Checking RHTAP ArgoCD instance health..."
+        # Make sure the rhtap ArgoCD instance has permission on the cluster
+        echo -n "* ArgoCD clusterroles: "
+        if [ "$(oc get clusterroles -o name | grep -c "/{{.Release.Namespace}}-argocd-")" = "3" ]; then
+          echo "OK"
+        else
+          echo "FAIL"
+          ERRORS+=("ClusterRoles for ArgoCD not found.")
+        fi
+        echo -n "* ArgoCD clusterrolebindings: "
+        if [ "$(oc get clusterrolebindings -o name | grep -c "/{{.Release.Namespace}}-argocd-")" = "3" ]; then
+          echo "OK"
+        else
+          echo "FAIL"
+          ERRORS+=("ClusterRoleBindings for ArgoCD not found.")
+        fi
+      }
+
+      check_gitops_operator_health
+      check_rhtap_argocd_health
+
+      if [ "${#ERRORS[@]}" != "0" ]; then
+        for MSG in "${ERRORS[@]}"; do
+          echo "[ERROR]$MSG" >&2
+        done
+        exit 1
+      fi
   resources:
     limits:
       cpu: 100m
