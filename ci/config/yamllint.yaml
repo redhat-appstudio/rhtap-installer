@@ -2,6 +2,8 @@
 yaml-files:
   - '*.yaml'
   - '*.yml'
+ignore:
+  - 'templates/**'
 rules:
   braces: enable
   brackets: enable
