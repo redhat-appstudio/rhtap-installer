@@ -7,7 +7,7 @@ debug:
   script: false  # Prints commands before executing them.
 openshift-gitops:
   enabled: true
-  channel: gitops-1.11
+  channel: gitops-1.12
   workload-namespaces:
     - default
   git-token: ${GITOPS__GIT_TOKEN}  # Token to create/push repositories.
@@ -39,14 +39,14 @@ developer-hub:
       publisher:
         type: 'local'
     auth:
-      environment: development
+      environment: production
       providers:
         github:
-          development:
+          production:
             clientId: ${GITHUB__APP__CLIENT_ID}
             clientSecret: ${GITHUB__APP__CLIENT_SECRET}
         gitlab:
-          development:
+          production:
             clientId: ${GITLAB__OAUTH__CLIENT_ID}
             clientSecret: ${GITLAB__OAUTH__CLIENT_SECRET}
     integrations:

@@ -14,6 +14,20 @@ spec:
         Git token
       name: git_token
       type: string
+    {{$gitlab_token := ""}}
+    {{if (unset .Values "" | dig "developer-hub" "app-config" "integrations" "gitlab" nil)}}
+    {{$gitlab_token = (index .Values "developer-hub" "app-config" "integrations" "gitlab" 0 "token" | replace "$" "\\$")}}
+    {{end}}
+    - default: "{{$gitlab_token}}"
+      description: |
+        GitLab Personal Access Token
+      name: gitlab_token
+      type: string
+    - default: "{{index .Values "pipelines" "pipelines-as-code" "github" "webhook-secret" | replace "$" "\\$"}}"
+      description: |
+        Pipelines as Code webhook secret
+      name: pipelines_webhook_secret
+      type: string
     - default: {{index .Values "quay" "dockerconfigjson" | replace "$" "\\$"}}
       description: |
         Image registry token
@@ -34,6 +48,10 @@ spec:
     - env:
       - name: GIT_TOKEN
         value: \$(params.git_token)
+      - name: GITLAB_TOKEN
+        value: \$(params.gitlab_token)
+      - name: PIPELINES_WEBHOOK_SECRET
+        value: \$(params.pipelines_webhook_secret)
       - name: QUAY_DOCKERCONFIGJSON
         value: \$(params.quay_dockerconfigjson)
       - name: ROX_API_TOKEN
@@ -71,12 +89,33 @@ spec:
           echo "OK"
         fi
 
+        SECRET_NAME="gitlab-auth-secret"
+        if [ -n "\$GITLAB_TOKEN" ]; then
+          echo -n "* \$SECRET_NAME secret: "
+          kubectl create secret generic "\$SECRET_NAME" \
+            --from-literal=password=\$GITLAB_TOKEN \
+            --type=kubernetes.io/basic-auth \
+            --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
+          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart={{.Chart.Name}}-{{.Chart.Version}}" >/dev/null
+          echo "OK"
+        fi
+
         SECRET_NAME="gitops-auth-secret"
         if [ -n "\$GIT_TOKEN" ]; then
           echo -n "* \$SECRET_NAME secret: "
           kubectl create secret generic "\$SECRET_NAME" \
             --from-literal=password=\$GIT_TOKEN \
             --type=kubernetes.io/basic-auth \
+            --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
+          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart={{.Chart.Name}}-{{.Chart.Version}}" >/dev/null
+          echo "OK"
+        fi
+
+        SECRET_NAME="pipelines-secret"
+        if [ -n "\$PIPELINES_WEBHOOK_SECRET" ]; then
+          echo -n "* \$SECRET_NAME secret: "
+          kubectl create secret generic "\$SECRET_NAME" \
+            --from-literal=webhook.secret=\$PIPELINES_WEBHOOK_SECRET \
             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
           kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart={{.Chart.Name}}-{{.Chart.Version}}" >/dev/null
           echo "OK"

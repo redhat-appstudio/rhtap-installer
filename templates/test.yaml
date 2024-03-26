@@ -23,5 +23,7 @@ spec:
     spec:
       containers:
         {{include "rhtap.namespace.test" . | indent 8}}
+        {{include "rhtap.openshift-gitops.test" . | indent 8}}
+        {{include "rhtap.openshift-pipelines.test" . | indent 8}}
       restartPolicy: Never
       serviceAccountName: helm-manager

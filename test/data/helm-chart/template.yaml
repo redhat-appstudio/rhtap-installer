@@ -60,7 +60,7 @@ metadata:
   name: openshift-gitops-operator
   namespace: openshift-operators
 spec:
-  channel: gitops-1.11
+  channel: gitops-1.12
   installPlanApproval: Automatic
   name: openshift-gitops-operator
   source: redhat-operators
@@ -108,7 +108,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.10.3"
+    helm.sh/chart: "rhtap-0.11.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -121,7 +121,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.10.3"
+        helm.sh/chart: "rhtap-0.11.1"
     spec:
       containers:
       
@@ -177,14 +177,14 @@ spec:
             
               cat << _EOF_ >> "$APPCONFIGEXTRA"
               auth:
-                environment: development
+                environment: production
                 providers:
                   github:
-                    development:
+                    production:
                       clientId: ${GITHUB__APP__CLIENT_ID}
                       clientSecret: ${GITHUB__APP__CLIENT_SECRET}
                   gitlab:
-                    development:
+                    production:
                       clientId: ${GITLAB__OAUTH__CLIENT_ID}
                       clientSecret: ${GITLAB__OAUTH__CLIENT_SECRET}
               catalog:
@@ -875,7 +875,7 @@ spec:
                 metadata:
                   name: rhtap-dev-namespace-setup
                   annotations:
-                    helm.sh/chart: "rhtap-0.10.3"
+                    helm.sh/chart: "rhtap-0.11.1"
                 spec:
                   description: >-
                     Create the required resources for rhtap tasks to run in a namespace.
@@ -884,6 +884,20 @@ spec:
                       description: |
                         Git token
                       name: git_token
+                      type: string
+                    
+                    
+                    
+                    
+                    - default: "\${GITLAB_TOKEN}"
+                      description: |
+                        GitLab Personal Access Token
+                      name: gitlab_token
+                      type: string
+                    - default: "\${GITHUB__APP__WEBHOOK_SECRET}"
+                      description: |
+                        Pipelines as Code webhook secret
+                      name: pipelines_webhook_secret
                       type: string
                     - default: \${QUAY__DOCKERCONFIGJSON}
                       description: |
@@ -905,6 +919,10 @@ spec:
                     - env:
                       - name: GIT_TOKEN
                         value: \$(params.git_token)
+                      - name: GITLAB_TOKEN
+                        value: \$(params.gitlab_token)
+                      - name: PIPELINES_WEBHOOK_SECRET
+                        value: \$(params.pipelines_webhook_secret)
                       - name: QUAY_DOCKERCONFIGJSON
                         value: \$(params.quay_dockerconfigjson)
                       - name: ROX_API_TOKEN
@@ -932,11 +950,22 @@ spec:
                           labels:
                             app.kubernetes.io/instance: default
                             app.kubernetes.io/part-of: tekton-chains
-                            helm.sh/chart: rhtap-0.10.3
+                            helm.sh/chart: rhtap-0.11.1
                             operator.tekton.dev/operand-name: tektoncd-chains
                           name: \$SECRET_NAME
                         type: Opaque
                         EOF
+                          echo "OK"
+                        fi
+                
+                        SECRET_NAME="gitlab-auth-secret"
+                        if [ -n "\$GITLAB_TOKEN" ]; then
+                          echo -n "* \$SECRET_NAME secret: "
+                          kubectl create secret generic "\$SECRET_NAME" \
+                            --from-literal=password=\$GITLAB_TOKEN \
+                            --type=kubernetes.io/basic-auth \
+                            --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.11.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -947,7 +976,17 @@ spec:
                             --from-literal=password=\$GIT_TOKEN \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.3" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.11.1" >/dev/null
+                          echo "OK"
+                        fi
+                
+                        SECRET_NAME="pipelines-secret"
+                        if [ -n "\$PIPELINES_WEBHOOK_SECRET" ]; then
+                          echo -n "* \$SECRET_NAME secret: "
+                          kubectl create secret generic "\$SECRET_NAME" \
+                            --from-literal=webhook.secret=\$PIPELINES_WEBHOOK_SECRET \
+                            --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.11.1" >/dev/null
                           echo "OK"
                         fi
                         
@@ -961,7 +1000,7 @@ spec:
                             kubectl apply --filename - --overwrite=true >/dev/null
                           rm "\$DATA"
                           echo -n "."
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.3" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.11.1" >/dev/null
                           echo -n "."
                           while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
                             sleep 2
@@ -986,7 +1025,7 @@ spec:
                             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.10.3" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=rhtap-0.11.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -1003,7 +1042,7 @@ spec:
                 metadata:
                   name: rhtap-pe-info
                   annotations:
-                    helm.sh/chart: "rhtap-0.10.3"
+                    helm.sh/chart: "rhtap-0.11.1"
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1097,7 +1136,7 @@ spec:
               metadata:
                 generateName: rhtap-dev-namespace-setup-
                 annotations:
-                  helm.sh/chart: "rhtap-0.10.3"
+                  helm.sh/chart: "rhtap-0.11.1"
               spec:
                 pipelineSpec:
                   tasks:
@@ -1588,7 +1627,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 2.1.0
-    helm.sh/chart: "rhtap-0.10.3"
+    helm.sh/chart: "rhtap-0.11.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1600,7 +1639,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "rhtap-0.10.3"
+        helm.sh/chart: "rhtap-0.11.1"
     spec:
       containers:
                 
@@ -1621,7 +1660,7 @@ spec:
                 metadata:
                   generateName: rhtap-test-config-
                   annotations:
-                    helm.sh/chart: "rhtap-0.10.3"
+                    helm.sh/chart: "rhtap-0.11.1"
                 spec:
                   pipelineSpec:
                     tasks:
@@ -1650,6 +1689,132 @@ spec:
                 echo "Failed"
                 exit 1
               fi
+        
+                
+        - name: test-openshift-gitops
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              rollout_status() {
+                local namespace="${1}"
+                local deployment="${2}"
+        
+                if ! kubectl --namespace="${namespace}" --timeout="5m" \
+                  rollout status deployment "${deployment}"; then
+                  fail "'${namespace}/${deployment}' is not deployed as expected!"
+                fi
+              }
+        
+              check_rhtap_gitops_health() {
+                echo "[INFO] Checking OpenShift GitOps health..."
+        
+                # wait until tekton pipelines operator is created
+                echo "Waiting for OpenShift Pipelines Operator to be created..."
+                timeout 2m bash <<-EOF
+                until oc get deployment openshift-gitops-operator-controller-manager -n openshift-operators; do
+                  echo -n "."
+                  sleep 5
+                done
+              EOF
+                oc rollout status -n openshift-operators deployment/openshift-gitops-operator-controller-manager --timeout 10m
+        
+                # wait until all the deployments in the openshift-gitops namespace are ready:
+                rollout_status "openshift-gitops" "cluster"
+                rollout_status "openshift-gitops" "kam"
+                rollout_status "openshift-gitops" "openshift-gitops-applicationset-controller"
+                rollout_status "openshift-gitops" "openshift-gitops-dex-server"
+                rollout_status "openshift-gitops" "openshift-gitops-redis"
+                rollout_status "openshift-gitops" "openshift-gitops-repo-server"
+                rollout_status "openshift-gitops" "openshift-gitops-server"
+        
+        
+                # Check argocd instance creation
+                oc delete ns test-argocd --ignore-not-found --wait
+                oc create ns test-argocd
+        
+                cat << EOF | oc apply -f -
+                apiVersion: argoproj.io/v1beta1
+                kind: ArgoCD
+                metadata:
+                    name: argocd
+                    namespace: test-argocd
+              EOF
+        
+                while [ "$(oc -n test-argocd get pod | grep -c argocd-)" -ne 4 ]; do
+                  sleep 5
+                done
+                oc wait --for=condition=Ready -n test-argocd pod --timeout=15m  -l 'app.kubernetes.io/name in (argocd-application-controller,argocd-redis,argocd-repo-server,argocd-server)'
+        
+                oc delete ns test-argocd
+              }
+              
+              check_rhtap_gitops_health
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+        
+                
+        - name: test-openshift-pipelines
+          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -o errexit
+              set -o nounset
+              set -o pipefail
+        
+              rollout_status() {
+                local namespace="${1}"
+                local deployment="${2}"
+        
+                if ! kubectl --namespace="${namespace}" --timeout="5m" \
+                  rollout status deployment "${deployment}"; then
+                  fail "'${namespace}/${deployment}' is not deployed as expected!"
+                fi
+              }
+              
+              check_rhtap_pipelines_health() {
+                echo "[INFO] Checking OpenShift Pipelines health..."
+        
+                # wait until tekton pipelines operator is created
+                echo "Waiting for OpenShift Pipelines Operator to be created..."
+                timeout 2m bash <<-EOF
+                until oc get deployment openshift-pipelines-operator -n openshift-operators; do
+                  echo -n "."
+                  sleep 5
+                done
+              EOF
+                oc rollout status -n openshift-operators deployment/openshift-pipelines-operator --timeout 10m
+        
+                # wait until clustertasks tekton CRD is properly deployed
+                timeout 10m bash <<-EOF
+                until oc get crd tasks.tekton.dev; do
+                  sleep 5
+                done
+              EOF
+        
+                timeout 2m bash <<-EOF
+                until oc get deployment tekton-pipelines-controller -n openshift-pipelines; do
+                  sleep 5
+                done
+              EOF
+                rollout_status "openshift-pipelines" "tekton-pipelines-controller"
+                rollout_status "openshift-pipelines" "tekton-pipelines-webhook"
+              }
+        
+              check_rhtap_pipelines_health
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
         
       restartPolicy: Never
       serviceAccountName: helm-manager
