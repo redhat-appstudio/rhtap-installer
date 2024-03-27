@@ -36,7 +36,7 @@ spec:
           secretKeyRef:
             name: {{ .Chart.Name }}-pipelines-secret
             key: webhook-url
-      image: "k8s.gcr.io/hyperkube:v1.12.1"
+      image: "quay.io/codeready-toolchain/oc-client-base:latest"
       name: setup
       script: |
         #!/usr/bin/env bash
