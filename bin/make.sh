@@ -209,7 +209,9 @@ test() {
 
 uninstall() {
   # Remove install namespace
-  kubectl get applications -n "$NAMESPACE" --ignore-not-found --output name | xargs --no-run-if-empty kubectl delete -n "$NAMESPACE" --wait
+  if kubectl api-resources | grep -q applications; then
+    kubectl get applications -n "$NAMESPACE" --ignore-not-found --output name | xargs --no-run-if-empty kubectl delete -n "$NAMESPACE" --wait
+  fi
   kubectl delete namespace "$NAMESPACE" --ignore-not-found --wait &
 
   # Remove DH component deployment namespaces
