@@ -17,6 +17,15 @@
       "artifacts.taskrun.storage": "oci",
       "transparency.enabled": "true",
       "transparency.url": "http://rekor-server.{{.Release.Namespace}}.svc"
+    },
+    "platforms": {
+      "openshift": {
+        "pipelinesAsCode": {
+          "settings": {
+            "remember-ok-to-test": "false"
+          }
+        }
+      }
     }
   }
 }
