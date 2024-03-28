@@ -102,7 +102,7 @@
         -o yaml \
         --dry-run=client | kubectl apply -f - >/dev/null
       echo -n "."
-      helm repo add developer-hub https://charts.openshift.io/ >/dev/null
+      helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation >/dev/null
       echo -n "."
       if ! helm upgrade \
         --install \
@@ -110,7 +110,7 @@
         --namespace=${NAMESPACE} \
         --values="$HELM_VALUES" \
         developer-hub \
-        developer-hub/redhat-developer-hub >/dev/null; then
+        developer-hub/developer-hub >/dev/null; then
         echo "ERROR while installing chart!"
         exit 1
       fi
