@@ -85,6 +85,13 @@
       echo 'Expected "developer-hub" in the values.yaml' >&2
       exit 1
     {{ end }}
+      echo -n "."
+      KUBERNETES_CLUSTER_FQDN="$(
+        kubectl get routes -n openshift-pipelines pipelines-as-code-controller -o jsonpath='{.spec.host}' | \
+        cut -d. -f 2-
+      )"
+      export KUBERNETES_CLUSTER_FQDN
+      yq --inplace '.global.clusterRouterBase = strenv(KUBERNETES_CLUSTER_FQDN)' "$HELM_VALUES"
       echo "OK"
 
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
