@@ -94,6 +94,7 @@ spec:
           echo -n "* \$SECRET_NAME secret: "
           kubectl create secret generic "\$SECRET_NAME" \
             --from-literal=password=\$GITLAB_TOKEN \
+            --from-literal=username=oauth2 \
             --type=kubernetes.io/basic-auth \
             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
           kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart={{.Chart.Name}}-{{.Chart.Version}}" >/dev/null
