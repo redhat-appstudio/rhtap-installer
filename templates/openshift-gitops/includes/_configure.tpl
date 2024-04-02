@@ -38,8 +38,8 @@
       done
       echo "OK"
 
-      RHTAP_ARGOCD_NAMESPACE="{{ .Release.Namespace}}"
-      RHTAP_ARGOCD_INSTANCE="{{ .Chart.Name }}-argocd"
+      RHTAP_ARGOCD_NAMESPACE="{{.Release.Namespace}}"
+      RHTAP_ARGOCD_INSTANCE="{{.Chart.Name}}"
 
       echo -n "* Creating ArgoCD instance for RHTAP: "
       cat <<EOF | kubectl apply -n "${RHTAP_ARGOCD_NAMESPACE}" -f -
