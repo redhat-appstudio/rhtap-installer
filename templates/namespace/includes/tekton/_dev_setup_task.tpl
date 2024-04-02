@@ -58,7 +58,7 @@ spec:
         value: \$(params.acs_api_token)
       - name: ROX_ENDPOINT
         value: \$(params.acs_central_endpoint)
-      image: "quay.io/codeready-toolchain/oc-client-base:latest"
+      image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
       name: setup
       script: |
         #!/usr/bin/env bash

@@ -25,7 +25,7 @@ spec:
       containers:
       {{if eq .Values.debug.container true}}
         - name: debug-container
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           workingDir: /tmp
           command:
             - /bin/bash

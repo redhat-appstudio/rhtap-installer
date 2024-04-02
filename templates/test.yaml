@@ -21,6 +21,7 @@ spec:
         app.kubernetes.io/instance: {{.Release.Name | quote}}
         helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
     spec:
+      automountServiceAccountToken: true
       containers:
         {{include "rhtap.namespace.test" . | indent 8}}
         {{include "rhtap.openshift-gitops.test" . | indent 8}}
