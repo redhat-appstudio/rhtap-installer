@@ -1,7 +1,7 @@
 {{ define "rhtap.trusted-artifact-signer.configure" }}
 {{ if (index .Values "trusted-artifact-signer") }}
 - name: configure-trusted-artifact-signer
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c

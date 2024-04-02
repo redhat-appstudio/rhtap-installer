@@ -1,6 +1,6 @@
 {{ define "rhtap.namespace.test" }}
 - name: test-namespace
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c
@@ -25,4 +25,8 @@
         echo "Failed"
         exit 1
       fi
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
 {{ end }}
