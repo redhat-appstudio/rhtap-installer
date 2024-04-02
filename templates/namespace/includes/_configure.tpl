@@ -1,6 +1,6 @@
 {{ define "rhtap.namespace.configure" }}
 - name: configure-namespace
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c

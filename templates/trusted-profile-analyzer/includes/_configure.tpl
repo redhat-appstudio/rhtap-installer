@@ -1,7 +1,7 @@
 {{ define "rhtap.trusted-profile-analyzer.configure" }}
 {{ if (index .Values "trusted-profile-analyzer") }}
 - name: configure-trusted-profile-analyzer
-  image: quay.io/codeready-toolchain/oc-client-base:latest
+  image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
   command:
     - /bin/bash
     - -c
