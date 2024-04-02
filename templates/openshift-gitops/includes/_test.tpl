@@ -1,5 +1,5 @@
-{{ define "rhtap.openshift-gitops.test" }}
-- name: test-openshift-gitops
+{{ define "rhtap.gitops.test" }}
+- name: test-gitops
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
@@ -9,6 +9,10 @@
       set -o nounset
       set -o pipefail
 
+    {{ if eq .Values.debug.script true }}
+      set -x
+    {{ end }}
+    
       ERRORS=()
 
       rollout_status() {
