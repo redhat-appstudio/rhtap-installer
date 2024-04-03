@@ -1,21 +1,21 @@
 # yamllint disable rule:line-length
 # yamllint disable rule:trailing-spaces
 ---
-# Source: trusted-application-pipeline/templates/developer-hub/serviceaccount.yaml
+# Source: redhat-trusted-application-pipeline/templates/developer-hub/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: rhdh-kubernetes-plugin
   namespace: rhtap
 ---
-# Source: trusted-application-pipeline/templates/serviceaccount.yaml
+# Source: redhat-trusted-application-pipeline/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: helm-manager
   namespace: rhtap
 ---
-# Source: trusted-application-pipeline/templates/developer-hub/serviceaccount.yaml
+# Source: redhat-trusted-application-pipeline/templates/developer-hub/serviceaccount.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -29,7 +29,7 @@ subjects:
     name: rhdh-kubernetes-plugin
     namespace: rhtap
 ---
-# Source: trusted-application-pipeline/templates/serviceaccount.yaml
+# Source: redhat-trusted-application-pipeline/templates/serviceaccount.yaml
 # The ServiceAccount needs to be able to manage resources that
 # might not be declated until after Subscriptions have been
 # deployed (e.g. TektonConfig).
@@ -53,7 +53,7 @@ subjects:
     name: helm-manager
     namespace: rhtap
 ---
-# Source: trusted-application-pipeline/templates/openshift-gitops/subscription.yaml
+# Source: redhat-trusted-application-pipeline/templates/openshift-gitops/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -70,7 +70,7 @@ spec:
       - name: ARGOCD_CLUSTER_CONFIG_NAMESPACES
         value: openshift-gitops,rhtap
 ---
-# Source: trusted-application-pipeline/templates/openshift-pipelines/subscription.yaml
+# Source: redhat-trusted-application-pipeline/templates/openshift-pipelines/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -83,7 +83,7 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
-# Source: trusted-application-pipeline/templates/trusted-artifact-signer/subscription.yaml
+# Source: redhat-trusted-application-pipeline/templates/trusted-artifact-signer/subscription.yaml
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -99,7 +99,7 @@ spec:
   sourceNamespace: openshift-marketplace
   startingCSV: rhtas-operator.v0.0.2
 ---
-# Source: trusted-application-pipeline/templates/configure.yaml
+# Source: redhat-trusted-application-pipeline/templates/configure.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -108,7 +108,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.1.0
-    helm.sh/chart: "trusted-application-pipeline-0.1.0"
+    helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -121,7 +121,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "trusted-application-pipeline-0.1.0"
+        helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
     spec:
       containers:
       
@@ -876,10 +876,10 @@ spec:
                 metadata:
                   name: rhtap-dev-namespace-setup
                   annotations:
-                    helm.sh/chart: "trusted-application-pipeline-0.1.0"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
                 spec:
                   description: >-
-                    Create the required resources for trusted-application-pipeline tasks to run in a namespace.
+                    Create the required resources for redhat-trusted-application-pipeline tasks to run in a namespace.
                   params:
                     - default: \${GITOPS__GIT_TOKEN}
                       description: |
@@ -951,7 +951,7 @@ spec:
                           labels:
                             app.kubernetes.io/instance: default
                             app.kubernetes.io/part-of: tekton-chains
-                            helm.sh/chart: trusted-application-pipeline-0.1.0
+                            helm.sh/chart: redhat-trusted-application-pipeline-0.1.0
                             operator.tekton.dev/operand-name: tektoncd-chains
                           name: \$SECRET_NAME
                         type: Opaque
@@ -967,7 +967,7 @@ spec:
                             --from-literal=username=oauth2 \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                 
@@ -978,7 +978,7 @@ spec:
                             --from-literal=password=\$GIT_TOKEN \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                 
@@ -988,7 +988,7 @@ spec:
                           kubectl create secret generic "\$SECRET_NAME" \
                             --from-literal=webhook.secret=\$PIPELINES_WEBHOOK_SECRET \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                         
@@ -1002,7 +1002,7 @@ spec:
                             kubectl apply --filename - --overwrite=true >/dev/null
                           rm "\$DATA"
                           echo -n "."
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.1.0" >/dev/null
                           echo -n "."
                           while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
                             sleep 2
@@ -1027,12 +1027,12 @@ spec:
                             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                 
                         echo
-                        echo "Namespace is ready to execute trusted-application-pipeline pipelines"
+                        echo "Namespace is ready to execute redhat-trusted-application-pipeline pipelines"
                       workingDir: /tmp
                 
               EOF
@@ -1044,7 +1044,7 @@ spec:
                 metadata:
                   name: rhtap-pe-info
                   annotations:
-                    helm.sh/chart: "trusted-application-pipeline-0.1.0"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1138,7 +1138,7 @@ spec:
               metadata:
                 generateName: rhtap-dev-namespace-setup-
                 annotations:
-                  helm.sh/chart: "trusted-application-pipeline-0.1.0"
+                  helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
               spec:
                 pipelineSpec:
                   tasks:
@@ -1629,16 +1629,16 @@ spec:
       restartPolicy: Never
       serviceAccountName: helm-manager
 ---
-# Source: trusted-application-pipeline/templates/tests/test.yaml
+# Source: redhat-trusted-application-pipeline/templates/tests/test.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "trusted-application-pipeline-installer-test"
+  name: "rhtap-installer-test"
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.1.0
-    helm.sh/chart: "trusted-application-pipeline-0.1.0"
+    helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1650,7 +1650,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "trusted-application-pipeline-0.1.0"
+        helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
     spec:
       automountServiceAccountToken: true
       containers:
@@ -1672,7 +1672,7 @@ spec:
                 metadata:
                   generateName: rhtap-test-config-
                   annotations:
-                    helm.sh/chart: "trusted-application-pipeline-0.1.0"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.1.0"
                 spec:
                   pipelineSpec:
                     tasks:

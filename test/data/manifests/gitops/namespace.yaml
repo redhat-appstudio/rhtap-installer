@@ -4,4 +4,4 @@ kind: Namespace
 metadata:
   name: my_namespace
   labels:
-    argocd.argoproj.io/managed-by: trusted-application-pipeline
+    argocd.argoproj.io/managed-by: rhtap-argocd
