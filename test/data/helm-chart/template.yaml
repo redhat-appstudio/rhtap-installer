@@ -107,8 +107,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
-    app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "trusted-application-pipeline-1.0.0"
+    app.kubernetes.io/version: 1.1.0
+    helm.sh/chart: "trusted-application-pipeline-0.1.0"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -121,7 +121,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "trusted-application-pipeline-1.0.0"
+        helm.sh/chart: "trusted-application-pipeline-0.1.0"
     spec:
       containers:
       
@@ -875,7 +875,7 @@ spec:
                 metadata:
                   name: trusted-application-pipeline-dev-namespace-setup
                   annotations:
-                    helm.sh/chart: "trusted-application-pipeline-1.0.0"
+                    helm.sh/chart: "trusted-application-pipeline-0.1.0"
                 spec:
                   description: >-
                     Create the required resources for trusted-application-pipeline tasks to run in a namespace.
@@ -950,7 +950,7 @@ spec:
                           labels:
                             app.kubernetes.io/instance: default
                             app.kubernetes.io/part-of: tekton-chains
-                            helm.sh/chart: trusted-application-pipeline-1.0.0
+                            helm.sh/chart: trusted-application-pipeline-0.1.0
                             operator.tekton.dev/operand-name: tektoncd-chains
                           name: \$SECRET_NAME
                         type: Opaque
@@ -966,7 +966,7 @@ spec:
                             --from-literal=username=oauth2 \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-1.0.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                 
@@ -977,7 +977,7 @@ spec:
                             --from-literal=password=\$GIT_TOKEN \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-1.0.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                 
@@ -987,7 +987,7 @@ spec:
                           kubectl create secret generic "\$SECRET_NAME" \
                             --from-literal=webhook.secret=\$PIPELINES_WEBHOOK_SECRET \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-1.0.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                         
@@ -1001,7 +1001,7 @@ spec:
                             kubectl apply --filename - --overwrite=true >/dev/null
                           rm "\$DATA"
                           echo -n "."
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-1.0.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
                           echo -n "."
                           while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
                             sleep 2
@@ -1026,7 +1026,7 @@ spec:
                             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-1.0.0" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=trusted-application-pipeline-0.1.0" >/dev/null
                           echo "OK"
                         fi
                 
@@ -1043,7 +1043,7 @@ spec:
                 metadata:
                   name: trusted-application-pipeline-pe-info
                   annotations:
-                    helm.sh/chart: "trusted-application-pipeline-1.0.0"
+                    helm.sh/chart: "trusted-application-pipeline-0.1.0"
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1137,7 +1137,7 @@ spec:
               metadata:
                 generateName: trusted-application-pipeline-dev-namespace-setup-
                 annotations:
-                  helm.sh/chart: "trusted-application-pipeline-1.0.0"
+                  helm.sh/chart: "trusted-application-pipeline-0.1.0"
               spec:
                 pipelineSpec:
                   tasks:
@@ -1628,7 +1628,7 @@ spec:
       restartPolicy: Never
       serviceAccountName: helm-manager
 ---
-# Source: trusted-application-pipeline/templates/test.yaml
+# Source: trusted-application-pipeline/templates/tests/test.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1636,8 +1636,8 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
-    app.kubernetes.io/version: 1.0.0
-    helm.sh/chart: "trusted-application-pipeline-1.0.0"
+    app.kubernetes.io/version: 1.1.0
+    helm.sh/chart: "trusted-application-pipeline-0.1.0"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1649,7 +1649,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "trusted-application-pipeline-1.0.0"
+        helm.sh/chart: "trusted-application-pipeline-0.1.0"
     spec:
       automountServiceAccountToken: true
       containers:
@@ -1671,7 +1671,7 @@ spec:
                 metadata:
                   generateName: rhtap-test-config-
                   annotations:
-                    helm.sh/chart: "trusted-application-pipeline-1.0.0"
+                    helm.sh/chart: "trusted-application-pipeline-0.1.0"
                 spec:
                   pipelineSpec:
                     tasks:
