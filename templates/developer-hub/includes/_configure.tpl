@@ -1,7 +1,7 @@
 {{ define "rhtap.developer-hub.configure" }}
 {{ if (index .Values "developer-hub") }}
 - name: configure-developer-hub
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c
@@ -85,6 +85,13 @@
       echo 'Expected "developer-hub" in the values.yaml' >&2
       exit 1
     {{ end }}
+      echo -n "."
+      KUBERNETES_CLUSTER_FQDN="$(
+        kubectl get routes -n openshift-pipelines pipelines-as-code-controller -o jsonpath='{.spec.host}' | \
+        cut -d. -f 2-
+      )"
+      export KUBERNETES_CLUSTER_FQDN
+      yq --inplace '.global.clusterRouterBase = strenv(KUBERNETES_CLUSTER_FQDN)' "$HELM_VALUES"
       echo "OK"
 
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
@@ -95,7 +102,7 @@
         -o yaml \
         --dry-run=client | kubectl apply -f - >/dev/null
       echo -n "."
-      helm repo add developer-hub https://charts.openshift.io/ >/dev/null
+      helm repo add developer-hub https://raw.githubusercontent.com/rhdh-bot/openshift-helm-charts/rhdh-1.1-rhel-9/installation >/dev/null
       echo -n "."
       if ! helm upgrade \
         --install \
@@ -103,7 +110,7 @@
         --namespace=${NAMESPACE} \
         --values="$HELM_VALUES" \
         developer-hub \
-        developer-hub/redhat-developer-hub >/dev/null; then
+        developer-hub/developer-hub >/dev/null; then
         echo "ERROR while installing chart!"
         exit 1
       fi

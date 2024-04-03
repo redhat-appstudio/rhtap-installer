@@ -3,7 +3,7 @@
 apiVersion: argoproj.io/v1beta1
 kind: ArgoCD
 metadata:
-  name: {{ .Chart.Name }}-argocd
+  name: {{.Chart.Name}}
 spec:
   server:
     autoscale:

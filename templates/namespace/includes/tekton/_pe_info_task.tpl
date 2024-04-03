@@ -36,7 +36,7 @@ spec:
           secretKeyRef:
             name: {{ .Chart.Name }}-pipelines-secret
             key: webhook-url
-      image: "k8s.gcr.io/hyperkube:v1.12.1"
+      image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
       name: setup
       script: |
         #!/usr/bin/env bash

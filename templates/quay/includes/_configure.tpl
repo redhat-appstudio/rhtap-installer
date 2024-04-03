@@ -1,6 +1,6 @@
 {{ define "rhtap.quay.configure" }}
 - name: configure-quay
-  image: "k8s.gcr.io/hyperkube:v1.12.1"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c

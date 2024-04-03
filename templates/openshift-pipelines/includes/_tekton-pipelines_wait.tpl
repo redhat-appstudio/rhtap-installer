@@ -28,7 +28,7 @@ spec:
   description: >-
     Test task to validate that Tekton is installed.
   steps:
-    - image: "k8s.gcr.io/hyperkube:v1.12.1"
+    - image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
       name: setup
       script: |
         #!/usr/bin/env bash

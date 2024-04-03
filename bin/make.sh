@@ -18,6 +18,8 @@ Manage the Helm chart in '$NAMESPACE' as '$APP_NAME'.
 Commands:
     apply
         Apply (install/update) the helm chart.
+    certify
+        Generate the report certifying the helm chart
     delete
         Delete the helm chart.
     release
@@ -26,6 +28,8 @@ Commands:
         Render the helm chart.
     test
         Run the helm chart tests.
+    uninstall
+        Uninstall as much of the chart as possible.
     values
         Generate a 'values-private.yaml' configuration based on environment
         variables defined in 'private.env'.
@@ -67,7 +71,7 @@ set_defaults() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
-    apply | delete | release | template | test | values)
+    apply | certify | delete | release | template | test | uninstall | values)
       ACTION="$1"
       ;;
     -a | --app-name)
@@ -129,13 +133,42 @@ init() {
   helm dependencies update >/dev/null
 }
 
-delete() {
-  $helm uninstall "$APP_NAME"
+apply() {
+  $helm upgrade --install --create-namespace --timeout=20m "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
   $helm list
 }
 
-apply() {
-  $helm upgrade --install --create-namespace --timeout=20m "$APP_NAME" "$VERSION" "${PASSTHROUGH_ARGS[@]}"
+certify() {
+  HELM_REPOSITORY="tmp/charts"
+  CERTIFICATION_DIR="tmp/certification"
+  mkdir -p "$HELM_REPOSITORY"
+  mkdir -p "$CERTIFICATION_DIR"
+  CHART_TGZ=$(helm package --destination "$HELM_REPOSITORY" . | sed 's:.*/::')
+  if kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+    # Can be removed when using helm to uninstall the chart doesn't
+    # break the GitOps operator.
+    echo "Cannot certify the chart on a cluster on which the chart was already installed" >&2
+    exit 1
+  else
+    kubectl create namespace "$NAMESPACE"
+  fi
+  podman run --rm \
+    -e KUBECONFIG=/.kube/config \
+    -v "${HOME}/.kube":/.kube:z \
+    -v "$(pwd)":/workspace:z \
+    "quay.io/redhat-certification/chart-verifier" \
+    verify \
+    --chart-values "/workspace/private-values.yaml" \
+    --helm-install-timeout 20m \
+    --namespace "$NAMESPACE" \
+    --set chart-testing.release="$APP_NAME" \
+    --set profile.vendorType=redhat \
+    "/workspace/$HELM_REPOSITORY/$CHART_TGZ" |
+    yq '.results |= sort_by(.check)' >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
+}
+
+delete() {
+  $helm uninstall "$APP_NAME"
   $helm list
 }
 
@@ -203,6 +236,26 @@ template() {
 
 test() {
   $helm test "$APP_NAME"
+}
+
+uninstall() {
+  # Remove install namespace
+  if kubectl api-resources | grep -q applications; then
+    kubectl get applications -n "$NAMESPACE" --ignore-not-found --output name | xargs --no-run-if-empty kubectl delete -n "$NAMESPACE" --wait
+  fi
+  kubectl delete namespace "$NAMESPACE" --ignore-not-found --wait &
+
+  # Remove DH component deployment namespaces
+  for namespace in $(
+    kubectl get namespaces -o yaml |
+      yq '
+      .items[] |
+      select(.metadata.annotations["argocd.argoproj.io/managed-by"] == "trusted-application-pipeline") |
+      .metadata.name'
+  ); do
+    kubectl delete namespace "$namespace" --wait &
+  done
+  wait
 }
 
 values() {
