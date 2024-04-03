@@ -10,7 +10,7 @@ kubeVersion: ">= 1.25.0-0"
 maintainers:
   - name: Red Hat Trusted Application Pipeline Team
     url: https://github.com/redhat-appstudio/rhtap-installer
-name: trusted-application-pipeline
+name: redhat-trusted-application-pipeline
 sources:
   - https://github.com/redhat-appstudio/rhtap-installer
 type: application
