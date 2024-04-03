@@ -1,6 +1,6 @@
 {{ define "rhtap.gitops.configure" }}
 - name: configure-gitops
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/sh
     - -c
@@ -38,8 +38,8 @@
       done
       echo "OK"
 
-      RHTAP_ARGOCD_NAMESPACE="{{ .Release.Namespace}}"
-      RHTAP_ARGOCD_INSTANCE="{{ .Chart.Name }}-argocd"
+      RHTAP_ARGOCD_NAMESPACE="{{.Release.Namespace}}"
+      RHTAP_ARGOCD_INSTANCE="{{.Chart.Name}}"
 
       echo -n "* Creating ArgoCD instance for RHTAP: "
       cat <<EOF | kubectl apply -n "${RHTAP_ARGOCD_NAMESPACE}" -f -

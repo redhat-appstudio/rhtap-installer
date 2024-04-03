@@ -1,6 +1,6 @@
 {{ define "rhtap.openshift-gitops.test" }}
 - name: test-openshift-gitops
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c
@@ -68,14 +68,14 @@
         echo "[INFO] Checking RHTAP ArgoCD instance health..."
         # Make sure the rhtap ArgoCD instance has permission on the cluster
         echo -n "* ArgoCD clusterroles: "
-        if [ "$(oc get clusterroles -o name | grep -c "/{{.Release.Namespace}}-argocd-")" = "3" ]; then
+        if [ "$(oc get clusterroles -o name | grep -c "/{{.Chart.Name}}-{{.Release.Namespace}}-argocd-")" = "3" ]; then
           echo "OK"
         else
           echo "FAIL"
           ERRORS+=("ClusterRoles for ArgoCD not found.")
         fi
         echo -n "* ArgoCD clusterrolebindings: "
-        if [ "$(oc get clusterrolebindings -o name | grep -c "/{{.Release.Namespace}}-argocd-")" = "3" ]; then
+        if [ "$(oc get clusterrolebindings -o name | grep -c "/{{.Chart.Name}}-{{.Release.Namespace}}-argocd-")" = "3" ]; then
           echo "OK"
         else
           echo "FAIL"
