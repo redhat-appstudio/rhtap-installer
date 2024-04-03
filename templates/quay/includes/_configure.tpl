@@ -1,6 +1,6 @@
 {{ define "rhtap.quay.configure" }}
 - name: configure-quay
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c

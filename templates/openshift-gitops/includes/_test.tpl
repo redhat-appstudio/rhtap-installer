@@ -1,6 +1,6 @@
 {{ define "rhtap.openshift-gitops.test" }}
 - name: test-openshift-gitops
-  image: "quay.io/codeready-toolchain/oc-client-base:latest"
+  image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   command:
     - /bin/bash
     - -c

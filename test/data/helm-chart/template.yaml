@@ -127,7 +127,7 @@ spec:
       
                 
         - name: configure-acs
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
@@ -143,7 +143,7 @@ spec:
                 
         
         - name: configure-developer-hub
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
@@ -507,7 +507,7 @@ spec:
         
                 
         - name: configure-gitops
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/sh
             - -c
@@ -736,7 +736,7 @@ spec:
                 description: >-
                   Test task to validate that Tekton is installed.
                 steps:
-                  - image: "quay.io/codeready-toolchain/oc-client-base:latest"
+                  - image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
                     name: setup
                     script: |
                       #!/usr/bin/env bash
@@ -800,7 +800,7 @@ spec:
         
                 
         - name: configure-namespace
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
@@ -840,7 +840,7 @@ spec:
                 description: >-
                   Test task to validate that Tekton is installed.
                 steps:
-                  - image: "quay.io/codeready-toolchain/oc-client-base:latest"
+                  - image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
                     name: setup
                     script: |
                       #!/usr/bin/env bash
@@ -929,7 +929,7 @@ spec:
                         value: \$(params.acs_api_token)
                       - name: ROX_ENDPOINT
                         value: \$(params.acs_central_endpoint)
-                      image: "quay.io/codeready-toolchain/oc-client-base:latest"
+                      image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
                       name: setup
                       script: |
                         #!/usr/bin/env bash
@@ -1075,7 +1075,7 @@ spec:
                           secretKeyRef:
                             name: trusted-application-pipeline-pipelines-secret
                             key: webhook-url
-                      image: "quay.io/codeready-toolchain/oc-client-base:latest"
+                      image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
                       name: setup
                       script: |
                         #!/usr/bin/env bash
@@ -1290,7 +1290,7 @@ spec:
                 
         
         - name: configure-trusted-artifact-signer
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
@@ -1396,7 +1396,7 @@ spec:
                 
         
         - name: configure-trusted-profile-analyzer
-          image: quay.io/codeready-toolchain/oc-client-base:latest
+          image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
           command:
             - /bin/bash
             - -c
@@ -1651,10 +1651,11 @@ spec:
         app.kubernetes.io/instance: "installer"
         helm.sh/chart: "trusted-application-pipeline-1.0.0"
     spec:
+      automountServiceAccountToken: true
       containers:
                 
         - name: test-namespace
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
@@ -1699,10 +1700,14 @@ spec:
                 echo "Failed"
                 exit 1
               fi
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
         
                 
         - name: test-openshift-gitops
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
@@ -1801,7 +1806,7 @@ spec:
         
                 
         - name: test-openshift-pipelines
-          image: "quay.io/codeready-toolchain/oc-client-base:latest"
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           command:
             - /bin/bash
             - -c
