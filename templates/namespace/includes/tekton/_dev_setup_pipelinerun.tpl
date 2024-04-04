@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: {{.Chart.Name}}-dev-namespace-setup-
+  generateName: {{index .Values "trusted-application-pipeline" "name"}}-dev-namespace-setup-
   annotations:
     helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
 spec:
@@ -15,7 +15,7 @@ spec:
             - name: kind
               value: task
             - name: name
-              value: {{.Chart.Name}}-dev-namespace-setup
+              value: {{index .Values "trusted-application-pipeline" "name"}}-dev-namespace-setup
             - name: namespace
               value: {{.Release.Namespace}}
 {{end}}

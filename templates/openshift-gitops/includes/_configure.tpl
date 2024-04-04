@@ -28,42 +28,43 @@
       #
       # All actions must be idempotent
       #
-      CHART="{{ .Chart.Name }}"
-      ARGOCD_NAMESPACE="openshift-gitops"
+      CHART="{{index .Values "trusted-application-pipeline" "name"}}"
+      NAMESPACE="{{.Release.Namespace}}"
+      RHTAP_ARGOCD_INSTANCE="$CHART-argocd"
 
       echo -n "* Waiting for gitops operator deployment: "
-      until kubectl get argocd -n "$ARGOCD_NAMESPACE" openshift-gitops --ignore-not-found >/dev/null; do
-        echo -n "."
-        sleep 3
+      until kubectl get argocds.argoproj.io -n openshift-gitops openshift-gitops -o jsonpath={.status.phase} | grep -q "^Available$"; do
+        echo -n "_"
+        sleep 2
       done
       echo "OK"
-
-      RHTAP_ARGOCD_NAMESPACE="{{.Release.Namespace}}"
-      RHTAP_ARGOCD_INSTANCE="{{.Chart.Name}}"
 
       echo -n "* Creating ArgoCD instance for RHTAP: "
-      cat <<EOF | kubectl apply -n "${RHTAP_ARGOCD_NAMESPACE}" -f -
+      cat <<EOF | kubectl apply -n "$NAMESPACE" -f - >/dev/null
       {{ include "rhtap.include.argocd" . | indent 6 }}
       EOF
-
-      echo -n "* ArgoCD dashboard: "
-      test_cmd="kubectl get route -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-server" --ignore-not-found -o jsonpath={.spec.host}"
-      ARGOCD_HOSTNAME="$(${test_cmd})"
-      until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
-        echo -n "."
+      until kubectl get argocds.argoproj.io -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE" --ignore-not-found -o jsonpath={.status.phase} | grep -q "^Available$"; do
+        echo -n "_"
         sleep 2
-        ARGOCD_HOSTNAME="$(${test_cmd})"
+      done
+      echo -n "."
+      until kubectl get route -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-server" >/dev/null 2>&1; do
+        echo -n "_"
+        sleep 2
       done
       echo "OK"
 
-      echo -n " * ArgoCD admin user: "
-      if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-          ARGOCD_PASSWORD="$(kubectl get secret -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+      echo -n "* ArgoCD admin user: "
+      if [ "$(kubectl get secret "$RHTAP_ARGOCD_INSTANCE-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+          ARGOCD_HOSTNAME="$(kubectl get route -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-server" --ignore-not-found -o jsonpath={.spec.host})"
+          echo -n "."
+          ARGOCD_PASSWORD="$(kubectl get secret -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+          echo -n "."
           ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
           echo -n "."
           ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"
           echo -n "."
-          kubectl create secret generic "$CHART-argocd-secret" \
+          kubectl create secret generic "$RHTAP_ARGOCD_INSTANCE-secret" \
             --from-literal="api-token=$ARGOCD_API_TOKEN" \
             --from-literal="hostname=$ARGOCD_HOSTNAME" \
             --from-literal="password=$ARGOCD_PASSWORD" \

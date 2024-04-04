@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: {{ .Chart.Name }}-pe-info
+  name: {{ index .Values "trusted-application-pipeline" "name" }}-pe-info
   annotations:
     helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
 spec:
@@ -14,27 +14,27 @@ spec:
       - name: ARGOCD_HOSTNAME
         valueFrom:
           secretKeyRef:
-            name: {{ .Chart.Name }}-argocd-secret
+            name: {{ index .Values "trusted-application-pipeline" "name" }}-argocd-secret
             key: hostname
       - name: ARGOCD_TOKEN
         valueFrom:
           secretKeyRef:
-            name: {{ .Chart.Name }}-argocd-secret
+            name: {{ index .Values "trusted-application-pipeline" "name" }}-argocd-secret
             key: api-token
       - name: DEVELOPER_HUB_HOSTNAME
         valueFrom:
           secretKeyRef:
-            name: {{ .Chart.Name }}-developer-hub-secret
+            name: {{ index .Values "trusted-application-pipeline" "name" }}-developer-hub-secret
             key: hostname
       - name: PIPELINES_PAC_GH_SECRET
         valueFrom:
           secretKeyRef:
-            name: {{ .Chart.Name }}-pipelines-secret
+            name: {{ index .Values "trusted-application-pipeline" "name" }}-pipelines-secret
             key: webhook-github-secret
       - name: PIPELINES_PAC_URL
         valueFrom:
           secretKeyRef:
-            name: {{ .Chart.Name }}-pipelines-secret
+            name: {{ index .Values "trusted-application-pipeline" "name" }}-pipelines-secret
             key: webhook-url
       image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
       name: setup

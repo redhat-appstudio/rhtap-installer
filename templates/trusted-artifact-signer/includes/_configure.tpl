@@ -13,7 +13,7 @@
       set -x
   {{ end }}
 
-      CHART="{{ .Chart.Name }}"
+      CHART="{{index .Values "trusted-application-pipeline" "name"}}"
 
       echo -n "* Configure OIDC: "
     {{ if (unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" false) }}
