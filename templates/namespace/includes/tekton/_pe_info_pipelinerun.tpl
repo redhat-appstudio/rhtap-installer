@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: {{ .Chart.Name }}-pe-info-
+  generateName: {{ index .Values "trusted-application-pipeline" "name" }}-pe-info-
   namespace: {{ .Release.Namespace }}
 spec:
   pipelineSpec:
@@ -14,7 +14,7 @@ spec:
             - name: kind
               value: task
             - name: name
-              value: {{ .Chart.Name }}-pe-info
+              value: {{ index .Values "trusted-application-pipeline" "name" }}-pe-info
             - name: namespace
               value: {{ .Release.Namespace }}
 {{ end }}

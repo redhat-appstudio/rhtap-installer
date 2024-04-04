@@ -27,7 +27,7 @@
       curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
       chmod +x "/usr/bin/yq"
 
-      CHART="{{ .Chart.Name }}"
+      CHART="{{ index .Values "trusted-application-pipeline" "name" }}"
       NAMESPACE="{{ .Release.Namespace }}"
 
       echo -n "* Generating 'app-config.extra.yaml': "

@@ -23,7 +23,7 @@
       #
       # All actions MUST be idempotent
       #
-      CHART="{{ .Chart.Name }}"
+      CHART="{{index .Values "trusted-application-pipeline" "name"}}"
       PIPELINES_NAMESPACE="openshift-pipelines"
 
       echo -n "* Waiting for pipelines operator deployment: "

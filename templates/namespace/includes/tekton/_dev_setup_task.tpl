@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: {{.Chart.Name}}-dev-namespace-setup
+  name: {{index .Values "trusted-application-pipeline" "name"}}-dev-namespace-setup
   annotations:
     helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
 spec:

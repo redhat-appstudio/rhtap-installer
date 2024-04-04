@@ -103,7 +103,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "trusted-application-pipeline-installer-configure"
+  name: "rhtap-installer-configure"
   labels:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
@@ -167,7 +167,7 @@ spec:
               curl --fail --location --output "/usr/bin/yq" --silent --show-error "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
               chmod +x "/usr/bin/yq"
         
-              CHART="trusted-application-pipeline"
+              CHART="rhtap"
               NAMESPACE="rhtap"
         
               echo -n "* Generating 'app-config.extra.yaml': "
@@ -533,27 +533,25 @@ spec:
               #
               # All actions must be idempotent
               #
-              CHART="trusted-application-pipeline"
-              ARGOCD_NAMESPACE="openshift-gitops"
+              CHART="rhtap"
+              NAMESPACE="rhtap"
+              RHTAP_ARGOCD_INSTANCE="$CHART-argocd"
         
               echo -n "* Waiting for gitops operator deployment: "
-              until kubectl get argocd -n "$ARGOCD_NAMESPACE" openshift-gitops --ignore-not-found >/dev/null; do
-                echo -n "."
-                sleep 3
+              until kubectl get argocds.argoproj.io -n openshift-gitops openshift-gitops -o jsonpath={.status.phase} | grep -q "^Available$"; do
+                echo -n "_"
+                sleep 2
               done
               echo "OK"
         
-              RHTAP_ARGOCD_NAMESPACE="rhtap"
-              RHTAP_ARGOCD_INSTANCE="trusted-application-pipeline"
-        
               echo -n "* Creating ArgoCD instance for RHTAP: "
-              cat <<EOF | kubectl apply -n "${RHTAP_ARGOCD_NAMESPACE}" -f -
+              cat <<EOF | kubectl apply -n "$NAMESPACE" -f - >/dev/null
                     
               ---
               apiVersion: argoproj.io/v1beta1
               kind: ArgoCD
               metadata:
-                name: trusted-application-pipeline
+                name: rhtap-argocd
               spec:
                 server:
                   autoscale:
@@ -679,25 +677,28 @@ spec:
                   accounts.admin: apiKey, login
               
               EOF
-        
-              echo -n "* ArgoCD dashboard: "
-              test_cmd="kubectl get route -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-server" --ignore-not-found -o jsonpath={.spec.host}"
-              ARGOCD_HOSTNAME="$(${test_cmd})"
-              until curl --fail --insecure --output /dev/null --silent "https://$ARGOCD_HOSTNAME"; do
-                echo -n "."
+              until kubectl get argocds.argoproj.io -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE" --ignore-not-found -o jsonpath={.status.phase} | grep -q "^Available$"; do
+                echo -n "_"
                 sleep 2
-                ARGOCD_HOSTNAME="$(${test_cmd})"
+              done
+              echo -n "."
+              until kubectl get route -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-server" >/dev/null 2>&1; do
+                echo -n "_"
+                sleep 2
               done
               echo "OK"
         
-              echo -n " * ArgoCD admin user: "
-              if [ "$(kubectl get secret "$CHART-argocd-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
-                  ARGOCD_PASSWORD="$(kubectl get secret -n "${RHTAP_ARGOCD_NAMESPACE}" "${RHTAP_ARGOCD_INSTANCE}-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+              echo -n "* ArgoCD admin user: "
+              if [ "$(kubectl get secret "$RHTAP_ARGOCD_INSTANCE-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
+                  ARGOCD_HOSTNAME="$(kubectl get route -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-server" --ignore-not-found -o jsonpath={.spec.host})"
+                  echo -n "."
+                  ARGOCD_PASSWORD="$(kubectl get secret -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
+                  echo -n "."
                   ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
                   echo -n "."
                   ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"
                   echo -n "."
-                  kubectl create secret generic "$CHART-argocd-secret" \
+                  kubectl create secret generic "$RHTAP_ARGOCD_INSTANCE-secret" \
                     --from-literal="api-token=$ARGOCD_API_TOKEN" \
                     --from-literal="hostname=$ARGOCD_HOSTNAME" \
                     --from-literal="password=$ARGOCD_PASSWORD" \
@@ -764,17 +765,17 @@ spec:
                     - name: ARGOCD_HOSTNAME
                       valueFrom:
                         secretKeyRef:
-                          name: trusted-application-pipeline-argocd-secret
+                          name: rhtap-argocd-secret
                           key: hostname
                     - name: ARGOCD_PASSWORD
                       valueFrom:
                         secretKeyRef:
-                          name: trusted-application-pipeline-argocd-secret
+                          name: rhtap-argocd-secret
                           key: password
                     - name: ARGOCD_USER
                       valueFrom:
                         secretKeyRef:
-                          name: trusted-application-pipeline-argocd-secret
+                          name: rhtap-argocd-secret
                           key: user
                     image: registry.access.redhat.com/ubi9/ubi-minimal
                     name: check-argocd-login
@@ -853,7 +854,7 @@ spec:
               echo "OK"
               
         
-              CHART="trusted-application-pipeline"
+              CHART="rhtap"
               NAMESPACE="rhtap"
         
               echo -n "* Configuring Tasks: "
@@ -873,7 +874,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: trusted-application-pipeline-dev-namespace-setup
+                  name: rhtap-dev-namespace-setup
                   annotations:
                     helm.sh/chart: "trusted-application-pipeline-0.1.0"
                 spec:
@@ -1041,7 +1042,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: trusted-application-pipeline-pe-info
+                  name: rhtap-pe-info
                   annotations:
                     helm.sh/chart: "trusted-application-pipeline-0.1.0"
                 spec:
@@ -1053,27 +1054,27 @@ spec:
                       - name: ARGOCD_HOSTNAME
                         valueFrom:
                           secretKeyRef:
-                            name: trusted-application-pipeline-argocd-secret
+                            name: rhtap-argocd-secret
                             key: hostname
                       - name: ARGOCD_TOKEN
                         valueFrom:
                           secretKeyRef:
-                            name: trusted-application-pipeline-argocd-secret
+                            name: rhtap-argocd-secret
                             key: api-token
                       - name: DEVELOPER_HUB_HOSTNAME
                         valueFrom:
                           secretKeyRef:
-                            name: trusted-application-pipeline-developer-hub-secret
+                            name: rhtap-developer-hub-secret
                             key: hostname
                       - name: PIPELINES_PAC_GH_SECRET
                         valueFrom:
                           secretKeyRef:
-                            name: trusted-application-pipeline-pipelines-secret
+                            name: rhtap-pipelines-secret
                             key: webhook-github-secret
                       - name: PIPELINES_PAC_URL
                         valueFrom:
                           secretKeyRef:
-                            name: trusted-application-pipeline-pipelines-secret
+                            name: rhtap-pipelines-secret
                             key: webhook-url
                       image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
                       name: setup
@@ -1127,7 +1128,7 @@ spec:
                 echo -n "* Creating '$DEV_NAMESPACE' namespace: "
                 kubectl create namespace "$DEV_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
                 echo -n "."
-                kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$CHART" >/dev/null
+                kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$CHART-argocd" >/dev/null
                 echo "OK"
                 echo -n "* Configuring '$DEV_NAMESPACE' namespace: "
                 cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $DEV_NAMESPACE|" | kubectl create --filename - >/dev/null
@@ -1135,7 +1136,7 @@ spec:
               apiVersion: tekton.dev/v1
               kind: PipelineRun
               metadata:
-                generateName: trusted-application-pipeline-dev-namespace-setup-
+                generateName: rhtap-dev-namespace-setup-
                 annotations:
                   helm.sh/chart: "trusted-application-pipeline-0.1.0"
               spec:
@@ -1148,7 +1149,7 @@ spec:
                           - name: kind
                             value: task
                           - name: name
-                            value: trusted-application-pipeline-dev-namespace-setup
+                            value: rhtap-dev-namespace-setup
                           - name: namespace
                             value: rhtap
               
@@ -1184,7 +1185,7 @@ spec:
               #
               # All actions MUST be idempotent
               #
-              CHART="trusted-application-pipeline"
+              CHART="rhtap"
               PIPELINES_NAMESPACE="openshift-pipelines"
         
               echo -n "* Waiting for pipelines operator deployment: "
@@ -1300,7 +1301,7 @@ spec:
               set -o pipefail
           
         
-              CHART="trusted-application-pipeline"
+              CHART="rhtap"
         
               echo -n "* Configure OIDC: "
             
@@ -1347,7 +1348,7 @@ spec:
               apiVersion: rhtas.redhat.com/v1alpha1
               kind: Securesign
               metadata:
-                name: trusted-application-pipeline-securesign
+                name: rhtap-securesign
                 labels:
                   app.kubernetes.io/instance: securesign-sample
                   app.kubernetes.io/name: securesign-sample
@@ -1773,16 +1774,19 @@ spec:
         
               check_rhtap_argocd_health() {
                 echo "[INFO] Checking RHTAP ArgoCD instance health..."
+                RHTAP_ARGOCD_INSTANCE="rhtap-argocd"
+                NAMESPACE="rhtap"
+                PREFIX="$RHTAP_ARGOCD_INSTANCE-$NAMESPACE-argocd-"
                 # Make sure the rhtap ArgoCD instance has permission on the cluster
                 echo -n "* ArgoCD clusterroles: "
-                if [ "$(oc get clusterroles -o name | grep -c "/trusted-application-pipeline-rhtap-argocd-")" = "3" ]; then
+                if [ "$(oc get clusterroles -o name | grep -c "/$PREFIX")" = "3" ]; then
                   echo "OK"
                 else
                   echo "FAIL"
                   ERRORS+=("ClusterRoles for ArgoCD not found.")
                 fi
                 echo -n "* ArgoCD clusterrolebindings: "
-                if [ "$(oc get clusterrolebindings -o name | grep -c "/trusted-application-pipeline-rhtap-argocd-")" = "3" ]; then
+                if [ "$(oc get clusterrolebindings -o name | grep -c "/$PREFIX")" = "3" ]; then
                   echo "OK"
                 else
                   echo "FAIL"
