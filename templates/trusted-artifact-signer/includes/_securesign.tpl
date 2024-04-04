@@ -2,7 +2,7 @@
 apiVersion: rhtas.redhat.com/v1alpha1
 kind: Securesign
 metadata:
-  name: {{ .Chart.Name }}-securesign
+  name: {{index .Values "trusted-application-pipeline" "name"}}-securesign
   labels:
     app.kubernetes.io/instance: securesign-sample
     app.kubernetes.io/name: securesign-sample

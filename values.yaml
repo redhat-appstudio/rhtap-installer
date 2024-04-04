@@ -208,6 +208,7 @@ trusted-artifact-signer:
           IssuerURL: '${TAS__SECURESIGN__FULCIO__OIDC__URL}'
           Type: ${TAS__SECURESIGN__FULCIO__OIDC__TYPE}
 trusted-application-pipeline:
+  name: rhtap
   namespaces:
     - rhtap-app
 trusted-profile-analyzer:
