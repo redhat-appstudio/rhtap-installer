@@ -66,16 +66,19 @@
 
       check_rhtap_argocd_health() {
         echo "[INFO] Checking RHTAP ArgoCD instance health..."
+        RHTAP_ARGOCD_INSTANCE="{{index .Values "trusted-application-pipeline" "name"}}-argocd"
+        NAMESPACE="{{.Release.Namespace}}"
+        PREFIX="$RHTAP_ARGOCD_INSTANCE-$NAMESPACE-argocd-"
         # Make sure the rhtap ArgoCD instance has permission on the cluster
         echo -n "* ArgoCD clusterroles: "
-        if [ "$(oc get clusterroles -o name | grep -c "/{{.Chart.Name}}-{{.Release.Namespace}}-argocd-")" = "3" ]; then
+        if [ "$(oc get clusterroles -o name | grep -c "/$PREFIX")" = "3" ]; then
           echo "OK"
         else
           echo "FAIL"
           ERRORS+=("ClusterRoles for ArgoCD not found.")
         fi
         echo -n "* ArgoCD clusterrolebindings: "
-        if [ "$(oc get clusterrolebindings -o name | grep -c "/{{.Chart.Name}}-{{.Release.Namespace}}-argocd-")" = "3" ]; then
+        if [ "$(oc get clusterrolebindings -o name | grep -c "/$PREFIX")" = "3" ]; then
           echo "OK"
         else
           echo "FAIL"

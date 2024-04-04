@@ -250,7 +250,7 @@ uninstall() {
     kubectl get namespaces -o yaml |
       yq '
       .items[] |
-      select(.metadata.annotations["argocd.argoproj.io/managed-by"] == "trusted-application-pipeline") |
+      select(.metadata.annotations["argocd.argoproj.io/managed-by"] == "rhtap-argocd") |
       .metadata.name'
   ); do
     kubectl delete namespace "$namespace" --wait &
