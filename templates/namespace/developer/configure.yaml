@@ -11,11 +11,12 @@ while ! kubectl get tasks "$CHART-dev-namespace-setup" >/dev/null 2>&1; do
 done
 echo "OK"
 
+RHTAP_ARGOCD_INSTANCE="{{.Chart.Name}}"
 for DEV_NAMESPACE in "${DEV_NAMESPACE_LIST[@]}"; do
   echo -n "* Creating '$DEV_NAMESPACE' namespace: "
   kubectl create namespace "$DEV_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
   echo -n "."
-  kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$CHART" >/dev/null
+  kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$RHTAP_ARGOCD_INSTANCE" >/dev/null
   echo "OK"
   echo -n "* Configuring '$DEV_NAMESPACE' namespace: "
   cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $DEV_NAMESPACE|" | kubectl create --filename - >/dev/null

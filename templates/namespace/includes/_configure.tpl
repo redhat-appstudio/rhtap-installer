@@ -14,7 +14,7 @@
 
       {{ include "rhtap.openshift-pipelines.wait" . | indent 6 }}
 
-      CHART="{{.Chart.Name}}"
+      CHART="{{index .Values "trusted-application-pipeline" "name"}}"
       NAMESPACE="{{.Release.Namespace}}"
 
       echo -n "* Configuring Tasks: "

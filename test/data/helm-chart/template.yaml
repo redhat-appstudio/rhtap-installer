@@ -869,7 +869,7 @@ spec:
               echo "OK"
               
         
-              CHART="trusted-application-pipeline"
+              CHART="rhtap"
               NAMESPACE="rhtap"
         
               echo -n "* Configuring Tasks: "
@@ -889,7 +889,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: trusted-application-pipeline-dev-namespace-setup
+                  name: rhtap-dev-namespace-setup
                   annotations:
                     helm.sh/chart: "trusted-application-pipeline-0.12.0"
                 spec:
@@ -1057,7 +1057,7 @@ spec:
                 apiVersion: tekton.dev/v1
                 kind: Task
                 metadata:
-                  name: trusted-application-pipeline-pe-info
+                  name: rhtap-pe-info
                   annotations:
                     helm.sh/chart: "trusted-application-pipeline-0.12.0"
                 spec:
@@ -1139,11 +1139,12 @@ spec:
               done
               echo "OK"
               
+              RHTAP_ARGOCD_INSTANCE="trusted-application-pipeline"
               for DEV_NAMESPACE in "${DEV_NAMESPACE_LIST[@]}"; do
                 echo -n "* Creating '$DEV_NAMESPACE' namespace: "
                 kubectl create namespace "$DEV_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
                 echo -n "."
-                kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$CHART" >/dev/null
+                kubectl annotate namespace "$DEV_NAMESPACE" "argocd.argoproj.io/managed-by=$RHTAP_ARGOCD_INSTANCE" >/dev/null
                 echo "OK"
                 echo -n "* Configuring '$DEV_NAMESPACE' namespace: "
                 cat << EOF | sed "s|^metadata:.*|\0\n  namespace: $DEV_NAMESPACE|" | kubectl create --filename - >/dev/null
@@ -1151,7 +1152,7 @@ spec:
               apiVersion: tekton.dev/v1
               kind: PipelineRun
               metadata:
-                generateName: trusted-application-pipeline-dev-namespace-setup-
+                generateName: rhtap-dev-namespace-setup-
                 annotations:
                   helm.sh/chart: "trusted-application-pipeline-0.12.0"
               spec:
@@ -1164,7 +1165,7 @@ spec:
                           - name: kind
                             value: task
                           - name: name
-                            value: trusted-application-pipeline-dev-namespace-setup
+                            value: rhtap-dev-namespace-setup
                           - name: namespace
                             value: rhtap
               
