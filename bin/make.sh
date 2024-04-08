@@ -163,8 +163,8 @@ certify() {
     --namespace "$NAMESPACE" \
     --set chart-testing.release="$APP_NAME" \
     --set profile.vendorType=redhat \
-    "/workspace/$HELM_REPOSITORY/$CHART_TGZ" |
-    yq '.results |= sort_by(.check)' >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
+    "/workspace/$HELM_REPOSITORY/$CHART_TGZ" >"$CERTIFICATION_DIR/report.yaml"
+  yq '.results |= sort_by(.check)' "$CERTIFICATION_DIR/report.yaml" >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
 }
 
 delete() {
