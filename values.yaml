@@ -94,7 +94,7 @@ developer-hub:
       backstage:
         extraAppConfig:
           - filename: app-config.extra.yaml
-            configMapRef: developer-hub-app-config-extra
+            configMapRef: redhat-developer-hub-app-config-extra
     global:
       dynamic:
         includes:
