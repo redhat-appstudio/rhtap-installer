@@ -353,6 +353,13 @@ spec:
                     filename: app-config.extra.yaml
               EOF
             
+              echo -n "."
+              KUBERNETES_CLUSTER_FQDN="$(
+                kubectl get routes -n openshift-pipelines pipelines-as-code-controller -o jsonpath='{.spec.host}' | \
+                cut -d. -f 2-
+              )"
+              export KUBERNETES_CLUSTER_FQDN
+              yq --inplace '.global.clusterRouterBase = strenv(KUBERNETES_CLUSTER_FQDN)' "$HELM_VALUES"
               echo "OK"
         
               
@@ -488,7 +495,7 @@ spec:
                       echo -n "_"
                       sleep 2
                   done
-                  echo -n "OK"
+                  echo "OK"
               else
                   echo "Configuration already up to date"
               fi
