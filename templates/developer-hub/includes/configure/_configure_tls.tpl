@@ -3,7 +3,7 @@
 # Configure TLS
 ################################################################################
 echo -n "* Waiting for deployment: "
-until kubectl get deployment developer-hub -o name >/dev/null ; do
+until kubectl get deployment redhat-developer-hub -o name >/dev/null ; do
   echo -n "_"
   sleep 3
 done
@@ -13,7 +13,7 @@ ORIGNAL_POD=$(kubectl get pods -l app.kubernetes.io/name=developer-hub -o name)
 
 DEPLOYMENT="/tmp/deployment.yaml"
 DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
-oc get deployment/developer-hub -o yaml >"$DEPLOYMENT"
+oc get deployment/redhat-developer-hub -o yaml >"$DEPLOYMENT"
 cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
 
 echo -n "* Configuring TLS:"

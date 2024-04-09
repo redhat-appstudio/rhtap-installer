@@ -349,7 +349,7 @@ spec:
               upstream:
                 backstage:
                   extraAppConfig:
-                  - configMapRef: developer-hub-app-config-extra
+                  - configMapRef: redhat-developer-hub-app-config-extra
                     filename: app-config.extra.yaml
               EOF
             
@@ -376,7 +376,7 @@ spec:
               
         
               echo -n "* Installing Developer Hub: "
-              kubectl create configmap developer-hub-app-config-extra \
+              kubectl create configmap redhat-developer-hub-app-config-extra \
                 --from-file=app-config.extra.yaml="$APPCONFIGEXTRA" \
                 -o yaml \
                 --dry-run=client | kubectl apply -f - >/dev/null
@@ -388,7 +388,7 @@ spec:
                 --devel \
                 --namespace=${NAMESPACE} \
                 --values="$HELM_VALUES" \
-                developer-hub \
+                redhat-developer-hub \
                 developer-hub/redhat-developer-hub >/dev/null; then
                 echo "ERROR while installing chart!"
                 exit 1
@@ -396,11 +396,11 @@ spec:
               echo "OK"
         
               echo -n "* Waiting for route: "
-              until kubectl get route "developer-hub" -o name >/dev/null ; do
+              until kubectl get route "redhat-developer-hub" -o name >/dev/null ; do
                 echo -n "."
                 sleep 3
               done
-              HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
+              HOSTNAME="$(kubectl get routes "redhat-developer-hub" -o jsonpath="{.spec.host}")"
               echo -n "."
               if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 kubectl create secret generic "$CHART-developer-hub-secret" \
@@ -423,7 +423,7 @@ spec:
               # Configure TLS
               ################################################################################
               echo -n "* Waiting for deployment: "
-              until kubectl get deployment developer-hub -o name >/dev/null ; do
+              until kubectl get deployment redhat-developer-hub -o name >/dev/null ; do
                 echo -n "_"
                 sleep 3
               done
@@ -433,7 +433,7 @@ spec:
               
               DEPLOYMENT="/tmp/deployment.yaml"
               DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
-              oc get deployment/developer-hub -o yaml >"$DEPLOYMENT"
+              oc get deployment/redhat-developer-hub -o yaml >"$DEPLOYMENT"
               cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
               
               echo -n "* Configuring TLS:"
