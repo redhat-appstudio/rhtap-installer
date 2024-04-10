@@ -109,6 +109,7 @@
         --devel \
         --namespace=${NAMESPACE} \
         --values="$HELM_VALUES" \
+        --version=~1.1 \
         redhat-developer-hub \
         developer-hub/redhat-developer-hub >/dev/null; then
         echo "ERROR while installing chart!"
