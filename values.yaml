@@ -89,13 +89,12 @@ developer-hub:
   quay:
     # The UI url for Quay, used to generate the link to Quay
     uiUrl: 'https://quay.io'
-  quay-token: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
   values:
     upstream:
       backstage:
         extraAppConfig:
           - filename: app-config.extra.yaml
-            configMapRef: developer-hub-app-config-extra
+            configMapRef: redhat-developer-hub-app-config-extra
     global:
       dynamic:
         includes:
