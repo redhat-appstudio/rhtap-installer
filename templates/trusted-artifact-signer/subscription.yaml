@@ -17,6 +17,6 @@ spec:
   name: rhtas-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: rhtas-operator.v0.0.2
+  startingCSV: rhtas-operator.v1.0.0
 {{ end}}
 {{ end}}
