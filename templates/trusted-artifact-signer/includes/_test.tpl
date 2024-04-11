@@ -9,10 +9,10 @@
       set -o errexit
       set -o nounset
       set -o pipefail
-
     {{ if eq .Values.debug.script true }}
       set -x
     {{ end }}
+
       rollout_status() {
         local namespace="${1}"
         local deployment="${2}"
