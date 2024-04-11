@@ -132,21 +132,6 @@ spec:
       containers:
       
                 
-        - name: configure-acs
-          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-            
-        
-              echo
-              echo "Configuration successful"
-        
-                
         
         - name: configure-developer-hub
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
@@ -501,7 +486,7 @@ spec:
                       echo -n "_"
                       sleep 2
                   done
-                  echo -n "OK"
+                  echo "OK"
               else
                   echo "Configuration already up to date"
               fi
@@ -1679,6 +1664,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
               pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
                       
@@ -1731,7 +1717,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
             
               ERRORS=()
@@ -1835,7 +1820,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
             
               rollout_status() {
@@ -1894,8 +1878,8 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
+        
               rollout_status() {
                 local namespace="${1}"
                 local deployment="${2}"
@@ -1927,7 +1911,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
             
               rollout_status() {
