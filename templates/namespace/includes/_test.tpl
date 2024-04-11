@@ -8,6 +8,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
+    {{ if eq .Values.debug.script true }}
+      set -x
+    {{ end }}
 
       pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
       {{ include "rhtap.namespace.test_pipeline" . | indent 8 }}

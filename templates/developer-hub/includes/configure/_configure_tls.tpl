@@ -68,7 +68,7 @@ if ! diff --brief "$DEPLOYMENT" "$DEPLOYMENT_PATCHED" >/dev/null; then
         echo -n "_"
         sleep 2
     done
-    echo -n "OK"
+    echo "OK"
 else
     echo "Configuration already up to date"
 fi
