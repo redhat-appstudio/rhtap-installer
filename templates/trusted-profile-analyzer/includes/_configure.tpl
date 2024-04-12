@@ -2,6 +2,7 @@
 {{ if (index .Values "trusted-profile-analyzer") }}
 - name: configure-trusted-profile-analyzer
   image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c
@@ -12,8 +13,6 @@
   {{ if eq .Values.debug.script true }}
       set -x
   {{ end }}
-
-      cd /tmp
 
       # Installing Helm...
       curl --fail --silent --show-error --location \
