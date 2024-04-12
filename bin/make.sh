@@ -354,7 +354,7 @@ values() {
     export VALUE
     case $ENV_VAR in
     GITHUB__APP__PRIVATE_KEY)
-      if ! echo "$GITHUB__APP__PRIVATE_KEY" | grep --extended-regexp --quiet "^-----BEGIN RSA PRIVATE KEY-----.*-----END RSA PRIVATE KEY-----$"; then
+      if ! echo "$GITHUB__APP__PRIVATE_KEY" | tr -d '\n' | grep --extended-regexp --quiet "^-----BEGIN RSA PRIVATE KEY-----.*-----END RSA PRIVATE KEY-----$"; then
         echo "[ERROR] Invalid value for 'GITHUB__APP__PRIVATE_KEY'. The value must be the full content of the private key." >&2
         exit 1
       fi
