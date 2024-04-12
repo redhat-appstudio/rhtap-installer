@@ -135,6 +135,7 @@ spec:
         
         - name: configure-developer-hub
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -507,6 +508,7 @@ spec:
                 
         - name: configure-gitops
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/sh
             - -c
@@ -812,6 +814,7 @@ spec:
                 
         - name: configure-namespace
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1175,6 +1178,7 @@ spec:
                 
         - name: configure-pipelines
           image: quay.io/redhat-appstudio/appstudio-utils:dbbdd82734232e6289e8fbae5b4c858481a7c057
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1302,6 +1306,7 @@ spec:
         
         - name: configure-trusted-artifact-signer
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1410,6 +1415,7 @@ spec:
         
         - name: configure-trusted-profile-analyzer
           image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1418,8 +1424,6 @@ spec:
               set -o nounset
               set -o pipefail
           
-        
-              cd /tmp
         
               # Installing Helm...
               curl --fail --silent --show-error --location \
@@ -1669,6 +1673,7 @@ spec:
                 
         - name: test-namespace
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1725,6 +1730,7 @@ spec:
                 
         - name: test-gitops
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1831,6 +1837,7 @@ spec:
                 
         - name: test-pipelines
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1892,6 +1899,7 @@ spec:
         
         - name: test-trusted-artifact-signer
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
@@ -1928,6 +1936,7 @@ spec:
         
         - name: test-trusted-profile-analyzer
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
           command:
             - /bin/bash
             - -c
