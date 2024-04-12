@@ -354,9 +354,17 @@ values() {
     export VALUE
     case $ENV_VAR in
     GITHUB__APP__PRIVATE_KEY)
+      if ! echo "$GITHUB__APP__PRIVATE_KEY" | grep --extended-regexp --quiet "^-----BEGIN RSA PRIVATE KEY-----.*-----END RSA PRIVATE KEY-----$"; then
+        echo "[ERROR] Invalid value for 'GITHUB__APP__PRIVATE_KEY'. The value must be the full content of the private key." >&2
+        exit 1
+      fi
+      if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == true ]; then
+        yq -i "
+        .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE)
+        " "$TMP_VALUES"
+      fi
       yq -i "
-      .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE),
-      .pipelines.pipelines-as-code.github.private-key = strenv(VALUE)
+        .pipelines.pipelines-as-code.github.private-key = strenv(VALUE)
       " "$TMP_VALUES"
       ;;
     QUAY__DOCKERCONFIGJSON)
