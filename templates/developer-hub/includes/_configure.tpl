@@ -2,6 +2,7 @@
 {{ if (index .Values "developer-hub") }}
 - name: configure-developer-hub
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c

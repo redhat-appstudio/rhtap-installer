@@ -2,6 +2,7 @@
 {{ if (index .Values "trusted-profile-analyzer") }}
 - name: test-trusted-profile-analyzer
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c

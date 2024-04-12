@@ -1,6 +1,7 @@
 {{ define "rhtap.gitops.test" }}
 - name: test-gitops
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c
