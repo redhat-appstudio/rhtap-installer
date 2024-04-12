@@ -56,4 +56,7 @@
     limits:
       cpu: 100m
       memory: 256Mi
+    requests:
+      cpu: 20m
+      memory: 128Mi
 {{ end }}
