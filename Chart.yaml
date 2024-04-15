@@ -14,4 +14,4 @@ name: redhat-trusted-application-pipeline
 sources:
   - https://github.com/redhat-appstudio/rhtap-installer
 type: application
-version: 0.13.1
+version: 0.14.0
