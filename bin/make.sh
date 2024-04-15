@@ -2,7 +2,6 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -x
 
 SCRIPT_DIR="$(
   cd "$(dirname "$0")" >/dev/null
