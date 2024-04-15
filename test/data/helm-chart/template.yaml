@@ -15,15 +15,6 @@ metadata:
   name: helm-manager
   namespace: rhtap
 ---
-# Source: redhat-trusted-application-pipeline/templates/developer-hub/quay-token.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rhdh-pull-secret
-data:
-  .dockerconfigjson: ${DEVELOPER_HUB__QUAY_TOKEN__ASK_THE_INSTALLER_DEV_TEAM}
-type: kubernetes.io/dockerconfigjson
----
 # Source: redhat-trusted-application-pipeline/templates/developer-hub/serviceaccount.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -66,6 +57,8 @@ subjects:
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
+  annotations:
+    helm.sh/resource-policy: keep
   name: openshift-gitops-operator
   namespace: openshift-operators
 spec:
@@ -83,6 +76,8 @@ spec:
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
+  annotations:
+    helm.sh/resource-policy: keep
   name: openshift-pipelines-operator
   namespace: openshift-operators
 spec:
@@ -96,6 +91,8 @@ spec:
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
+  annotations:
+    helm.sh/resource-policy: keep
   labels:
     operators.coreos.com/rhtas-operator.openshift-operators: ""
   name: rhtas-operator
@@ -106,7 +103,7 @@ spec:
   name: rhtas-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: rhtas-operator.v0.0.2
+  startingCSV: rhtas-operator.v1.0.0
 ---
 # Source: redhat-trusted-application-pipeline/templates/configure.yaml
 apiVersion: batch/v1
@@ -117,7 +114,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.1.0
-    helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -130,25 +127,10 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+        helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
     spec:
       containers:
       
-                
-        - name: configure-acs
-          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -o errexit
-              set -o nounset
-              set -o pipefail
-            
-        
-              echo
-              echo "Configuration successful"
-        
                 
         
         - name: configure-developer-hub
@@ -358,7 +340,7 @@ spec:
               upstream:
                 backstage:
                   extraAppConfig:
-                  - configMapRef: developer-hub-app-config-extra
+                  - configMapRef: redhat-developer-hub-app-config-extra
                     filename: app-config.extra.yaml
               EOF
             
@@ -392,7 +374,7 @@ spec:
               
         
               echo -n "* Installing Developer Hub: "
-              kubectl create configmap developer-hub-app-config-extra \
+              kubectl create configmap redhat-developer-hub-app-config-extra \
                 --from-file=app-config.extra.yaml="$APPCONFIGEXTRA" \
                 -o yaml \
                 --dry-run=client | kubectl apply -f - >/dev/null
@@ -404,19 +386,19 @@ spec:
                 --devel \
                 --namespace=${NAMESPACE} \
                 --values="$HELM_VALUES" \
-                developer-hub \
-                developer-hub/developer-hub >/dev/null; then
+                redhat-developer-hub \
+                developer-hub/redhat-developer-hub >/dev/null; then
                 echo "ERROR while installing chart!"
                 exit 1
               fi
               echo "OK"
         
               echo -n "* Waiting for route: "
-              until kubectl get route "developer-hub" -o name >/dev/null ; do
+              until kubectl get route "redhat-developer-hub" -o name >/dev/null ; do
                 echo -n "."
                 sleep 3
               done
-              HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
+              HOSTNAME="$(kubectl get routes "redhat-developer-hub" -o jsonpath="{.spec.host}")"
               echo -n "."
               if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 kubectl create secret generic "$CHART-developer-hub-secret" \
@@ -439,7 +421,7 @@ spec:
               # Configure TLS
               ################################################################################
               echo -n "* Waiting for deployment: "
-              until kubectl get deployment developer-hub -o name >/dev/null ; do
+              until kubectl get deployment redhat-developer-hub -o name >/dev/null ; do
                 echo -n "_"
                 sleep 3
               done
@@ -449,7 +431,7 @@ spec:
               
               DEPLOYMENT="/tmp/deployment.yaml"
               DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
-              oc get deployment/developer-hub -o yaml >"$DEPLOYMENT"
+              oc get deployment/redhat-developer-hub -o yaml >"$DEPLOYMENT"
               cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
               
               echo -n "* Configuring TLS:"
@@ -504,7 +486,7 @@ spec:
                       echo -n "_"
                       sleep 2
                   done
-                  echo -n "OK"
+                  echo "OK"
               else
                   echo "Configuration already up to date"
               fi
@@ -892,7 +874,7 @@ spec:
                 metadata:
                   name: rhtap-dev-namespace-setup
                   annotations:
-                    helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
                 spec:
                   description: >-
                     Create the required resources for redhat-trusted-application-pipeline tasks to run in a namespace.
@@ -967,7 +949,7 @@ spec:
                           labels:
                             app.kubernetes.io/instance: default
                             app.kubernetes.io/part-of: tekton-chains
-                            helm.sh/chart: redhat-trusted-application-pipeline-0.12.1
+                            helm.sh/chart: redhat-trusted-application-pipeline-0.14.1
                             operator.tekton.dev/operand-name: tektoncd-chains
                           name: \$SECRET_NAME
                         type: Opaque
@@ -983,7 +965,7 @@ spec:
                             --from-literal=username=oauth2 \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.12.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -994,7 +976,7 @@ spec:
                             --from-literal=password=\$GIT_TOKEN \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.12.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -1004,7 +986,7 @@ spec:
                           kubectl create secret generic "\$SECRET_NAME" \
                             --from-literal=webhook.secret=\$PIPELINES_WEBHOOK_SECRET \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.12.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                         
@@ -1018,7 +1000,7 @@ spec:
                             kubectl apply --filename - --overwrite=true >/dev/null
                           rm "\$DATA"
                           echo -n "."
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.12.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo -n "."
                           while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
                             sleep 2
@@ -1043,7 +1025,7 @@ spec:
                             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.12.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -1060,7 +1042,7 @@ spec:
                 metadata:
                   name: rhtap-pe-info
                   annotations:
-                    helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1154,7 +1136,7 @@ spec:
               metadata:
                 generateName: rhtap-dev-namespace-setup-
                 annotations:
-                  helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+                  helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
               spec:
                 pipelineSpec:
                   tasks:
@@ -1378,19 +1360,21 @@ spec:
                     organizationName: ${FULCIO__ORG_NAME}
                   config:
                     OIDCIssuers:
-                      "${FULCIO__OIDC__URL}":
+                      - Issuer: "${FULCIO__OIDC__URL}"
                         ClientID: ${FULCIO__OIDC__CLIENT_ID}
                         IssuerURL: "${FULCIO__OIDC__URL}"
                         Type: ${FULCIO__OIDC__TYPE}
                   externalAccess:
                     enabled: true
-                  monitoring: false
+                  monitoring:
+                    enabled: false
                 rekor:
                   externalAccess:
                     enabled: true
                   signer:
                     kms: secret
-                  monitoring: false
+                  monitoring:
+                    enabled: false
                 trillian:
                   database:
                     create: true
@@ -1590,7 +1574,7 @@ spec:
               git clone https://github.com/trustification/trustification.git
               pushd trustification &&
                 # Desired commit for trustification charts.
-                git reset --hard 9abcf0a6 &&
+                git checkout v1.0.0-TP1 &&
                   # Adding the bitnami repository for "trustification-infrastructure"
                   # dependencies.
                   helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -1654,7 +1638,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.1.0
-    helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1666,7 +1650,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+        helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
     spec:
       automountServiceAccountToken: true
       containers:
@@ -1680,6 +1664,7 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
+            
         
               pipeline_id="$(cat << EOF | kubectl create -f - | cut -d' ' -f 1
                       
@@ -1688,7 +1673,7 @@ spec:
                 metadata:
                   generateName: rhtap-test-config-
                   annotations:
-                    helm.sh/chart: "redhat-trusted-application-pipeline-0.12.1"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
                 spec:
                   pipelineSpec:
                     tasks:
@@ -1721,6 +1706,9 @@ spec:
             limits:
               cpu: 100m
               memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
         
                 
         - name: test-gitops
@@ -1732,7 +1720,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
             
               ERRORS=()
@@ -1825,6 +1812,9 @@ spec:
             limits:
               cpu: 100m
               memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
         
                 
         - name: test-pipelines
@@ -1836,7 +1826,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
             
               rollout_status() {
@@ -1883,6 +1872,9 @@ spec:
             limits:
               cpu: 100m
               memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
         
                 
         
@@ -1895,8 +1887,8 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
+        
               rollout_status() {
                 local namespace="${1}"
                 local deployment="${2}"
@@ -1915,6 +1907,9 @@ spec:
             limits:
               cpu: 100m
               memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
         
         
                 
@@ -1928,7 +1923,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-        
             
             
               rollout_status() {
@@ -1941,6 +1935,11 @@ spec:
                 fi
               }
         
+              echo "Installing utils: "
+        
+              curl -Lso /usr/local/bin/cosign https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 && chmod +x /usr/local/bin/cosign
+              curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+              
               echo "Checking deployments..."
               deployments=(bombastic-api bombastic-collector bombastic-indexer documentation guac-graphql spog-api spog-ui v11y-api v11y-indexer vexination-api vexination-collector vexination-indexer)
               for deploy in "${deployments[@]}"; do
@@ -1948,27 +1947,31 @@ spec:
               done
         
               echo "Upload SBOM to TPA..."
-              cosign download sbom registry.redhat.io/rh-syft-tech-preview/syft-rhel9:0.105.0 > sbom.json
+              cosign download sbom registry.access.redhat.com/rh-syft-tech-preview/syft-rhel9:1.0.1-1710487708 > sbom.json
               syft convert sbom.json -o cyclonedx-json@1.3=sbom-1-3.json
               keycloak_host=$(kubectl -n rhtap get route -l app.kubernetes.io/component=keycloak -o jsonpath='{.items[0].spec.host}')
         
               tpa_oidc_walker_client_secret=${TPA__OIDC__WALKER_CLIENT_SECRET}
-              tpa_token=$(curl \
-                -d 'client_id=walker' \         
+              tpa_token=$(curl -d 'client_id=walker' \
                 -d "client_secret=${tpa_oidc_walker_client_secret}" \
                 -d 'grant_type=client_credentials' \
                 "https://${keycloak_host}/realms/chicken/protocol/openid-connect/token" | jq .access_token -r)
         
               bombastic_api_host=$(oc -n rhtap get route --selector app.kubernetes.io/name=bombastic-api -o jsonpath='{.items[].spec.host}')
-              curl \
-                -H "authorization: Bearer ${tpa_token}" \
-                -H 'transfer-encoding: chunked' \
-                --json @sbom-1-3.json \
-                'https://${bombastic_api_host}/api/v1/sbom?id=rh-syft-0-105-0'
+              
+              curl -H 'content-type: application/json' -H "authorization: Bearer ${tpa_token}" -H 'transfer-encoding: chunked' --data @sbom-1-3.json "https://${bombastic_api_host}/api/v1/sbom?id=rh-syft-0-105-0" | tee result.log
+              # Check if the SBOM was uploaded successfully
+              if ! grep -q "Successfully uploaded SBOM" result.log; then
+                  echo "SBOM was not uploaded successfully!"
+                  exit 1
+              fi
           resources:
             limits:
               cpu: 100m
               memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
         
         
       restartPolicy: Never

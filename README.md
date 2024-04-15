@@ -5,13 +5,13 @@ This helm chart installs and configures the following projects/products :
 
 |          Product          |                       Installation                        |                   Configuration                    |
 | :-----------------------: | :-------------------------------------------------------: | :------------------------------------------------: |
+|       Developer Hub       |                 Rolled out via Helm Chart                 |         Controlled by the values YAML file         |
 |     OpenShift GitOps      |                  Operator `Subscription`                  |        Sets up the default Argo CD instance        |
 |    OpenShift Pipelines    |                  Operator `Subscription`                  | Enables Tekton Chains & sets up the signing secret |
+|  Trusted Artifact Signer  |                  Operator `Subscription`                  |   Default operator install & SecureSign instance   |
+| Trusted Profile Analyzer  | Rolled out via Helm Charts `tpa-infrastructure` and `tpa` |         Controlled by the values YAML file         |
 |           Quay            |                          (TODO)                           |                                                    |
 | Advanced Cluster Security |                          (TODO)                           |                                                    |
-|  Trusted Artifact Signer  |                  Operator `Subscription`                  |   Default operator install & SecureSign instance   |
-| Trusted Profile Analyzer  |                  (TODO) Helm Dependency                   |                                                    |
-| Trusted Profile Analyzer  | Rolled out via Helm Charts `tpa-infrastructure` and `tpa` |                                                    |
 
 # Try it
 
@@ -43,7 +43,7 @@ This helm chart installs and configures the following projects/products :
 
 3. Install/upgrade RHTAP
 
-    `helm upgrade installer rhtap/rhtap --install --create-namespace --namespace rhtap --timeout 20m --values values.yaml`
+    `helm upgrade installer rhtap/redhat-trusted-application-pipeline --install --create-namespace --namespace rhtap --timeout 20m --values values.yaml`
 
     Sample output:
     
@@ -54,7 +54,7 @@ This helm chart installs and configures the following projects/products :
     STATUS: deployed
     REVISION: 1
     NOTES:
-    Thank you for installing rhtap-installer.
+    Thank you for installing redhat-trusted-application-pipeline.
     [...]
     ```
 
@@ -66,7 +66,13 @@ This helm chart installs and configures the following projects/products :
 
 3. Uninstall RHTAP
 
-    `helm uninstall --namespace rhtap installer`
+    * `./bin/make.sh uninstall --namespace rhtap --app-name installer`
+
+If you do not want to use `make.sh`, perform the following actions:
+* Delete all `applications` CRs from the rhtap namespace.
+* Uninstall the helm chart: `helm uninstall --namespace rhtap installer`.
+* Delete the rhtap namespace.
+* Delete all the deployment namespaces (e.g. `rhtap-app-development`, `rhtap-app-production`, `rhtap-app-stage`).
 
 ## UI ( a.k.a OpenShift Console - UNSUPPORTED)
 
@@ -100,7 +106,9 @@ spec:
 
 ## Continuous integration
 
-TODO
+The CI is controlled by the following repositories:
+* https://github.com/openshift/release
+* https://github.com/redhat-appstudio/rhtap-e2e
 
 ## Release a new version of RHTAP
 

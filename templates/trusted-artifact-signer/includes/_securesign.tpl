@@ -16,19 +16,21 @@ spec:
       organizationName: ${FULCIO__ORG_NAME}
     config:
       OIDCIssuers:
-        "${FULCIO__OIDC__URL}":
+        - Issuer: "${FULCIO__OIDC__URL}"
           ClientID: ${FULCIO__OIDC__CLIENT_ID}
           IssuerURL: "${FULCIO__OIDC__URL}"
           Type: ${FULCIO__OIDC__TYPE}
     externalAccess:
       enabled: true
-    monitoring: false
+    monitoring:
+      enabled: false
   rekor:
     externalAccess:
       enabled: true
     signer:
       kms: secret
-    monitoring: false
+    monitoring:
+      enabled: false
   trillian:
     database:
       create: true
