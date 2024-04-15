@@ -114,7 +114,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.1.0
-    helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -127,7 +127,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+        helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
     spec:
       containers:
       
@@ -874,7 +874,7 @@ spec:
                 metadata:
                   name: rhtap-dev-namespace-setup
                   annotations:
-                    helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
                 spec:
                   description: >-
                     Create the required resources for redhat-trusted-application-pipeline tasks to run in a namespace.
@@ -949,7 +949,7 @@ spec:
                           labels:
                             app.kubernetes.io/instance: default
                             app.kubernetes.io/part-of: tekton-chains
-                            helm.sh/chart: redhat-trusted-application-pipeline-0.13.1
+                            helm.sh/chart: redhat-trusted-application-pipeline-0.14.1
                             operator.tekton.dev/operand-name: tektoncd-chains
                           name: \$SECRET_NAME
                         type: Opaque
@@ -965,7 +965,7 @@ spec:
                             --from-literal=username=oauth2 \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.13.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -976,7 +976,7 @@ spec:
                             --from-literal=password=\$GIT_TOKEN \
                             --type=kubernetes.io/basic-auth \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.13.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -986,7 +986,7 @@ spec:
                           kubectl create secret generic "\$SECRET_NAME" \
                             --from-literal=webhook.secret=\$PIPELINES_WEBHOOK_SECRET \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.13.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                         
@@ -1000,7 +1000,7 @@ spec:
                             kubectl apply --filename - --overwrite=true >/dev/null
                           rm "\$DATA"
                           echo -n "."
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.13.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo -n "."
                           while ! kubectl get serviceaccount pipeline >/dev/null &>2; do
                             sleep 2
@@ -1025,7 +1025,7 @@ spec:
                             --from-literal=rox-api-endpoint=\$ROX_ENDPOINT \
                             --from-literal=rox-api-token=\$ROX_API_TOKEN \
                             --dry-run=client -o yaml | kubectl apply --filename - --overwrite=true >/dev/null
-                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.13.1" >/dev/null
+                          kubectl annotate secret "\$SECRET_NAME" "helm.sh/chart=redhat-trusted-application-pipeline-0.14.1" >/dev/null
                           echo "OK"
                         fi
                 
@@ -1042,7 +1042,7 @@ spec:
                 metadata:
                   name: rhtap-pe-info
                   annotations:
-                    helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
                 spec:
                   description: >-
                     Display the configuration information needed by the Platform
@@ -1136,7 +1136,7 @@ spec:
               metadata:
                 generateName: rhtap-dev-namespace-setup-
                 annotations:
-                  helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+                  helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
               spec:
                 pipelineSpec:
                   tasks:
@@ -1574,7 +1574,7 @@ spec:
               git clone https://github.com/trustification/trustification.git
               pushd trustification &&
                 # Desired commit for trustification charts.
-                git reset --hard 9abcf0a6 &&
+                git checkout v1.0.0-TP1 &&
                   # Adding the bitnami repository for "trustification-infrastructure"
                   # dependencies.
                   helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -1638,7 +1638,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/instance: "installer"
     app.kubernetes.io/version: 1.1.0
-    helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -1650,7 +1650,7 @@ spec:
       labels:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/instance: "installer"
-        helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+        helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
     spec:
       automountServiceAccountToken: true
       containers:
@@ -1673,7 +1673,7 @@ spec:
                 metadata:
                   generateName: rhtap-test-config-
                   annotations:
-                    helm.sh/chart: "redhat-trusted-application-pipeline-0.13.1"
+                    helm.sh/chart: "redhat-trusted-application-pipeline-0.14.1"
                 spec:
                   pipelineSpec:
                     tasks:
