@@ -142,12 +142,7 @@ certify() {
   mkdir -p "$HELM_REPOSITORY"
   mkdir -p "$CERTIFICATION_DIR"
   CHART_TGZ=$(helm package --destination "$HELM_REPOSITORY" . | sed 's:.*/::')
-  if kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
-    # Can be removed when using helm to uninstall the chart doesn't
-    # break the GitOps operator.
-    echo "Cannot certify the chart on a cluster on which the chart was already installed" >&2
-    exit 1
-  else
+  if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
     kubectl create namespace "$NAMESPACE"
   fi
   podman run --rm \
