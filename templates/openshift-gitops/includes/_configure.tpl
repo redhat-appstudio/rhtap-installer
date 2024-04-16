@@ -61,6 +61,7 @@
           echo -n "."
           ARGOCD_PASSWORD="$(kubectl get secret -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
           echo -n "."
+          echo -n "?"
           ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --http-retry-max 5 --username admin --password "$ARGOCD_PASSWORD" >/dev/null
           echo -n "."
           ARGOCD_API_TOKEN="$(./argocd account generate-token --http-retry-max 5 --account "admin")"

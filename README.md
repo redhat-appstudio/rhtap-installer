@@ -1,3 +1,4 @@
+FOOBAR
 # Red Hat Trusted Application Pipeline
 
 This helm chart installs and configures the following projects/products :
