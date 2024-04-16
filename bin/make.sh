@@ -91,7 +91,7 @@ parse_args() {
           sort --version-sort |
           tail -1
       )
-      VERSION="https://redhat-appstudio.github.io/helm-repository/rhtap-installer-$VERSION.tgz"
+      VERSION="https://redhat-appstudio.github.io/helm-repository/redhat-trusted-application-pipeline-$VERSION.tgz"
       ;;
     -d | --debug)
       set -x
