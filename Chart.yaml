@@ -4,7 +4,7 @@ annotations:
   charts.openshift.io/provider: Red Hat
   charts.openshift.io/supportURL: https://github.com/redhat-appstudio/rhtap-installer/issues
 apiVersion: v2
-appVersion: "1.1.0"
+appVersion: "1.1.x"
 description: A Helm chart for deploying Red Hat Trusted Application Pipeline
 kubeVersion: ">= 1.25.0-0"
 maintainers:
@@ -14,4 +14,4 @@ name: redhat-trusted-application-pipeline
 sources:
   - https://github.com/redhat-appstudio/rhtap-installer
 type: application
-version: 0.3.0
+version: 1.0.0
