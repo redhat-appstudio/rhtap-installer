@@ -14,10 +14,7 @@ jobs:
       # only required for workflows in private repositories
       actions: read
       contents: read
-    environment: snyk_env
     runs-on: ubuntu-latest
-    env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - name: Run Snyk to check Kubernetes manifest file for issues
