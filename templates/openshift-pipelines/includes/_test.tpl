@@ -1,6 +1,7 @@
 {{ define "rhtap.pipelines.test" }}
 - name: test-pipelines
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c
@@ -8,7 +9,6 @@
       set -o errexit
       set -o nounset
       set -o pipefail
-
     {{ if eq .Values.debug.script true }}
       set -x
     {{ end }}
@@ -57,4 +57,7 @@
     limits:
       cpu: 100m
       memory: 256Mi
+    requests:
+      cpu: 20m
+      memory: 128Mi
 {{ end }}

@@ -1,6 +1,7 @@
 {{ define "rhtap.gitops.configure" }}
 - name: configure-gitops
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+  workingDir: /tmp
   command:
     - /bin/sh
     - -c
@@ -60,9 +61,20 @@
           echo -n "."
           ARGOCD_PASSWORD="$(kubectl get secret -n "$NAMESPACE" "$RHTAP_ARGOCD_INSTANCE-cluster" -o jsonpath="{.data.admin\.password}" | base64 --decode)"
           echo -n "."
-          ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --username admin --password "$ARGOCD_PASSWORD" >/dev/null
+          RETRY=0
+          while ! ./argocd login "$ARGOCD_HOSTNAME" --grpc-web --insecure --http-retry-max 5 --username admin --password "$ARGOCD_PASSWORD" >/dev/null; do
+            if [ "$RETRY" = "20" ]; then
+              echo "FAIL"
+              echo "[ERROR] Could not login to ArgoCD" >&2
+              exit 1
+            else
+              echo -n "_"
+              RETRY=$((RETRY + 1))
+              sleep 5
+            fi
+          done
           echo -n "."
-          ARGOCD_API_TOKEN="$(./argocd account generate-token --account "admin")"
+          ARGOCD_API_TOKEN="$(./argocd account generate-token --http-retry-max 5 --account "admin")"
           echo -n "."
           kubectl create secret generic "$RHTAP_ARGOCD_INSTANCE-secret" \
             --from-literal="api-token=$ARGOCD_API_TOKEN" \

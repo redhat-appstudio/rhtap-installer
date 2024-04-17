@@ -91,7 +91,7 @@ parse_args() {
           sort --version-sort |
           tail -1
       )
-      VERSION="https://redhat-appstudio.github.io/helm-repository/rhtap-installer-$VERSION.tgz"
+      VERSION="https://redhat-appstudio.github.io/helm-repository/redhat-trusted-application-pipeline-$VERSION.tgz"
       ;;
     -d | --debug)
       set -x
@@ -163,8 +163,8 @@ certify() {
     --namespace "$NAMESPACE" \
     --set chart-testing.release="$APP_NAME" \
     --set profile.vendorType=redhat \
-    "/workspace/$HELM_REPOSITORY/$CHART_TGZ" |
-    yq '.results |= sort_by(.check)' >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
+    "/workspace/$HELM_REPOSITORY/$CHART_TGZ" >"$CERTIFICATION_DIR/report.yaml"
+  yq '.results |= sort_by(.check)' "$CERTIFICATION_DIR/report.yaml" >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
 }
 
 delete() {
@@ -354,9 +354,17 @@ values() {
     export VALUE
     case $ENV_VAR in
     GITHUB__APP__PRIVATE_KEY)
+      if ! echo "$VALUE" | tr -d '\n' | grep --extended-regexp --quiet "^-----BEGIN RSA PRIVATE KEY-----.*-----END RSA PRIVATE KEY-----$"; then
+        echo "[ERROR] Invalid value for 'GITHUB__APP__PRIVATE_KEY'. The value must be the full content of the private key." >&2
+        exit 1
+      fi
+      if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == true ]; then
+        yq -i "
+        .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE)
+        " "$TMP_VALUES"
+      fi
       yq -i "
-      .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE),
-      .pipelines.pipelines-as-code.github.private-key = strenv(VALUE)
+        .pipelines.pipelines-as-code.github.private-key = strenv(VALUE)
       " "$TMP_VALUES"
       ;;
     QUAY__DOCKERCONFIGJSON)

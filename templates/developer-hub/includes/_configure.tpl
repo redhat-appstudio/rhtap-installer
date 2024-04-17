@@ -2,6 +2,7 @@
 {{ if (index .Values "developer-hub") }}
 - name: configure-developer-hub
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c
@@ -97,7 +98,7 @@
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
 
       echo -n "* Installing Developer Hub: "
-      kubectl create configmap developer-hub-app-config-extra \
+      kubectl create configmap redhat-developer-hub-app-config-extra \
         --from-file=app-config.extra.yaml="$APPCONFIGEXTRA" \
         -o yaml \
         --dry-run=client | kubectl apply -f - >/dev/null
@@ -109,19 +110,19 @@
         --devel \
         --namespace=${NAMESPACE} \
         --values="$HELM_VALUES" \
-        developer-hub \
-        developer-hub/developer-hub >/dev/null; then
+        redhat-developer-hub \
+        developer-hub/redhat-developer-hub >/dev/null; then
         echo "ERROR while installing chart!"
         exit 1
       fi
       echo "OK"
 
       echo -n "* Waiting for route: "
-      until kubectl get route "developer-hub" -o name >/dev/null ; do
+      until kubectl get route "redhat-developer-hub" -o name >/dev/null ; do
         echo -n "."
         sleep 3
       done
-      HOSTNAME="$(kubectl get routes "developer-hub" -o jsonpath="{.spec.host}")"
+      HOSTNAME="$(kubectl get routes "redhat-developer-hub" -o jsonpath="{.spec.host}")"
       echo -n "."
       if [ "$(kubectl get secret "$CHART-developer-hub-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         kubectl create secret generic "$CHART-developer-hub-secret" \

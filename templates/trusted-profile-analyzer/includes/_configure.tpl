@@ -2,6 +2,7 @@
 {{ if (index .Values "trusted-profile-analyzer") }}
 - name: configure-trusted-profile-analyzer
   image: registry.redhat.io/openshift4/ose-tools-rhel8:latest
+  workingDir: /tmp
   command:
     - /bin/bash
     - -c
@@ -12,8 +13,6 @@
   {{ if eq .Values.debug.script true }}
       set -x
   {{ end }}
-
-      cd /tmp
 
       # Installing Helm...
       curl --fail --silent --show-error --location \
@@ -46,7 +45,7 @@
       git clone https://github.com/trustification/trustification.git
       pushd trustification &&
         # Desired commit for trustification charts.
-        git reset --hard 9abcf0a6 &&
+        git checkout v1.0.0-TP1 &&
           # Adding the bitnami repository for "trustification-infrastructure"
           # dependencies.
           helm repo add bitnami https://charts.bitnami.com/bitnami

@@ -7,7 +7,7 @@ ENV TEKTONCD_CLI_VERSION="v0.33.0"
 USER root
 
 # hadolint ignore=DL3041
-RUN dnf install -y -q --allowerasing --nobest nodejs-devel nodejs-libs python3-pip jq \
+RUN dnf install -y -q --allowerasing --nobest nodejs-devel nodejs-libs python3-pip jq diffutils \
     openssl openssl-devel ca-certificates make cmake cpp gcc gcc-c++ zlib zlib-devel brotli brotli-devel python3 nodejs-packaging && \
     pip3 install --upgrade pip && \
     pip3 install --upgrade setuptools && \
