@@ -8,6 +8,12 @@ on:
         - main
 jobs:
   security:
+    permissions:
+      # required for all workflows
+      security-events: write
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
     environment: snyk_env
     runs-on: ubuntu-latest
     env:
@@ -16,5 +22,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run Snyk to check Kubernetes manifest file for issues
         uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --report
