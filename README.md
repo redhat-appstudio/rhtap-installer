@@ -6,14 +6,14 @@ This helm chart installs and configures the following projects/products :
 | Product                   | Installation                                              | Configuration                                                                                                                                                                                                            |
 | :-----------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | Developer Hub             | Rolled out via Helm Chart                                 | Controlled by the values YAML file.                                                                                                                                                                                      |
-| OpenShift GitOps          | Operator `Subscription`                                   | Controlled by the values YAML file. If a subscription already exists, the installation it will not modify it. A new instance ArgoCD will be created.                                                                     |
+| OpenShift GitOps          | Operator `Subscription`                                   | Controlled by the values YAML file. If a subscription already exists, the installation will not modify it. A new instance ArgoCD will be created.                                                                     |
 | OpenShift Pipelines       | Operator `Subscription`                                   | Controlled by the values YAML file. If a subscription already exists, the installation will not modify it. In all cases, the TektonConfig will be modified to enable Tekton Chains and the signing secret will be setup. |
 | Trusted Artifact Signer   | Operator `Subscription`                                   | Default operator install & SecureSign instance                                                                                                                                                                           |
 | Trusted Profile Analyzer  | Rolled out via Helm Charts `tpa-infrastructure` and `tpa` | Controlled by the values YAML file                                                                                                                                                                                       |
 | Quay                      | (TODO)                                                    |                                                                                                                                                                                                                          |
 | Advanced Cluster Security | (TODO)                                                    |                                                                                                                                                                                                                          |
 
-Note: If a subscription for an operator already exists, the installation will not tamper with it. Please make sure you're using a supported version of that product.
+Note: If a subscription for an operator already exists, the installation will not tamper with it. Please make sure you're using a supported version of that product. See [Compatibility matrix for 1.0](https://access.redhat.com/documentation/en-us/red_hat_trusted_application_pipeline/1.0/html/release_notes_for_red_hat_trusted_application_pipeline_1.0/con_support_matrix_default).
 
 # Try it
 
@@ -69,7 +69,7 @@ Note: If a subscription for an operator already exists, the installation will no
 
 ### Uninstall
 
-Note: Uninstalling RHTAP will not unsinstall any operators that was deployed during the installation.
+Note: Uninstalling RHTAP will not unsinstall any operators that were deployed during the installation.
 
 1. Uninstall RHTAP:
 
