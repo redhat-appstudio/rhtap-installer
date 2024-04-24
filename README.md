@@ -3,15 +3,17 @@
 This helm chart installs and configures the following projects/products :
 
 
-|          Product          |                       Installation                        |                   Configuration                    |
-| :-----------------------: | :-------------------------------------------------------: | :------------------------------------------------: |
-|       Developer Hub       |                 Rolled out via Helm Chart                 |         Controlled by the values YAML file         |
-|     OpenShift GitOps      |                  Operator `Subscription`                  |        Sets up the default Argo CD instance        |
-|    OpenShift Pipelines    |                  Operator `Subscription`                  | Enables Tekton Chains & sets up the signing secret |
-|  Trusted Artifact Signer  |                  Operator `Subscription`                  |   Default operator install & SecureSign instance   |
-| Trusted Profile Analyzer  | Rolled out via Helm Charts `tpa-infrastructure` and `tpa` |         Controlled by the values YAML file         |
-|           Quay            |                          (TODO)                           |                                                    |
-| Advanced Cluster Security |                          (TODO)                           |                                                    |
+| Product                   | Installation                                              | Configuration                                                                                                                                                                                                            |
+| :-----------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| Developer Hub             | Rolled out via Helm Chart                                 | Controlled by the values YAML file.                                                                                                                                                                                      |
+| OpenShift GitOps          | Operator `Subscription`                                   | Controlled by the values YAML file. If a subscription already exists, the installation it will not modify it. A new instance ArgoCD will be created.                                                                     |
+| OpenShift Pipelines       | Operator `Subscription`                                   | Controlled by the values YAML file. If a subscription already exists, the installation will not modify it. In all cases, the TektonConfig will be modified to enable Tekton Chains and the signing secret will be setup. |
+| Trusted Artifact Signer   | Operator `Subscription`                                   | Default operator install & SecureSign instance                                                                                                                                                                           |
+| Trusted Profile Analyzer  | Rolled out via Helm Charts `tpa-infrastructure` and `tpa` | Controlled by the values YAML file                                                                                                                                                                                       |
+| Quay                      | (TODO)                                                    |                                                                                                                                                                                                                          |
+| Advanced Cluster Security | (TODO)                                                    |                                                                                                                                                                                                                          |
+
+Note: If a subscription for an operator already exists, the installation will not tamper with it. Please make sure you're using a supported version of that product.
 
 # Try it
 
@@ -31,19 +33,20 @@ This helm chart installs and configures the following projects/products :
 
 ## CLI
 
-0. Login to an OpenShift 4.14 cluster and create a new Project.
+### Install
+1. Login to an OpenShift 4.14 cluster.
 
-1. Add the helm repository to your local system 
+2. Add the helm repository to your local system:
 
-    `helm repo add rhtap https://redhat-appstudio.github.io/helm-repository`
+    `helm repo add openshift-helm-charts https://charts.openshift.io/`
     
-    If you've already added this, run a `helm repo update` time to time to pull the latest packages.
+    If you've already added this, run a `helm repo update` to pull the latest packages.
 
-2. Edit `values.yaml` to set your configuration parameters. You have the option to use `bin/make.sh values` to generate the configuration YAML.
+3. Copy `values.yaml` to `private-values.yaml`, and set your configuration parameters. You have the option to use `bin/make.sh values` to generate the configuration YAML.
 
-3. Install/upgrade RHTAP
+4. Install/upgrade RHTAP
 
-    `helm upgrade installer rhtap/redhat-trusted-application-pipeline --install --create-namespace --namespace rhtap --timeout 20m --values values.yaml`
+    `helm upgrade installer openshift-helm-charts/redhat-trusted-application-pipeline --install --create-namespace --namespace rhtap --timeout 20m --values private-values.yaml`
 
     Sample output:
     
@@ -64,45 +67,31 @@ This helm chart installs and configures the following projects/products :
     * `Callback URL`: `.pipelines.pipelines-as-code.callback-url`
     * `Webhook URL`: `.pipelines.pipelines-as-code.webhook-url`
 
-3. Uninstall RHTAP
+### Uninstall
 
-    * `./bin/make.sh uninstall --namespace rhtap --app-name installer`
+Note: Uninstalling RHTAP will not unsinstall any operators that was deployed during the installation.
+
+1. Uninstall RHTAP:
+
+    `./bin/make.sh uninstall --namespace rhtap --app-name installer`
 
 If you do not want to use `make.sh`, perform the following actions:
-* Delete all `applications` CRs from the rhtap namespace.
-* Uninstall the helm chart: `helm uninstall --namespace rhtap installer`.
-* Delete the rhtap namespace.
-* Delete all the deployment namespaces (e.g. `rhtap-app-development`, `rhtap-app-production`, `rhtap-app-stage`).
+1. Delete all `applications` CRs from the `rhtap` namespace.
+2. Uninstall the helm chart: `helm uninstall --namespace rhtap installer`.
+3. Delete the rhtap namespace.
+4. Delete all the deployment namespaces (e.g. `rhtap-app-development`, `rhtap-app-production`, `rhtap-app-stage`).
 
 ## UI ( a.k.a OpenShift Console - UNSUPPORTED)
 
 Currently unsupported as the user does not have the option to modify the default values.
-
-1. Add the Helm Chart Repository to OpenShift 
-
-```
-apiVersion: helm.openshift.io/v1beta1
-kind: HelmChartRepository
-metadata:
-  name: rhtap-installer
-spec:
-  connectionConfig:
-    url: 'https://redhat-appstudio.github.io/helm-repository'
-  name: rhtap-installer
-```
-
-2. Install the Chart from the catalog
-
-<img width="1365" alt="image" src="https://user-images.githubusercontent.com/545280/283235252-c3dfc4d7-c11b-43ff-8a52-8b1321727b3e.png">
-
 
 # Development
 
 ## "Inner loop"
 
 1. Download/Clone this Git Repository: `git clone https://github.com/redhat-appstudio/rhtap-installer`.
-2. Install/upgrade the chart on your cluster: `./bin/make.sh apply -- --values values-private.yaml`
-3. Run tests: `./test/e2e.sh -- --values values-private.yaml`
+2. Install/upgrade the chart on your cluster: `./bin/make.sh apply -- --values private-values.yaml`
+3. Run tests: `./test/e2e.sh -- --values private-values.yaml`
 
 ## Continuous integration
 
@@ -110,7 +99,7 @@ The CI is controlled by the following repositories:
 * https://github.com/openshift/release
 * https://github.com/redhat-appstudio/rhtap-e2e
 
-## Release a new version of RHTAP
+## Release a new CI version of RHTAP
 
 ```
 $ git clone https://github.com/redhat-appstudio/rhtap-installer
