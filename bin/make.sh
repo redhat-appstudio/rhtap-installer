@@ -20,8 +20,6 @@ Commands:
         Apply (install/update) the helm chart.
     certify
         Generate the report certifying the helm chart
-    delete
-        Delete the helm chart.
     release
         Package and release the helm chart.
     template
@@ -165,11 +163,6 @@ certify() {
     --set profile.vendorType=redhat \
     "/workspace/$HELM_REPOSITORY/$CHART_TGZ" >"$CERTIFICATION_DIR/report.yaml"
   yq '.results |= sort_by(.check)' "$CERTIFICATION_DIR/report.yaml" >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
-}
-
-delete() {
-  $helm uninstall "$APP_NAME"
-  $helm list
 }
 
 release() {
