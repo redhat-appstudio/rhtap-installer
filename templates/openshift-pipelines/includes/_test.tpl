@@ -53,6 +53,9 @@
       }
 
       check_rhtap_pipelines_health
+
+      echo
+      echo "Test successful"
   resources:
     limits:
       cpu: 100m
