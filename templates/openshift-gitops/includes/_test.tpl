@@ -93,12 +93,14 @@
       check_gitops_operator_health
       check_rhtap_argocd_health
 
+      echo
       if [ "${#ERRORS[@]}" != "0" ]; then
         for MSG in "${ERRORS[@]}"; do
           echo "[ERROR]$MSG" >&2
         done
         exit 1
       fi
+      echo "Test successful"
   resources:
     limits:
       cpu: 100m
