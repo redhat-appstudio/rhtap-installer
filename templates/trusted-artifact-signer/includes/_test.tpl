@@ -28,6 +28,9 @@
       for deploy in "${deployments[@]}"; do
         rollout_status "{{.Release.Namespace}}" "${deploy}"
       done
+
+      echo
+      echo "Test successful"
   resources:
     limits:
       cpu: 100m

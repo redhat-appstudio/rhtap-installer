@@ -54,6 +54,9 @@
           echo "SBOM was not uploaded successfully!"
           exit 1
       fi
+
+      echo
+      echo "Test successful"
   resources:
     limits:
       cpu: 100m
