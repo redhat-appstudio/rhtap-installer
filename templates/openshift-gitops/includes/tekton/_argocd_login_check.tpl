@@ -12,17 +12,17 @@ spec:
         valueFrom:
           secretKeyRef:
             name: {{index .Values "trusted-application-pipeline" "name"}}-argocd-secret
-            key: hostname
+            key: ARGOCD_HOSTNAME
       - name: ARGOCD_PASSWORD
         valueFrom:
           secretKeyRef:
             name: {{index .Values "trusted-application-pipeline" "name"}}-argocd-secret
-            key: password
+            key: ARGOCD_PASSWORD
       - name: ARGOCD_USER
         valueFrom:
           secretKeyRef:
             name: {{index .Values "trusted-application-pipeline" "name"}}-argocd-secret
-            key: user
+            key: ARGOCD_USER
       image: registry.access.redhat.com/ubi9/ubi-minimal
       name: check-argocd-login
       script: |

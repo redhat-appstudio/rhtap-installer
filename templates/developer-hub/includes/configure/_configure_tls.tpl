@@ -2,20 +2,6 @@
 ################################################################################
 # Configure TLS
 ################################################################################
-echo -n "* Waiting for deployment: "
-until kubectl get deployment redhat-developer-hub -o name >/dev/null ; do
-  echo -n "_"
-  sleep 3
-done
-echo "OK"
-
-ORIGNAL_POD=$(kubectl get pods -l app.kubernetes.io/name=developer-hub -o name)
-
-DEPLOYMENT="/tmp/deployment.yaml"
-DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
-oc get deployment/redhat-developer-hub -o yaml >"$DEPLOYMENT"
-cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
-
 echo -n "* Configuring TLS:"
 # Update env var.
 if [ "$(yq '.spec.template.spec.containers[0].env[] | select(.name == "NODE_EXTRA_CA_CERTS") | length' "$DEPLOYMENT_PATCHED")" == "2" ]; then
@@ -56,20 +42,5 @@ else
 fi
 yq --inplace "$YQ_EXPRESSION" "$DEPLOYMENT_PATCHED"
 echo "OK"
-
-echo -n "* Updating deployment: "
-yq -i 'sort_keys(..)' "$DEPLOYMENT"
-yq -i 'sort_keys(..)' "$DEPLOYMENT_PATCHED"
-if ! diff --brief "$DEPLOYMENT" "$DEPLOYMENT_PATCHED" >/dev/null; then
-    oc apply -f "$DEPLOYMENT_PATCHED" >/dev/null 2>&1
-
-    # Wait for the configuration to be deployed
-    while kubectl get "$ORIGNAL_POD" -o name >/dev/null 2>&1 ; do
-        echo -n "_"
-        sleep 2
-    done
-    echo "OK"
-else
-    echo "Configuration already up to date"
-fi
+################################################################################
 {{ end }}
