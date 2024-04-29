@@ -302,14 +302,12 @@ values() {
   echo "# Generated with bin/make.sh $(grep "^version: " Chart.yaml | grep --only-matching "[0-9.]*")-$(git rev-parse HEAD | cut -c1-7)" >"$TMP_VALUES"
   cat values.yaml >>"$TMP_VALUES"
   if [ "$RHTAP_ENABLE_GITHUB" == false ]; then
-    yq -i ".developer-hub.app-config.auth.providers.github = null" "$TMP_VALUES"
-    yq -i ".developer-hub.app-config.integrations.github = null" "$TMP_VALUES"
+    yq -i ".git.github = null" "$TMP_VALUES"
     yq -i ".openshift-gitops.git-token = null" "$TMP_VALUES"
     yq -i ".pipelines.pipelines-as-code.github = null" "$TMP_VALUES"
   fi
   if [ "$RHTAP_ENABLE_GITLAB" == false ]; then
-    yq -i ".developer-hub.app-config.auth.providers.gitlab = null" "$TMP_VALUES"
-    yq -i ".developer-hub.app-config.integrations.gitlab = null" "$TMP_VALUES"
+    yq -i ".git.gitlab = null" "$TMP_VALUES"
   fi
   if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == false ]; then
     yq -i ".developer-hub = null" "$TMP_VALUES"
@@ -353,7 +351,7 @@ values() {
       fi
       if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == true ]; then
         yq -i "
-        .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE)
+        .git.github.app.privateKey = strenv(VALUE)
         " "$TMP_VALUES"
       fi
       yq -i "

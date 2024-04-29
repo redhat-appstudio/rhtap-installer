@@ -1,6 +1,6 @@
 {{ define "rhtap.developer-hub.configure.plugin_kubernetes" }}
 ################################################################################
-# Tekton plugin configuration
+# Kubernetes/Tekton plugin configuration
 ################################################################################
 export K8S_SA_TOKEN=$(
   SECRET_NAME=$(kubectl get secrets --namespace "$NAMESPACE" -o name | grep rhdh-kubernetes-plugin-token- | cut -d/ -f2 | head -1)
@@ -16,4 +16,6 @@ yq -i '
     .serviceAccountToken
   ) = strenv(K8S_SA_TOKEN)
 ' "$HELM_VALUES"
+echo -n "."
+################################################################################
 {{ end }}

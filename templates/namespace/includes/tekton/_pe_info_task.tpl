@@ -15,12 +15,12 @@ spec:
         valueFrom:
           secretKeyRef:
             name: {{ index .Values "trusted-application-pipeline" "name" }}-argocd-secret
-            key: hostname
+            key: ARGOCD_HOSTNAME
       - name: ARGOCD_TOKEN
         valueFrom:
           secretKeyRef:
             name: {{ index .Values "trusted-application-pipeline" "name" }}-argocd-secret
-            key: api-token
+            key: ARGOCD_API_TOKEN
       - name: DEVELOPER_HUB_HOSTNAME
         valueFrom:
           secretKeyRef:
