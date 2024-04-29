@@ -77,10 +77,10 @@
           ARGOCD_API_TOKEN="$(./argocd account generate-token --http-retry-max 5 --account "admin")"
           echo -n "."
           kubectl create secret generic "$RHTAP_ARGOCD_INSTANCE-secret" \
-            --from-literal="api-token=$ARGOCD_API_TOKEN" \
-            --from-literal="hostname=$ARGOCD_HOSTNAME" \
-            --from-literal="password=$ARGOCD_PASSWORD" \
-            --from-literal="user=admin" \
+            --from-literal="ARGOCD_API_TOKEN=$ARGOCD_API_TOKEN" \
+            --from-literal="ARGOCD_HOSTNAME=$ARGOCD_HOSTNAME" \
+            --from-literal="ARGOCD_PASSWORD=$ARGOCD_PASSWORD" \
+            --from-literal="ARGOCD_USER=admin" \
             > /dev/null
       fi
       echo "OK"

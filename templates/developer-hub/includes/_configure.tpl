@@ -35,37 +35,10 @@
       APPCONFIGEXTRA="app-config.extra.yaml"
       touch "$APPCONFIGEXTRA"
       echo -n "."
-    {{ if and (index .Values "developer-hub") (index .Values "developer-hub" "app-config") }}
-      cat << _EOF_ >> "$APPCONFIGEXTRA"
-{{ index .Values "developer-hub" "app-config" | toYaml | indent 6 }}
-      _EOF_
+      cat << EOF >> "$APPCONFIGEXTRA"
+{{ include "rhtap.developer-hub.configure.app-config-extra" . | indent 6 }}
+      EOF
       echo -n "."
-    {{ end }}
-
-      # ArgoCD integration
-      while [ "$(kubectl get secret "$CHART-argocd-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
-        echo -ne "_"
-        sleep 2
-      done
-      kubectl get secret "$CHART-argocd-secret" -o yaml > argocd_secret.yaml
-      echo -n "."
-
-      ARGOCD_API_TOKEN="$(yq '.data.api-token | @base64d' argocd_secret.yaml)"
-      ARGOCD_HOSTNAME="$(yq '.data.hostname | @base64d' argocd_secret.yaml)"
-      ARGOCD_PASSWORD="$(yq '.data.password | @base64d' argocd_secret.yaml)"
-      ARGOCD_USER="$(yq '.data.user | @base64d' argocd_secret.yaml)"
-      cat << _EOF_ >> "$APPCONFIGEXTRA"
-      argocd:
-        username: $ARGOCD_USER
-        password: $ARGOCD_PASSWORD
-        waitCycles: 25
-        appLocatorMethods:
-          - type: 'config'
-            instances:
-              - name: default
-                url: https://$ARGOCD_HOSTNAME
-                token: $ARGOCD_API_TOKEN
-      _EOF_
 
       # Tekton integration
       while [ "$(kubectl get secret "$CHART-pipelines-secret" --ignore-not-found -o name | wc -l)" != "1" ]; do
@@ -73,19 +46,19 @@
         sleep 2
       done
       PIPELINES_PAC_URL="$(kubectl get secret "$CHART-pipelines-secret" -o yaml | yq '.data.webhook-url | @base64d')"
-      yq -i ".integrations.github[0].apps[0].webhookUrl = \"$PIPELINES_PAC_URL\"" "$APPCONFIGEXTRA"
+      echo "OK"
+
+      echo -n "* Generating redhat-developer-hub-{{index .Values "trusted-application-pipeline" "name"}}-config secret: "
+      cat <<EOF | kubectl apply -f - >/dev/null
+{{ include "rhtap.developer-hub.configure.extra_env" . | indent 6 }}
+      EOF
       echo "OK"
 
       echo -n "* Generating values.yaml: "
       HELM_VALUES="/tmp/developer-hub-values.yaml"
-    {{ if (index .Values "developer-hub") }}
       cat <<EOF >${HELM_VALUES}
-{{ index .Values "developer-hub" "values" | toYaml | indent 6 }}
+{{ include "rhtap.developer-hub.configure.helm_values" . | indent 6 }}
       EOF
-    {{ else }}
-      echo 'Expected "developer-hub" in the values.yaml' >&2
-      exit 1
-    {{ end }}
       echo -n "."
       KUBERNETES_CLUSTER_FQDN="$(
         kubectl get routes -n openshift-pipelines pipelines-as-code-controller -o jsonpath='{.spec.host}' | \
@@ -93,9 +66,11 @@
       )"
       export KUBERNETES_CLUSTER_FQDN
       yq --inplace '.global.clusterRouterBase = strenv(KUBERNETES_CLUSTER_FQDN)' "$HELM_VALUES"
-      echo "OK"
+      echo -n "."
 
+{{ include "rhtap.developer-hub.configure.argocd" . | indent 6 }}
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
+      echo "OK"
 
       echo -n "* Installing Developer Hub: "
       kubectl create configmap redhat-developer-hub-app-config-extra \
@@ -140,7 +115,36 @@
       done
       echo "OK"
 
+      echo -n "* Waiting for deployment: "
+      until kubectl get deployment redhat-developer-hub -o name >/dev/null ; do
+        echo -n "_"
+        sleep 3
+      done
+      echo -n "."
+      DEPLOYMENT="/tmp/deployment.yaml"
+      DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
+      oc get deployment/redhat-developer-hub -o yaml >"$DEPLOYMENT"
+      cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
+      echo "OK"
+
 {{ include "rhtap.developer-hub.configure.configure_tls" . | indent 6 }}
+
+      echo -n "* Updating deployment: "
+      yq -i 'sort_keys(..)' "$DEPLOYMENT"
+      yq -i 'sort_keys(..)' "$DEPLOYMENT_PATCHED"
+      if ! diff --brief "$DEPLOYMENT" "$DEPLOYMENT_PATCHED" >/dev/null; then
+        ORIGNAL_POD=$(kubectl get pods -l app.kubernetes.io/name=developer-hub -o name)
+        oc apply -f "$DEPLOYMENT_PATCHED" >/dev/null 2>&1
+
+        # Wait for the configuration to be deployed
+        while kubectl get "$ORIGNAL_POD" -o name >/dev/null 2>&1 ; do
+          echo -n "_"
+          sleep 2
+        done
+        echo "OK"
+      else
+        echo "Configuration already up to date"
+      fi
 
       echo -n "* Waiting for UI: "
       until curl --fail --insecure --location --output /dev/null --silent "https://$HOSTNAME"; do
