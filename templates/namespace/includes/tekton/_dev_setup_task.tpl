@@ -15,8 +15,8 @@ spec:
       name: git_token
       type: string
     {{$gitlab_token := ""}}
-    {{if (unset .Values "" | dig "developer-hub" "app-config" "integrations" "gitlab" nil)}}
-    {{$gitlab_token = (index .Values "developer-hub" "app-config" "integrations" "gitlab" 0 "token" | replace "$" "\\$")}}
+    {{if .Values.git.gitlab}}
+    {{$gitlab_token = (.Values.git.gitlab.token | replace "$" "\\$")}}
     {{end}}
     - default: "{{$gitlab_token}}"
       description: |
