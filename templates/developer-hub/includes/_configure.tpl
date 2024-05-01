@@ -55,10 +55,15 @@
       echo "OK"
 
       echo -n "* Generating values.yaml: "
+      helm repo add developer-hub https://charts.openshift.io/ >/dev/null
+      echo -n "."
       HELM_VALUES="/tmp/developer-hub-values.yaml"
-      cat <<EOF >${HELM_VALUES}
+      helm show values --version=~1.1 developer-hub/redhat-developer-hub >"${HELM_VALUES}"
+
+      cat <<EOF > rhtap-values.yaml
 {{ include "rhtap.developer-hub.configure.helm_values" . | indent 6 }}
       EOF
+      yq --inplace '. *= load("rhtap-values.yaml")' "${HELM_VALUES}"
       echo -n "."
       KUBERNETES_CLUSTER_FQDN="$(
         kubectl get routes -n openshift-pipelines pipelines-as-code-controller -o jsonpath='{.spec.host}' | \
@@ -68,6 +73,7 @@
       yq --inplace '.global.clusterRouterBase = strenv(KUBERNETES_CLUSTER_FQDN)' "$HELM_VALUES"
       echo -n "."
 
+{{ include "rhtap.developer-hub.configure.configure_tls" . | indent 6 }}
 {{ include "rhtap.developer-hub.configure.argocd" . | indent 6 }}
 {{ include "rhtap.developer-hub.configure.plugin_kubernetes" . | indent 6 }}
       echo "OK"
@@ -78,8 +84,6 @@
         -o yaml \
         --dry-run=client | kubectl apply -f - >/dev/null
       echo -n "."
-      helm repo add developer-hub https://charts.openshift.io/ >/dev/null
-      echo -n "."
       if ! helm upgrade \
         --install \
         --devel \
@@ -89,6 +93,7 @@
         redhat-developer-hub \
         developer-hub/redhat-developer-hub >/dev/null; then
         echo "ERROR while installing chart!"
+        sleep 600
         exit 1
       fi
       echo "OK"
@@ -109,44 +114,6 @@
       # Wait for the UI to fully boot once before modifying the configuration.
       # This should avoid issues with DB migrations being interrupted and generating locks.
       # Once RHIDP-1691 is solved that safeguard could be removed.
-      echo -n "* Waiting for UI: "
-      until curl --fail --insecure --location --output /dev/null --silent "https://$HOSTNAME"; do
-        echo -n "_"
-        sleep 3
-      done
-      echo "OK"
-
-      echo -n "* Waiting for deployment: "
-      until kubectl get deployment redhat-developer-hub -o name >/dev/null ; do
-        echo -n "_"
-        sleep 3
-      done
-      echo -n "."
-      DEPLOYMENT="/tmp/deployment.yaml"
-      DEPLOYMENT_PATCHED="/tmp/deployment.patched.yaml"
-      oc get deployment/redhat-developer-hub -o yaml >"$DEPLOYMENT"
-      cp "$DEPLOYMENT" "$DEPLOYMENT_PATCHED"
-      echo "OK"
-
-{{ include "rhtap.developer-hub.configure.configure_tls" . | indent 6 }}
-
-      echo -n "* Updating deployment: "
-      yq -i 'sort_keys(..)' "$DEPLOYMENT"
-      yq -i 'sort_keys(..)' "$DEPLOYMENT_PATCHED"
-      if ! diff --brief "$DEPLOYMENT" "$DEPLOYMENT_PATCHED" >/dev/null; then
-        ORIGNAL_POD=$(kubectl get pods -l app.kubernetes.io/name=developer-hub -o name)
-        oc apply -f "$DEPLOYMENT_PATCHED" >/dev/null 2>&1
-
-        # Wait for the configuration to be deployed
-        while kubectl get "$ORIGNAL_POD" -o name >/dev/null 2>&1 ; do
-          echo -n "_"
-          sleep 2
-        done
-        echo "OK"
-      else
-        echo "Configuration already up to date"
-      fi
-
       echo -n "* Waiting for UI: "
       until curl --fail --insecure --location --output /dev/null --silent "https://$HOSTNAME"; do
         echo -n "_"
