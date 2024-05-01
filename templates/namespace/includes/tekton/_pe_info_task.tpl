@@ -54,6 +54,7 @@ spec:
           hostname: \$DEVELOPER_HUB_HOSTNAME
         pipelines:
           pipelines-as-code:
+          {{if .Values.git.github}}
             github:
               # The docs URL explains how to setup the GitHub Application.
               # Set dummy values for the homepage URL and webhook URL, and
@@ -63,6 +64,11 @@ spec:
               callback-url: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/github/handler/frame
               webhook-url: \$PIPELINES_PAC_URL
               secret: \$PIPELINES_PAC_GH_SECRET
+          {{end}}
+          {{if .Values.git.gitlab}}
+            gitlab:
+              redirect-uri: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/gitlab/handler/frame
+          {{end}}
         _EOF_
       workingDir: /tmp
 {{ end }}
