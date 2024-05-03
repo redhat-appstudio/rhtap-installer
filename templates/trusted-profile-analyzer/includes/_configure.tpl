@@ -45,7 +45,7 @@
       git clone https://github.com/trustification/trustification.git
       pushd trustification &&
         # Desired commit for trustification charts.
-        git checkout v1.0.0-TP1 &&
+        git checkout v1.0.0 &&
           # Adding the bitnami repository for "trustification-infrastructure"
           # dependencies.
           helm repo add bitnami https://charts.bitnami.com/bitnami
