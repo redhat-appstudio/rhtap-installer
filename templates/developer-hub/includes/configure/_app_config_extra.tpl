@@ -44,6 +44,21 @@ integrations:
     - host: gitlab.com
       token: \${GITLAB__TOKEN}
 {{end}}
+proxy:
+  endpoints:
+    '/quay/api':
+      target: 'https://quay.io'
+      headers:
+        X-Requested-With: 'XMLHttpRequest'
+      {{if .Values.quay.token}}
+        Authorization: 'Bearer \${QUAY__API_TOKEN}'
+      {{end}}
+      changeOrigin: true
+      # Change to "false" in case of using self hosted quay instance with a self-signed certificate
+      secure: true
+quay:
+  # The UI url for Quay, used to generate the link to Quay
+  uiUrl: 'https://quay.io'
 techdocs:
   builder: 'local'
   generator:
