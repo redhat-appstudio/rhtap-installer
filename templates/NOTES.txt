@@ -8,11 +8,4 @@ cat << EOF | kubectl create -f - | sed "s|.*/\([^ ]*\).*|\n\nGet the RHTAP confi
 EOF
 ```
 
-Every developer must configure their namespace by running this PipelineRun:
-```
-cat << EOF | kubectl create -f -
-{{ include "rhtap.namespace.dev_setup_pipelinerun" . }}
-EOF
-```
-
 Run `helm test --namespace {{ .Release.Namespace }} {{ .Release.Name }}` to validate the installation.
