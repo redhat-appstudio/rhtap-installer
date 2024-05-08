@@ -1,17 +1,4 @@
 {{define "rhtap.developer-hub.configure.helm_values"}}
-proxy:
-  '/quay/api':
-    target: 'https://quay.io'
-    headers:
-      X-Requested-With: 'XMLHttpRequest'
-      # Uncomment the following line to access a private Quay Repository using a token
-      # Authorization: 'Bearer QUAY_TOKEN'
-    changeOrigin: true
-    # Change to "false" in case of using self hosted quay instance with a self-signed certificate
-    secure: true
-quay:
-  # The UI url for Quay, used to generate the link to Quay
-  uiUrl: 'https://quay.io'
 upstream:
   backstage:
     extraAppConfig:

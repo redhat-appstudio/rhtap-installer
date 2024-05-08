@@ -213,6 +213,21 @@ spec:
                   - host: gitlab.com
                     token: \${GITLAB__TOKEN}
               
+              proxy:
+                endpoints:
+                  '/quay/api':
+                    target: 'https://quay.io'
+                    headers:
+                      X-Requested-With: 'XMLHttpRequest'
+                    
+                      Authorization: 'Bearer \${QUAY__API_TOKEN}'
+                    
+                    changeOrigin: true
+                    # Change to "false" in case of using self hosted quay instance with a self-signed certificate
+                    secure: true
+              quay:
+                # The UI url for Quay, used to generate the link to Quay
+                uiUrl: 'https://quay.io'
               techdocs:
                 builder: 'local'
                 generator:
@@ -257,6 +272,9 @@ spec:
                   GITLAB__TOKEN: "${GITLAB__TOKEN}"
               
               
+                  QUAY__API_TOKEN: "${QUAY__API_TOKEN}"
+              
+              
               EOF
               echo "OK"
         
@@ -268,19 +286,6 @@ spec:
         
               cat <<EOF > rhtap-values.yaml
               
-              proxy:
-                '/quay/api':
-                  target: 'https://quay.io'
-                  headers:
-                    X-Requested-With: 'XMLHttpRequest'
-                    # Uncomment the following line to access a private Quay Repository using a token
-                    # Authorization: 'Bearer QUAY_TOKEN'
-                  changeOrigin: true
-                  # Change to "false" in case of using self hosted quay instance with a self-signed certificate
-                  secure: true
-              quay:
-                # The UI url for Quay, used to generate the link to Quay
-                uiUrl: 'https://quay.io'
               upstream:
                 backstage:
                   extraAppConfig:
