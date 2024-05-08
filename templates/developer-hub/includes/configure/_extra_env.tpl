@@ -21,4 +21,7 @@ stringData:
     GITLAB__APP__CLIENT__SECRET: "{{.Values.git.gitlab.app.secret}}"
     GITLAB__TOKEN: "{{.Values.git.gitlab.token}}"
 {{end}}
+{{if .Values.quay.token}}
+    QUAY__API_TOKEN: "{{.Values.quay.token}}"
+{{end}}
 {{end}}

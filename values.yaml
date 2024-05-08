@@ -58,6 +58,8 @@ quay:
   # Authentication information to push images.
   dockerconfigjson: |-
     ${QUAY__DOCKERCONFIGJSON}
+  # Authentication information to access images.
+  token: ${QUAY__API_TOKEN}
 trusted-artifact-signer:
   enabled: true
   operator:
