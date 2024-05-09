@@ -68,6 +68,8 @@ spec:
           {{if .Values.git.gitlab}}
             gitlab:
               redirect-uri: https://\$DEVELOPER_HUB_HOSTNAME/api/auth/gitlab/handler/frame
+              webhook-url: \$PIPELINES_PAC_URL
+              secret: \$PIPELINES_PAC_GH_SECRET
           {{end}}
         _EOF_
       workingDir: /tmp
