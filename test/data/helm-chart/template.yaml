@@ -492,9 +492,9 @@ spec:
               echo -n "."
               if ! helm upgrade \
                 --install \
-                --devel \
                 --namespace=${NAMESPACE} \
                 --values="$HELM_VALUES" \
+                --devel \
                 redhat-developer-hub \
                 developer-hub/redhat-developer-hub >/dev/null; then
                 echo "ERROR while installing chart!"
