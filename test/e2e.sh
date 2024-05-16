@@ -7,6 +7,10 @@ SCRIPT_DIR="$(
   cd "$(dirname "$0")" >/dev/null
   pwd
 )"
+PROJECT_DIR="$(
+  cd "$SCRIPT_DIR/.." >/dev/null
+  pwd
+)"
 
 usage() {
   echo "
@@ -34,7 +38,7 @@ set_defaults() {
   ACTIONS=()
   DEFAULT_ACTIONS=(version template apply test)
   HELM_CHART="$(
-    cd "$SCRIPT_DIR/.." >/dev/null
+    cd "$PROJECT_DIR/chart" >/dev/null
     pwd
   )"
   export NAMESPACE="rhtap"
@@ -84,13 +88,13 @@ apply() {
   # Because the chart is idempotent there is no
   # need to track if the chart as already been
   # applied.
-  "$HELM_CHART/bin/make.sh" apply -- "${PASSTHROUGH_ARGS[@]}"
+  "$PROJECT_DIR/bin/make.sh" apply -- "${PASSTHROUGH_ARGS[@]}"
 }
 
 template() {
   echo -n "Template: "
 
-  if diff "$SCRIPT_DIR/data/helm-chart/template.yaml" <("$HELM_CHART/bin/make.sh" template); then
+  if diff "$SCRIPT_DIR/data/helm-chart/template.yaml" <("$PROJECT_DIR/bin/make.sh" template); then
     echo "OK"
   else
     echo "FAIL"
@@ -100,15 +104,15 @@ template() {
 }
 
 test() {
-  "$HELM_CHART/bin/make.sh" test
+  "$PROJECT_DIR/bin/make.sh" test
 }
 
 upgrade() {
   BASE_VERSION="0.x"
   echo "## Installing base version '$BASE_VERSION'"
-  "$HELM_CHART/bin/make.sh" apply -- --version "$BASE_VERSION" "${PASSTHROUGH_ARGS[@]}"
+  "$PROJECT_DIR/bin/make.sh" apply -- --version "$BASE_VERSION" "${PASSTHROUGH_ARGS[@]}"
   echo "## Applying upgrade"
-  "$HELM_CHART/bin/make.sh" template --version "$BASE_VERSION" | diff - <("$HELM_CHART/bin/make.sh" template) || true
+  "$PROJECT_DIR/bin/make.sh" template --version "$BASE_VERSION" | diff - <("$HELM_CHART/bin/make.sh" template) || true
   apply
 }
 
