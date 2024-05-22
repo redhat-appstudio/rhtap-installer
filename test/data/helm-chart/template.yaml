@@ -257,7 +257,6 @@ spec:
               type: Opaque
               stringData:
                   DEVELOPER_HUB__CATALOG__URL: "${DEVELOPER_HUB__CATALOG__URL}"
-              
                   GITHUB__APP__ID: "${GITHUB__APP__ID}"
                   GITHUB__APP__CLIENT__ID: "${GITHUB__APP__CLIENT__ID}"
                   GITHUB__APP__CLIENT__SECRET: "${GITHUB__APP__CLIENT__SECRET}"
@@ -265,16 +264,11 @@ spec:
                   GITHUB__APP__WEBHOOK__SECRET: "${GITHUB__APP__WEBHOOK__SECRET}"
                   GITHUB__APP__PRIVATE_KEY: |-
                       ${GITHUB__APP__PRIVATE_KEY}
-              
-              
                   GITLAB__APP__CLIENT__ID: "${GITLAB__APP__CLIENT__ID}"
                   GITLAB__APP__CLIENT__SECRET: "${GITLAB__APP__CLIENT__SECRET}"
                   GITLAB__TOKEN: "${GITLAB__TOKEN}"
-              
-              
+                  NODE_OPTIONS: --no-node-snapshot
                   QUAY__API_TOKEN: "${QUAY__API_TOKEN}"
-              
-              
               EOF
               echo "OK"
         
