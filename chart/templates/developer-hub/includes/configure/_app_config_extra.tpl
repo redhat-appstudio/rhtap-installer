@@ -1,5 +1,8 @@
 {{define "rhtap.developer-hub.configure.app-config-extra"}}
 auth:
+{{- if .Values.debug.ci}}
+  dangerouslyDisableDefaultAuthPolicy: true
+{{end}}
   environment: production
   providers:
 {{if .Values.git.github}}

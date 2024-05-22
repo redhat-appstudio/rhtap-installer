@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 ---
 debug:
+  ci: false # Sets up the products for CI testing.
   container: false # Creates a long running container to easily open a terminal for troubleshooting.
   script: false # Prints commands before executing them.
 openshift-gitops:
