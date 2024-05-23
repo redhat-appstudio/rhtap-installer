@@ -1,8 +1,5 @@
 {{define "rhtap.developer-hub.configure.app-config-extra"}}
 auth:
-{{- if .Values.debug.ci}}
-  dangerouslyDisableDefaultAuthPolicy: true
-{{end}}
   environment: production
   providers:
 {{if .Values.git.github}}
@@ -16,6 +13,11 @@ auth:
       production:
         clientId: \${GITLAB__APP__CLIENT__ID}
         clientSecret: \${GITLAB__APP__CLIENT__SECRET}
+{{end}}
+{{- if .Values.debug.ci}}
+backend:
+  auth:
+    dangerouslyDisableDefaultAuthPolicy: true
 {{end}}
 catalog:
   locations:
