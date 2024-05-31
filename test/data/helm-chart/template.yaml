@@ -98,12 +98,11 @@ metadata:
   name: rhtas-operator
   namespace: openshift-operators
 spec:
-  channel: stable
+  channel: stable-v1.0
   installPlanApproval: Automatic
   name: rhtas-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: rhtas-operator.v1.0.0
 ---
 # Source: redhat-trusted-application-pipeline/templates/configure.yaml
 apiVersion: batch/v1
