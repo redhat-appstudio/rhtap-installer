@@ -59,6 +59,12 @@
         echo "OK"
       done
 
+      echo -n "* Waiting for 'rhtas-operator-controller-manager' deployment: "
+      while ! kubectl --namespace="openshift-operators" --timeout="5s" rollout status deployment "rhtas-operator-controller-manager" >/dev/null; do
+        echo -n "_"
+      done
+      echo "OK"
+
       echo -n "* Configure SecureSign instance: "
       cat <<EOF | kubectl apply -f - >/dev/null
 {{ include "rhtap.trusted-artifact-signer.securesign" . | indent 6 }}
