@@ -64,7 +64,7 @@ quay:
 trusted-artifact-signer:
   enabled: true
   operator:
-    channel: stable
+    channel: stable-v1.0
   securesign:
     fulcio:
       certificate:
