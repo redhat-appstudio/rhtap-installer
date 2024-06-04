@@ -1,0 +1,46 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: rhtap-install
+spec:
+  params:
+    - name: ocp-login-command
+      type: string
+      description: ""
+    - name: git-repo
+      type: string
+      default: "rhtap-installer"
+    - name: git-url
+      type: string
+      default: "https://github.com/redhat-appstudio/rhtap-installer.git"
+    - name: git-revision
+      type: string
+      default: "main"
+  volumes:
+    - name: secret-volume
+      secret:
+        secretName: rhtap-installer-configuration
+  steps:
+    - name: install
+      image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest
+      volumeMounts:
+        - name: secret-volume
+          mountPath: /workspace
+      script: |
+        #!/bin/sh
+        echo $(params.ocp-login-command)
+        $(params.ocp-login-command)
+
+        cd "$(mktemp -d)"
+        echo -e "INFO: cloning repo name '$(params.git-repo)' with revision '$(params.git-revision)' from url '$(params.git-url)'"
+        git clone "$(params.git-url)" .
+        git checkout "$(params.git-revision)"
+
+        cat /workspace/config.env > config.sh
+        chmod +x config.sh
+        source ./config.sh
+
+        ./bin/make.sh values
+        yq e -i '.debug.ci=true' private-values.yaml
+        ./bin/make.sh apply -n rhtap -- --debug --values private-values.yaml
