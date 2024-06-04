@@ -1,5 +1,5 @@
 # Red Hat Trusted Application Pipeline
-
+test
 This helm chart installs and configures the following projects/products :
 
 
