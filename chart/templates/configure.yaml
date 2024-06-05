@@ -1,0 +1,59 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{index .Values "trusted-application-pipeline" "name"}}-{{.Release.Name}}-configure"
+  labels:
+    app.kubernetes.io/managed-by: {{.Release.Service | quote}}
+    app.kubernetes.io/instance: {{.Release.Name | quote}}
+    app.kubernetes.io/version: {{.Chart.AppVersion}}
+    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install, post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      name: "{{.Release.Name}}-configure"
+      labels:
+        app.kubernetes.io/managed-by: {{.Release.Service | quote}}
+        app.kubernetes.io/instance: {{.Release.Name | quote}}
+        helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    spec:
+      containers:
+      {{if eq .Values.debug.container true}}
+        - name: debug-container
+          image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
+          workingDir: /tmp
+          command:
+            - /bin/bash
+            - -c
+            - |
+              DURATION=1800
+              FLAG="$PWD/.keep_alive"
+              echo "The container will shutdown in $DURATION seconds."
+              echo "Delete '$FLAG' to force the shutdown."
+              touch "$FLAG"
+              { sleep $DURATION; rm "$FLAG"; } &
+              while [ -e "$FLAG" ]; do
+                sleep 5
+              done
+              echo "Container shutting down"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
+      {{end}}
+        {{include "rhtap.developer-hub.configure" . | indent 8}}
+        {{include "rhtap.gitops.configure" . | indent 8}}
+        {{include "rhtap.namespace.configure" . | indent 8}}
+        {{include "rhtap.pipelines.configure" . | indent 8}}
+        {{include "rhtap.trusted-artifact-signer.configure" . | indent 8}}
+        {{include "rhtap.trusted-profile-analyzer.configure" . | indent 8}}
+      restartPolicy: Never
+      serviceAccountName: helm-manager

@@ -7,6 +7,10 @@ SCRIPT_DIR="$(
   cd "$(dirname "$0")" >/dev/null
   pwd
 )"
+PROJECT_DIR="$(
+  cd "$SCRIPT_DIR/.." >/dev/null
+  pwd
+)"
 
 usage() {
   echo "
@@ -20,8 +24,6 @@ Commands:
         Apply (install/update) the helm chart.
     certify
         Generate the report certifying the helm chart
-    delete
-        Delete the helm chart.
     release
         Package and release the helm chart.
     template
@@ -62,7 +64,7 @@ set_defaults() {
   NAMESPACE=${NAMESPACE:-rhtap}
   APP_NAME=${APP_NAME:-installer}
   HELM_CHART="$(
-    cd "$SCRIPT_DIR/.." >/dev/null
+    cd "$PROJECT_DIR/chart" >/dev/null
     pwd
   )"
   VERSION="$HELM_CHART"
@@ -71,7 +73,7 @@ set_defaults() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
-    apply | certify | delete | release | template | test | uninstall | values)
+    apply | certify | release | template | test | uninstall | values)
       ACTION="$1"
       ;;
     -a | --app-name)
@@ -130,7 +132,9 @@ init() {
   cd "$PROJECT_DIR" >/dev/null
   helm repo add rhtap https://redhat-appstudio.github.io/helm-repository/ >/dev/null
   helm repo update rhtap >/dev/null
+  cd "$HELM_CHART"
   helm dependencies update >/dev/null
+  cd - >/dev/null
 }
 
 apply() {
@@ -143,13 +147,8 @@ certify() {
   CERTIFICATION_DIR="tmp/certification"
   mkdir -p "$HELM_REPOSITORY"
   mkdir -p "$CERTIFICATION_DIR"
-  CHART_TGZ=$(helm package --destination "$HELM_REPOSITORY" . | sed 's:.*/::')
-  if kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
-    # Can be removed when using helm to uninstall the chart doesn't
-    # break the GitOps operator.
-    echo "Cannot certify the chart on a cluster on which the chart was already installed" >&2
-    exit 1
-  else
+  CHART_TGZ=$(helm package --destination "$HELM_REPOSITORY" "$HELM_CHART" | sed 's:.*/::')
+  if ! kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
     kubectl create namespace "$NAMESPACE"
   fi
   podman run --rm \
@@ -165,11 +164,6 @@ certify() {
     --set profile.vendorType=redhat \
     "/workspace/$HELM_REPOSITORY/$CHART_TGZ" >"$CERTIFICATION_DIR/report.yaml"
   yq '.results |= sort_by(.check)' "$CERTIFICATION_DIR/report.yaml" >"$CERTIFICATION_DIR/report.$(date +%Y%m%d-%H%M%S).yaml"
-}
-
-delete() {
-  $helm uninstall "$APP_NAME"
-  $helm list
 }
 
 release() {
@@ -189,15 +183,16 @@ release() {
     --single-branch "$HELM_REPOSITORY"
 
   # Create package
-  cd "$HELM_CHART"
-  helm package --destination "$HELM_REPOSITORY" .
+  cd "$PROJECT_DIR"
+  git clean -dx --force "$HELM_CHART"
+  helm package --destination "$HELM_REPOSITORY" "$HELM_CHART"
   _get_versions
   git tag --force "$version"
   git push --tags
 
   # Update version
-  sed -i -e "s|^version: \+$version$|version: $next_version|" Chart.yaml
-  "$SCRIPT_DIR/make.sh" template >"$HELM_CHART/test/data/helm-chart/template.yaml"
+  sed -i -e "s|^version: \+$version$|version: $next_version|" "$HELM_CHART/Chart.yaml"
+  "$SCRIPT_DIR/make.sh" template >"$PROJECT_DIR/test/data/helm-chart/template.yaml"
   git add .
   git commit -m "Init version: $next_version"
   git push
@@ -210,7 +205,7 @@ release() {
   
 Changes from $previous_version:
 $(
-    git -C "$HELM_CHART" log \
+    git -C "$PROJECT_DIR" log \
       --reverse --format="- %s" "$previous_version^..$version" \
       -- Chart.yaml values.yaml templates |
       tail -n +3
@@ -266,7 +261,7 @@ values() {
   # * Use the generated file to only ask the user about relevant data.
   # * Use the generated file and the user's responses to generate the final
   #   values file.
-  cd "$HELM_CHART"
+  cd "$PROJECT_DIR"
   touch "private.env"
   # shellcheck source=/dev/null
   source "private.env"
@@ -307,16 +302,14 @@ values() {
 
   TMP_VALUES="private-values.yaml.tmp"
   echo "# Generated with bin/make.sh $(grep "^version: " Chart.yaml | grep --only-matching "[0-9.]*")-$(git rev-parse HEAD | cut -c1-7)" >"$TMP_VALUES"
-  cat values.yaml >>"$TMP_VALUES"
+  cat "$HELM_CHART/values.yaml" >>"$TMP_VALUES"
   if [ "$RHTAP_ENABLE_GITHUB" == false ]; then
-    yq -i ".developer-hub.app-config.auth.providers.github = null" "$TMP_VALUES"
-    yq -i ".developer-hub.app-config.integrations.github = null" "$TMP_VALUES"
+    yq -i ".git.github = null" "$TMP_VALUES"
     yq -i ".openshift-gitops.git-token = null" "$TMP_VALUES"
     yq -i ".pipelines.pipelines-as-code.github = null" "$TMP_VALUES"
   fi
   if [ "$RHTAP_ENABLE_GITLAB" == false ]; then
-    yq -i ".developer-hub.app-config.auth.providers.gitlab = null" "$TMP_VALUES"
-    yq -i ".developer-hub.app-config.integrations.gitlab = null" "$TMP_VALUES"
+    yq -i ".git.gitlab = null" "$TMP_VALUES"
   fi
   if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == false ]; then
     yq -i ".developer-hub = null" "$TMP_VALUES"
@@ -360,7 +353,7 @@ values() {
       fi
       if [ "$RHTAP_ENABLE_DEVELOPER_HUB" == true ]; then
         yq -i "
-        .developer-hub.app-config.integrations.github[0].apps[0].privateKey = strenv(VALUE)
+        .git.github.app.privateKey = strenv(VALUE)
         " "$TMP_VALUES"
       fi
       yq -i "

@@ -3,7 +3,7 @@ yaml-files:
   - '*.yaml'
   - '*.yml'
 ignore:
-  - 'templates/**'
+  - 'chart/templates/**'
 rules:
   braces: enable
   brackets: enable
