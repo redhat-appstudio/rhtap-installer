@@ -14,30 +14,7 @@ global:
       # Installed plugins can be listed at:
       # https://DH_HOSTNAME/api/dynamic-plugins-info/loaded-plugins
       - disabled: false
-        package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd
-        pluginConfig:
-          dynamicPlugins:
-            frontend:
-              roadiehq.backstage-plugin-argo-cd:
-                mountPoints:
-                  - config:
-                      if:
-                        allOf:
-                          - isArgocdAvailable
-                      layout:
-                        gridColumnEnd:
-                          lg: span 8
-                          xs: span 12
-                    importName: EntityArgoCDOverviewCard
-                    mountPoint: entity.page.overview/cards
-                  - config:
-                      if:
-                        allOf:
-                          - isArgocdAvailable
-                      layout:
-                        gridColumn: 1 / -1
-                    importName: EntityArgoCDHistoryCard
-                    mountPoint: entity.page.cd/cards
+        package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-argocd
       - disabled: false
         package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
       - disabled: false
