@@ -9,11 +9,11 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
-      == "release-1.0.1"
+      == "release-1.0.2"
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: rhtap-installer-release-1-0-1
-    appstudio.openshift.io/component: ci-rhtap-installer-release-1-0-1
+    appstudio.openshift.io/application: rhtap-installer-release-1-0-2
+    appstudio.openshift.io/component: ci-rhtap-installer-release-1-0-2
     pipelines.appstudio.openshift.io/type: build
   name: ci-rhtap-installer-on-pull-request
   namespace: rhtap-shared-tenant
