@@ -30,7 +30,7 @@
       curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
       
       echo "Checking deployments..."
-      deployments=(bombastic-api bombastic-collector bombastic-indexer documentation guac-graphql spog-api spog-ui v11y-api v11y-indexer vexination-api vexination-collector vexination-indexer)
+      deployments=(bombastic-api bombastic-collector bombastic-indexer guac-graphql spog-api spog-ui v11y-api v11y-indexer vexination-api vexination-collector vexination-indexer)
       for deploy in "${deployments[@]}"; do
         rollout_status "{{.Release.Namespace}}" "${deploy}"
       done
