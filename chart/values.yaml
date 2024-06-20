@@ -81,6 +81,13 @@ trusted-application-pipeline:
   namespaces:
     - rhtap-app
 trusted-profile-analyzer:
+  authenticator: null
+  bombastic:
+    bucket: bombastic
+    topics:
+      failed: sbom-failed
+      indexed: sbom-indexed
+      stored: sbom-stored
   tracing:
     enabled: false
   # Enables using cluster's TLS certificates for services communication, this is
@@ -244,3 +251,15 @@ trusted-profile-analyzer:
           secretKeyRef:
             name: tpa-infrastructure-postgresql
             key: postgres-password
+  v11y:
+    bucket: v11y
+    topics:
+      failed: v11y-failed
+      indexed: v11y-indexed
+      stored: v11y-stored
+  vexination:
+    bucket: vexination
+    topics:
+      failed: vex-failed
+      indexed: vex-indexed
+      stored: vex-stored

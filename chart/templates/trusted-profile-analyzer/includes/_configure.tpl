@@ -50,11 +50,8 @@
           # dependencies.
           helm repo add bitnami https://charts.bitnami.com/bitnami
 
-          # Preparing Helm dependencies for both charts...
+          # Preparing Helm dependencies.
           pushd deploy/k8s/charts/trustification-infrastructure &&
-            helm dependency build
-          popd
-          pushd deploy/k8s/charts/trustification &&
             helm dependency build
           popd
 
@@ -75,22 +72,26 @@
               echo "ERROR: Installing trustification-infrastructure chart!"
               exit 1
             fi
-          
-            if ! helm upgrade \
-                --install \
-                --namespace=${NAMESPACE} \
-                --timeout=10m \
-                --values=${TRUSTIFICATION_VALUES} \
-                --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
-                --set-string appDomain=${APP_DOMAIN} \
-                --debug \
-                tpa \
-                charts/trustification; then
-              echo "ERROR: Installing trustification chart!"
-              exit 1
-            fi
           popd
       popd
+
+      # Adding the openshift-helm-charts repository for "trusted-profile-analyzer".
+      helm repo add openshift-helm-charts https://charts.openshift.io/ >/dev/null
+
+      if ! helm upgrade \
+          --install \
+          --namespace=${NAMESPACE} \
+          --timeout=10m \
+          --values=${TRUSTIFICATION_VALUES} \
+          --version=0.0.4 \
+          --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
+          --set-string appDomain=${APP_DOMAIN} \
+          --debug \
+          tpa \
+          openshift-helm-charts/redhat-trusted-profile-analyzer; then
+        echo "ERROR: Installing trusted-profile-analyzer chart!"
+        exit 1
+      fi
       echo "OK"
 
       echo
