@@ -1,4 +1,4 @@
-{{ define "rhtap.pipelines.test" }}
+{{- define "rhtap.pipelines.test" }}
 - name: test-pipelines
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   workingDir: /tmp
@@ -9,9 +9,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
-    {{ if eq .Values.debug.script true }}
+    {{- if eq .Values.debug.script true }}
       set -x
-    {{ end }}
+    {{- end }}
     
       rollout_status() {
         local namespace="${1}"
@@ -29,12 +29,13 @@
         # wait until tekton pipelines operator is created
         echo "Waiting for OpenShift Pipelines Operator to be created..."
         timeout 2m bash <<-EOF
-        until oc get deployment openshift-pipelines-operator -n openshift-operators; do
+        until oc get deployment -A | grep --quiet openshift-pipelines-operator ; do
           echo -n "."
           sleep 5
         done
       EOF
-        oc rollout status -n openshift-operators deployment/openshift-pipelines-operator --timeout 10m
+        NAMESPACE="$(kubectl get deployment -A | grep --max-count=1 openshift-pipelines-operator | cut -d' ' -f1)" || true
+        oc rollout status -n "$NAMESPACE" deployment/openshift-pipelines-operator --timeout 10m
 
         # wait until clustertasks tekton CRD is properly deployed
         timeout 10m bash <<-EOF
@@ -63,4 +64,4 @@
     requests:
       cpu: 20m
       memory: 128Mi
-{{ end }}
+{{- end }}
