@@ -78,7 +78,7 @@ kind: Subscription
 metadata:
   annotations:
     helm.sh/resource-policy: keep
-  name: openshift-pipelines-operator
+  name: openshift-pipelines-operator-rh
   namespace: openshift-operators
 spec:
   channel: pipelines-1.14
@@ -1779,7 +1779,6 @@ spec:
               set -o nounset
               set -o pipefail
             
-            
               ERRORS=()
         
               rollout_status() {
@@ -1798,12 +1797,13 @@ spec:
                 # wait until tekton pipelines operator is created
                 echo "Waiting for OpenShift Pipelines Operator to be created..."
                 timeout 2m bash <<-EOF
-                until oc get deployment openshift-gitops-operator-controller-manager -n openshift-operators; do
+                until oc get deployment -A | grep --quiet openshift-gitops-operator-controller-manager ; do
                   echo -n "."
                   sleep 5
                 done
               EOF
-                oc rollout status -n openshift-operators deployment/openshift-gitops-operator-controller-manager --timeout 10m
+                NAMESPACE="$(kubectl get deployment -A | grep --max-count=1 openshift-gitops-operator-controller-manager | cut -d' ' -f1)" || true
+                oc rollout status -n "$NAMESPACE" deployment/openshift-gitops-operator-controller-manager --timeout 10m
         
                 # wait until all the deployments in the openshift-gitops namespace are ready:
                 rollout_status "openshift-gitops" "cluster"
@@ -1846,14 +1846,14 @@ spec:
                   echo "OK"
                 else
                   echo "FAIL"
-                  ERRORS+=("ClusterRoles for ArgoCD not found.")
+                  ERRORS+=("ClusterRoles for ArgoCD not found. Check the value of ARGOCD_CLUSTER_CONFIG_NAMESPACES in the subscription.")
                 fi
                 echo -n "* ArgoCD clusterrolebindings: "
                 if [ "$(oc get clusterrolebindings -o name | grep -c "/$PREFIX")" = "3" ]; then
                   echo "OK"
                 else
                   echo "FAIL"
-                  ERRORS+=("ClusterRoleBindings for ArgoCD not found.")
+                  ERRORS+=("ClusterRoleBindings for ArgoCD not found. Check the value of ARGOCD_CLUSTER_CONFIG_NAMESPACES in the subscription.")
                 fi
               }
         
@@ -1875,7 +1875,6 @@ spec:
             requests:
               cpu: 20m
               memory: 128Mi
-        
                 
         - name: test-pipelines
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
@@ -1887,7 +1886,6 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-            
             
               rollout_status() {
                 local namespace="${1}"
@@ -1905,12 +1903,13 @@ spec:
                 # wait until tekton pipelines operator is created
                 echo "Waiting for OpenShift Pipelines Operator to be created..."
                 timeout 2m bash <<-EOF
-                until oc get deployment openshift-pipelines-operator -n openshift-operators; do
+                until oc get deployment -A | grep --quiet openshift-pipelines-operator ; do
                   echo -n "."
                   sleep 5
                 done
               EOF
-                oc rollout status -n openshift-operators deployment/openshift-pipelines-operator --timeout 10m
+                NAMESPACE="$(kubectl get deployment -A | grep --max-count=1 openshift-pipelines-operator | cut -d' ' -f1)" || true
+                oc rollout status -n "$NAMESPACE" deployment/openshift-pipelines-operator --timeout 10m
         
                 # wait until clustertasks tekton CRD is properly deployed
                 timeout 10m bash <<-EOF
@@ -1939,7 +1938,6 @@ spec:
             requests:
               cpu: 20m
               memory: 128Mi
-        
                 
         
         - name: test-trusted-artifact-signer
