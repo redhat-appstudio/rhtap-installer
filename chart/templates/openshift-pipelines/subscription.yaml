@@ -1,5 +1,5 @@
 ---
-{{ if (index .Values "openshift-pipelines") }}
+{{ if and (index .Values "openshift-pipelines") (index .Values "openshift-pipelines" "channel") }}
 {{ if (lookup "operators.coreos.com/v1alpha1" "Subscription" "openshift-operators" "openshift-pipelines-operator")}}
 {{else}}
 apiVersion: operators.coreos.com/v1alpha1
@@ -7,7 +7,7 @@ kind: Subscription
 metadata:
   annotations:
     helm.sh/resource-policy: keep
-  name: openshift-pipelines-operator
+  name: openshift-pipelines-operator-rh
   namespace: openshift-operators
 spec:
   channel: {{index .Values "openshift-pipelines" "channel"}}

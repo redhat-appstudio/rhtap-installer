@@ -1,4 +1,4 @@
-{{ define "rhtap.gitops.test" }}
+{{- define "rhtap.gitops.test" }}
 - name: test-gitops
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   workingDir: /tmp
@@ -9,9 +9,9 @@
       set -o errexit
       set -o nounset
       set -o pipefail
-    {{ if eq .Values.debug.script true }}
+    {{- if eq .Values.debug.script true }}
       set -x
-    {{ end }}
+    {{- end }}
     
       ERRORS=()
 
@@ -31,12 +31,13 @@
         # wait until tekton pipelines operator is created
         echo "Waiting for OpenShift Pipelines Operator to be created..."
         timeout 2m bash <<-EOF
-        until oc get deployment openshift-gitops-operator-controller-manager -n openshift-operators; do
+        until oc get deployment -A | grep --quiet openshift-gitops-operator-controller-manager ; do
           echo -n "."
           sleep 5
         done
       EOF
-        oc rollout status -n openshift-operators deployment/openshift-gitops-operator-controller-manager --timeout 10m
+        NAMESPACE="$(kubectl get deployment -A | grep --max-count=1 openshift-gitops-operator-controller-manager | cut -d' ' -f1)" || true
+        oc rollout status -n "$NAMESPACE" deployment/openshift-gitops-operator-controller-manager --timeout 10m
 
         # wait until all the deployments in the openshift-gitops namespace are ready:
         rollout_status "openshift-gitops" "cluster"
@@ -79,14 +80,14 @@
           echo "OK"
         else
           echo "FAIL"
-          ERRORS+=("ClusterRoles for ArgoCD not found.")
+          ERRORS+=("ClusterRoles for ArgoCD not found. Check the value of ARGOCD_CLUSTER_CONFIG_NAMESPACES in the subscription.")
         fi
         echo -n "* ArgoCD clusterrolebindings: "
         if [ "$(oc get clusterrolebindings -o name | grep -c "/$PREFIX")" = "3" ]; then
           echo "OK"
         else
           echo "FAIL"
-          ERRORS+=("ClusterRoleBindings for ArgoCD not found.")
+          ERRORS+=("ClusterRoleBindings for ArgoCD not found. Check the value of ARGOCD_CLUSTER_CONFIG_NAMESPACES in the subscription.")
         fi
       }
 
@@ -108,4 +109,4 @@
     requests:
       cpu: 20m
       memory: 128Mi
-{{ end }}
+{{- end }}
