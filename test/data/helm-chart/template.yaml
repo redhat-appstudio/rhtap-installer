@@ -1444,6 +1444,13 @@ spec:
           
               cat <<EOF >${TRUSTIFICATION_VALUES}
               ---
+              authenticator: null
+              bombastic:
+                bucket: bombastic
+                topics:
+                  failed: sbom-failed
+                  indexed: sbom-indexed
+                  stored: sbom-stored
               eventBus:
                 bootstrapServers: tpa-infrastructure-kafka:9092
                 config:
@@ -1579,6 +1586,18 @@ spec:
                       name: tpa-infrastructure-minio
               tracing:
                 enabled: false
+              v11y:
+                bucket: v11y
+                topics:
+                  failed: v11y-failed
+                  indexed: v11y-indexed
+                  stored: v11y-stored
+              vexination:
+                bucket: vexination
+                topics:
+                  failed: vex-failed
+                  indexed: vex-indexed
+                  stored: vex-stored
               EOF
           
         
@@ -1603,11 +1622,8 @@ spec:
                   # dependencies.
                   helm repo add bitnami https://charts.bitnami.com/bitnami
         
-                  # Preparing Helm dependencies for both charts...
+                  # Preparing Helm dependencies.
                   pushd deploy/k8s/charts/trustification-infrastructure &&
-                    helm dependency build
-                  popd
-                  pushd deploy/k8s/charts/trustification &&
                     helm dependency build
                   popd
         
@@ -1628,22 +1644,26 @@ spec:
                       echo "ERROR: Installing trustification-infrastructure chart!"
                       exit 1
                     fi
-                  
-                    if ! helm upgrade \
-                        --install \
-                        --namespace=${NAMESPACE} \
-                        --timeout=10m \
-                        --values=${TRUSTIFICATION_VALUES} \
-                        --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
-                        --set-string appDomain=${APP_DOMAIN} \
-                        --debug \
-                        tpa \
-                        charts/trustification; then
-                      echo "ERROR: Installing trustification chart!"
-                      exit 1
-                    fi
                   popd
               popd
+        
+              # Adding the openshift-helm-charts repository for "trusted-profile-analyzer".
+              helm repo add openshift-helm-charts https://charts.openshift.io/ >/dev/null
+        
+              if ! helm upgrade \
+                  --install \
+                  --namespace=${NAMESPACE} \
+                  --timeout=10m \
+                  --values=${TRUSTIFICATION_VALUES} \
+                  --version=0.0.4 \
+                  --set-string=keycloak.ingress.hostname=sso${APP_DOMAIN} \
+                  --set-string appDomain=${APP_DOMAIN} \
+                  --debug \
+                  tpa \
+                  openshift-helm-charts/redhat-trusted-profile-analyzer; then
+                echo "ERROR: Installing trusted-profile-analyzer chart!"
+                exit 1
+              fi
               echo "OK"
         
               echo
@@ -1981,7 +2001,7 @@ spec:
               curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
               
               echo "Checking deployments..."
-              deployments=(bombastic-api bombastic-collector bombastic-indexer documentation guac-graphql spog-api spog-ui v11y-api v11y-indexer vexination-api vexination-collector vexination-indexer)
+              deployments=(bombastic-api bombastic-collector bombastic-indexer guac-graphql spog-api spog-ui v11y-api v11y-indexer vexination-api vexination-collector vexination-indexer)
               for deploy in "${deployments[@]}"; do
                 rollout_status "rhtap" "${deploy}"
               done
