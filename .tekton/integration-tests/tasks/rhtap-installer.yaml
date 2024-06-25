@@ -41,6 +41,9 @@ spec:
         chmod +x config.sh
         source ./config.sh
 
+        echo "Enabled Components....."
+        env | grep '^RHTAP_ENABLE'
+
         ./bin/make.sh values
         yq e -i '.debug.ci=true' private-values.yaml
         ./bin/make.sh apply -n rhtap -- --debug --values private-values.yaml

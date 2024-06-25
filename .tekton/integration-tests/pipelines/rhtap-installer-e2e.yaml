@@ -108,9 +108,9 @@ spec:
         resolver: git
         params:
           - name: url
-            value: https://github.com/redhat-appstudio/rhtap-installer.git
+            value: https://github.com/xinredhat/rhtap-installer.git
           - name: revision
-            value: main
+            value: log_enabled_components
           - name: pathInRepo
             value: .tekton/integration-tests/tasks/rhtap-installer.yaml
       params:
@@ -163,6 +163,27 @@ spec:
         - name: oras-container
           value: "$(tasks.test-metadata.results.oras-container)"
   finally:
+    - name: collect-install-failure
+      when:
+        - input: "$(tasks.rhtap-install.status)"
+          operator: in
+          values: ["Failed"]
+      params:
+        - name: ocp-login-command
+          value: "$(tasks.provision-rosa.results.ocp-login-command)"
+      taskSpec:
+        params:
+          - name: ocp-login-command
+            type: string
+        steps:
+          - name: collect-install-failure
+            image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest
+            script: |
+              #!/bin/sh
+              echo $(params.ocp-login-command)
+              $(params.ocp-login-command)
+              echo "Extracting logs from the failed job rhtap-installer-configure..."
+              kubectl -n rhtap logs job/rhtap-installer-configure --all-containers=true
     - name: deprovision-rosa-collect-artifacts
       when:
         - input: "$(tasks.test-metadata.results.test-event-type)"
