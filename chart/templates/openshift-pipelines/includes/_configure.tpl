@@ -75,7 +75,7 @@
       echo -n "* Configuring Pipelines-as-Code: "
       if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         echo -n "."
-        WEBHOOK_SECRET="{{ default "$(openssl rand -hex 20)" (index .Values "pipelines" "pipelines-as-code" "github" "webhook-secret") | replace "$" "\\$" }}"
+        WEBHOOK_SECRET='{{ default "$(openssl rand -hex 20)" (index .Values "pipelines" "pipelines-as-code" "github" "webhook-secret") | replace "'" "'\\''" }}'
         kubectl create secret generic "$CHART-pipelines-secret" \
           --from-literal="webhook-github-secret=$WEBHOOK_SECRET" \
           --from-literal="webhook-url=$(kubectl get routes -n "$PIPELINES_NAMESPACE" pipelines-as-code-controller -o jsonpath="https://{.spec.host}")" >/dev/null
@@ -85,8 +85,8 @@
       if [ "$(kubectl get secret -n "$PIPELINES_NAMESPACE" "pipelines-as-code-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
         echo -n "."
         kubectl -n "$PIPELINES_NAMESPACE" create secret generic pipelines-as-code-secret \
-          --from-literal github-application-id="{{ (index .Values "pipelines" "pipelines-as-code" "github" "application-id") }}" \
-          --from-literal github-private-key="$(echo "{{ (index .Values "pipelines" "pipelines-as-code" "github" "private-key") | b64enc }}" | base64 -d)" \
+          --from-literal github-application-id='{{ (index .Values "pipelines" "pipelines-as-code" "github" "application-id") | replace "'" "'\\''" }}' \
+          --from-literal github-private-key="$(echo '{{ (index .Values "pipelines" "pipelines-as-code" "github" "private-key") | b64enc }}' | base64 -d)" \
           --from-literal webhook.secret="$WEBHOOK_SECRET" \
           --dry-run=client -o yaml | kubectl apply -f - >/dev/null
       fi
