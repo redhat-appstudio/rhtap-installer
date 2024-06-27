@@ -163,6 +163,34 @@ spec:
         - name: oras-container
           value: "$(tasks.test-metadata.results.oras-container)"
   finally:
+    - name: collect-install-failure
+      when:
+        - input: "$(tasks.rhtap-install.status)"
+          operator: in
+          values: ["Failed"]
+      params:
+        - name: ocp-login-command
+          value: "$(tasks.provision-rosa.results.ocp-login-command)"
+      taskSpec:
+        params:
+          - name: ocp-login-command
+            type: string
+        steps:
+          - name: collect-install-failure
+            image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest
+            script: |
+              #!/bin/sh
+              echo $(params.ocp-login-command)
+              $(params.ocp-login-command)
+              if [ "$(kubectl -n rhtap get job rhtap-installer-configure -o name --ignore-not-found | wc -l)" = "1" ]; then
+                echo "[INFO]Extracting logs from job rhtap-installer-configure..."
+                kubectl -n rhtap logs job/rhtap-installer-configure --all-containers=true
+              fi
+
+              if [ "$(kubectl -n rhtap get job rhtap-installer-test -o name --ignore-not-found | wc -l)" = "1" ]; then
+                echo "[INFO]Extracting logs from job rhtap-installer-test..."
+                kubectl -n rhtap logs job/rhtap-installer-test --all-containers=true
+              fi
     - name: deprovision-rosa-collect-artifacts
       when:
         - input: "$(tasks.test-metadata.results.test-event-type)"
