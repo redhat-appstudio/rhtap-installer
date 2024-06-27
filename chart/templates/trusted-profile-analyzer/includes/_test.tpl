@@ -40,7 +40,7 @@
       syft convert sbom.json -o cyclonedx-json@1.3=sbom-1-3.json
       keycloak_host=$(kubectl -n {{.Release.Namespace}} get route -l app.kubernetes.io/component=keycloak -o jsonpath='{.items[0].spec.host}')
 
-      tpa_oidc_walker_client_secret={{index .Values "trusted-profile-analyzer" "oidc" "clients" "walker" "clientSecret" "value"}}
+      tpa_oidc_walker_client_secret='{{index .Values "trusted-profile-analyzer" "oidc" "clients" "walker" "clientSecret" "value" | replace "'" "'\\''"}}'
       tpa_token=$(curl -d 'client_id=walker' \
         -d "client_secret=${tpa_oidc_walker_client_secret}" \
         -d 'grant_type=client_credentials' \
