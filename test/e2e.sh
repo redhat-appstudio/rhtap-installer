@@ -3,6 +3,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+########
+
 SCRIPT_DIR="$(
   cd "$(dirname "$0")" >/dev/null
   pwd
