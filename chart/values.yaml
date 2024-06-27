@@ -102,7 +102,6 @@ trusted-application-pipeline:
   namespaces:
     - rhtap-app
 trusted-profile-analyzer:
-  authenticator: null
   bombastic:
     bucket: bombastic
     topics:
