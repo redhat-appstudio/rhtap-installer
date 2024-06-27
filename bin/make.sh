@@ -301,7 +301,7 @@ values() {
   source private.env
 
   TMP_VALUES="private-values.yaml.tmp"
-  echo "# Generated with bin/make.sh $(grep "^version: " Chart.yaml | grep --only-matching "[0-9.]*")-$(git rev-parse HEAD | cut -c1-7)" >"$TMP_VALUES"
+  echo "# Generated with bin/make.sh $(grep "^version: " chart/Chart.yaml | grep --only-matching "[0-9.]*")-$(git rev-parse HEAD | cut -c1-7)" >"$TMP_VALUES"
   cat "$HELM_CHART/values.yaml" >>"$TMP_VALUES"
   if [ "$RHTAP_ENABLE_GITHUB" == false ]; then
     yq -i ".git.github = null" "$TMP_VALUES"
@@ -340,6 +340,7 @@ values() {
         read -r -p "Enter value for $ENV_VAR: " VALUE
         ;;
       esac
+      VALUE="${VALUE//\'/\'\\\'\'}"
     else
       echo "$ENV_VAR: OK"
       VALUE=${!ENV_VAR}

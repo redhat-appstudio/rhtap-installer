@@ -12,14 +12,20 @@ spec:
   fulcio:
     certificate:
       commonName: fulcio.hostname
-      organizationEmail: ${FULCIO__ORG_EMAIL}
-      organizationName: ${FULCIO__ORG_NAME}
+      organizationEmail: |-
+        ${FULCIO__ORG_EMAIL}
+      organizationName: |-
+        ${FULCIO__ORG_NAME}
     config:
       OIDCIssuers:
-        - Issuer: "${FULCIO__OIDC__URL}"
-          ClientID: ${FULCIO__OIDC__CLIENT_ID}
-          IssuerURL: "${FULCIO__OIDC__URL}"
-          Type: ${FULCIO__OIDC__TYPE}
+        - Issuer: |-
+            ${FULCIO__OIDC__URL}
+          ClientID: |-
+            ${FULCIO__OIDC__CLIENT_ID}
+          IssuerURL: |-
+            ${FULCIO__OIDC__URL}
+          Type: |-
+            ${FULCIO__OIDC__TYPE}
     externalAccess:
       enabled: true
     monitoring:

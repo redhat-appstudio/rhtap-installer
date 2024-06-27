@@ -1,5 +1,5 @@
 {{ define "rhtap.trusted-artifact-signer.configure" }}
-{{ if (index .Values "trusted-artifact-signer") }}
+{{- if (index .Values "trusted-artifact-signer") }}
 - name: configure-trusted-artifact-signer
   image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
   workingDir: /tmp
@@ -10,18 +10,18 @@
       set -o errexit
       set -o nounset
       set -o pipefail
-  {{ if eq .Values.debug.script true }}
+  {{- if eq .Values.debug.script true }}
       set -x
-  {{ end }}
+  {{- end }}
 
       CHART="{{index .Values "trusted-application-pipeline" "name"}}"
 
       echo -n "* Configure OIDC: "
-    {{ if (unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" false) }}
-      export FULCIO__OIDC__CLIENT_ID="{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" "ClientID" "trusted-artifact-signer" }}
-      export FULCIO__OIDC__TYPE="{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" "Type" "email" }}
-      export FULCIO__OIDC__URL="{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" "IssuerURL" "https://oidc.cluster.com" }}"
-    {{ else }}
+    {{- if (unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" false) }}
+      export FULCIO__OIDC__CLIENT_ID='{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" "ClientID" "trusted-artifact-signer" | replace "'" "'\\''" }}'
+      export FULCIO__OIDC__TYPE='{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" "Type" "email" | replace "'" "'\\''" }}'
+      export FULCIO__OIDC__URL='{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "OIDCIssuer" "IssuerURL" "https://oidc.cluster.com" | replace "'" "'\\''" }}'
+    {{- else }}
       git clone https://github.com/securesign/sigstore-ocp.git >/dev/null
       echo -n "."
       oc apply --kustomize sigstore-ocp/keycloak/operator/base
@@ -44,9 +44,9 @@
         sleep 2
       done
       export FULCIO__OIDC__URL="https://$FULCIO__OIDC__URL/auth/realms/trusted-artifact-signer"
-    {{ end }}
-      export FULCIO__ORG_EMAIL="{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "certificate" "organizationEmail" "email@company.com" }}"
-      export FULCIO__ORG_NAME="{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "certificate" "organizationName" "Company" }}"
+    {{- end }}
+      export FULCIO__ORG_EMAIL='{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "certificate" "organizationEmail" "email@company.com" | replace "'" "'\\''" }}'
+      export FULCIO__ORG_NAME='{{ unset .Values "" | dig "trusted-artifact-signer" "securesign" "fulcio" "certificate" "organizationName" "Company" | replace "'" "'\\''" }}'
       echo "OK"
 
       CRDS=( securesigns )
@@ -73,5 +73,5 @@
 
       echo
       echo "Configuration successful"
-{{ end }}
-{{ end }}
+{{- end }}
+{{- end }}
