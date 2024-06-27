@@ -102,6 +102,8 @@ trusted-application-pipeline:
   namespaces:
     - rhtap-app
 trusted-profile-analyzer:
+  authenticator:
+    type: keycloak
   bombastic:
     bucket: bombastic
     topics:
