@@ -9,37 +9,43 @@ spec:
   description: >-
     Create the required resources for {{.Chart.Name}} tasks to run in a namespace.
   params:
-    - default: {{index .Values "openshift-gitops" "git-token" | replace "$" "\\$"}}
+    - default: |-
+        {{mustRegexReplaceAll "[$`\\\\]" (index .Values "openshift-gitops" "git-token") "\\${0}"}}
       description: |
         Git token
       name: git_token
       type: string
-    {{$gitlab_token := ""}}
-    {{if .Values.git.gitlab}}
-    {{$gitlab_token = (.Values.git.gitlab.token | replace "$" "\\$")}}
-    {{end}}
-    - default: "{{$gitlab_token}}"
+    {{- $gitlab_token := "" }}
+    {{- if .Values.git.gitlab }}
+      {{- $gitlab_token = (mustRegexReplaceAll "[$`\\\\]" .Values.git.gitlab.token "\\${0}") }}
+    {{- end }}
+    - default: |-
+        {{$gitlab_token}}
       description: |
         GitLab Personal Access Token
       name: gitlab_token
       type: string
-    - default: "{{index .Values "pipelines" "pipelines-as-code" "github" "webhook-secret" | replace "$" "\\$"}}"
+    - default: |-
+        {{mustRegexReplaceAll "[$`\\\\]" (index .Values "pipelines" "pipelines-as-code" "github" "webhook-secret") "\\${0}"}}
       description: |
         Pipelines as Code webhook secret
       name: pipelines_webhook_secret
       type: string
-    - default: {{index .Values "quay" "dockerconfigjson" | replace "$" "\\$"}}
+    - default: |-
+        {{mustRegexReplaceAll "[$`\\\\]" (index .Values "quay" "dockerconfigjson") "\\${0}"}}
       description: |
         Image registry token
       name: quay_dockerconfigjson
       type: string
-    - default: {{index .Values "acs" "central-endpoint" | replace "$" "\\$"}}
+    - default: |-
+        {{mustRegexReplaceAll "[$`\\\\]" (index .Values "acs" "central-endpoint") "\\${0}"}}
       description: |
         StackRox Central address:port tuple
         (example - rox.stackrox.io:443)
       name: acs_central_endpoint
       type: string
-    - default: {{index .Values "acs" "api-token" | replace "$" "\\$"}}
+    - default: |-
+        {{mustRegexReplaceAll "[$`\\\\]" (index .Values "acs" "api-token") "\\${0}"}}
       description: |
         StackRox API token with CI permissions
       name: acs_api_token
@@ -65,9 +71,9 @@ spec:
         set -o errexit
         set -o nounset
         set -o pipefail
-      {{if eq .Values.debug.script true}}
+      {{- if eq .Values.debug.script true }}
         set -x
-      {{end}}
+      {{- end }}
 
         SECRET_NAME="cosign-pub"
         if [ -n "$COSIGN_SIGNING_PUBLIC_KEY" ]; then
@@ -164,4 +170,4 @@ spec:
         echo
         echo "Namespace is ready to execute {{ .Chart.Name }} pipelines"
       workingDir: /tmp
-{{ end }}
+{{- end }}
