@@ -284,7 +284,7 @@ spec:
               helm repo add developer-hub https://charts.openshift.io/ >/dev/null
               echo -n "."
               HELM_VALUES="/tmp/developer-hub-values.yaml"
-              helm show values --version=~1.1 developer-hub/redhat-developer-hub >"${HELM_VALUES}"
+              helm show values --version=~1.2 developer-hub/redhat-developer-hub >"${HELM_VALUES}"
         
               cat <<EOF > rhtap-values.yaml
               
@@ -1476,6 +1476,8 @@ spec:
           
               cat <<EOF >${TRUSTIFICATION_VALUES}
               ---
+              authenticator:
+                type: keycloak
               bombastic:
                 bucket: bombastic
                 topics:
