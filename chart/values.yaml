@@ -81,7 +81,8 @@ trusted-application-pipeline:
   namespaces:
     - rhtap-app
 trusted-profile-analyzer:
-  authenticator: null
+  authenticator:
+    type: keycloak
   bombastic:
     bucket: bombastic
     topics:
