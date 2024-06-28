@@ -1476,6 +1476,8 @@ spec:
           
               cat <<EOF >${TRUSTIFICATION_VALUES}
               ---
+              authenticator:
+                type: keycloak
               bombastic:
                 bucket: bombastic
                 topics:
