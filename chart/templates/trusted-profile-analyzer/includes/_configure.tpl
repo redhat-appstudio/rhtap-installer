@@ -25,7 +25,7 @@
   {{ if (index .Values "trusted-profile-analyzer") }}
       cat <<EOF >${TRUSTIFICATION_VALUES}
       ---
-{{ index .Values "trusted-profile-analyzer" | toYaml | indent 6 }}
+{{ mustRegexReplaceAll "[$`\\\\]" (index .Values "trusted-profile-analyzer" | toYaml | indent 6) "\\${0}" }}
       EOF
   {{ end }}
 

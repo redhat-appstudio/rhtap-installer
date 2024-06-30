@@ -11,7 +11,8 @@ openshift-gitops:
   channel: gitops-1.12
   workload-namespaces:
     - default
-  git-token: ${GITOPS__GIT_TOKEN} # Token to create/push repositories.
+  git-token: |- # Token to create/push repositories.
+    ${GITOPS__GIT_TOKEN}
   argoCD:
     # ArgoCD's application-controller resource limits.
     controller:
@@ -29,38 +30,53 @@ openshift-pipelines:
 # Private values
 # You may want to override those variables in another file (e.g. values-private.yaml)
 acs:
-  central-endpoint: ${ACS__CENTRAL_ENDPOINT}
-  api-token: ${ACS__API_TOKEN}
+  central-endpoint: |-
+    ${ACS__CENTRAL_ENDPOINT}
+  api-token: |-
+    ${ACS__API_TOKEN}
 developer-hub:
   catalog:
-    url: ${DEVELOPER_HUB__CATALOG__URL}
+    url: |-
+      ${DEVELOPER_HUB__CATALOG__URL}
 git:
   github:
     app:
-      id: ${GITHUB__APP__ID}
+      id: |-
+        ${GITHUB__APP__ID}
       client:
-        id: ${GITHUB__APP__CLIENT__ID}
-        secret: ${GITHUB__APP__CLIENT__SECRET}
+        id: |-
+          ${GITHUB__APP__CLIENT__ID}
+        secret: |-
+          ${GITHUB__APP__CLIENT__SECRET}
       webhook:
-        secret: ${GITHUB__APP__WEBHOOK__SECRET}
-      privateKey: ${GITHUB__APP__PRIVATE_KEY}
+        secret: |-
+          ${GITHUB__APP__WEBHOOK__SECRET}
+      privateKey: |-
+        ${GITHUB__APP__PRIVATE_KEY}
   gitlab:
     app:
-      id: ${GITLAB__APP__CLIENT__ID}
-      secret: ${GITLAB__APP__CLIENT__SECRET}
-    token: ${GITLAB__TOKEN}
+      id: |-
+        ${GITLAB__APP__CLIENT__ID}
+      secret: |-
+        ${GITLAB__APP__CLIENT__SECRET}
+    token: |-
+      ${GITLAB__TOKEN}
 pipelines:
   pipelines-as-code:
     github:
-      application-id: ${GITHUB__APP__ID}
-      private-key: ${GITHUB__APP__PRIVATE_KEY}
-      webhook-secret: ${GITHUB__APP__WEBHOOK__SECRET}
+      application-id: |-
+        ${GITHUB__APP__ID}
+      private-key: |-
+        ${GITHUB__APP__PRIVATE_KEY}
+      webhook-secret: |-
+        ${GITHUB__APP__WEBHOOK__SECRET}
 quay:
   # Authentication information to push images.
   dockerconfigjson: |-
     ${QUAY__DOCKERCONFIGJSON}
   # Authentication information to access images.
-  token: ${QUAY__API_TOKEN}
+  token: |-
+    ${QUAY__API_TOKEN}
 trusted-artifact-signer:
   enabled: true
   operator:
@@ -69,19 +85,25 @@ trusted-artifact-signer:
     fulcio:
       certificate:
         commonName: fulcio.hostname
-        organizationEmail: ${TAS__SECURESIGN__FULCIO__ORG_EMAIL}
-        organizationName: ${TAS__SECURESIGN__FULCIO__ORG_NAME}
+        organizationEmail: |-
+          ${TAS__SECURESIGN__FULCIO__ORG_EMAIL}
+        organizationName: |-
+          ${TAS__SECURESIGN__FULCIO__ORG_NAME}
       config:
         OIDCIssuer:
-          ClientID: ${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID}
-          IssuerURL: "${TAS__SECURESIGN__FULCIO__OIDC__URL}"
-          Type: ${TAS__SECURESIGN__FULCIO__OIDC__TYPE}
+          ClientID: |-
+            ${TAS__SECURESIGN__FULCIO__OIDC__CLIENT_ID}
+          IssuerURL: |-
+            ${TAS__SECURESIGN__FULCIO__OIDC__URL}
+          Type: |-
+            ${TAS__SECURESIGN__FULCIO__OIDC__TYPE}'
 trusted-application-pipeline:
   name: rhtap
   namespaces:
     - rhtap-app
 trusted-profile-analyzer:
-  authenticator: null
+  authenticator:
+    type: keycloak
   bombastic:
     bucket: bombastic
     topics:
@@ -101,7 +123,8 @@ trusted-profile-analyzer:
   minio:
     enabled: true
     # Minio's administrator (root) password
-    rootPassword: ${TPA__MINIO__ROOT_PASSWORD}
+    rootPassword: |-
+      ${TPA__MINIO__ROOT_PASSWORD}
     podSecurityContext:
       enabled: false
     containerSecurityContext:
@@ -123,7 +146,8 @@ trusted-profile-analyzer:
     auth:
       adminUser: admin
       # Keycloak's administrator (admin) password.
-      adminPassword: ${TPA__KEYCLOAK__ADMIN_PASSWORD}
+      adminPassword: |-
+        ${TPA__KEYCLOAK__ADMIN_PASSWORD}
     tls:
       enabled: true
       existingSecret: sso-tls
@@ -145,11 +169,13 @@ trusted-profile-analyzer:
     postgresql:
       auth:
         # PostgreSQL's administrator (postgres) password.
-        postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
+        postgresPassword: |-
+          ${TPA__POSTGRES__POSTGRES_PASSWORD}
         # Additional user for TPA's database.
         username: trusted-profile-analyzer
         # TPA's database user password.
-        password: ${TPA__POSTGRES__TPA_PASSWORD}
+        password: |-
+          ${TPA__POSTGRES__TPA_PASSWORD}
       primary:
         containerSecurityContext:
           enabled: false
@@ -203,15 +229,18 @@ trusted-profile-analyzer:
       walker:
         clientSecret:
           # OIDC client secret for the Walker module.
-          value: ${TPA__OIDC__WALKER_CLIENT_SECRET}
+          value: |-
+            ${TPA__OIDC__WALKER_CLIENT_SECRET}
       testingUser:
         clientSecret:
           # OIDC client secret for the Testing User module.
-          value: ${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
+          value: |-
+            ${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
       testingManager:
         clientSecret:
           # OIDC client secret for the Testing Manager module.
-          value: ${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
+          value: |-
+            ${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
   # TPA's modules configuration.
   modules:
     bombasticWalker:
@@ -240,7 +269,8 @@ trusted-profile-analyzer:
       sslMode: disable
       username: guac
       # GUAC administrator (guac) password.
-      password: ${TPA__GUAC__PASSWORD}
+      password: |-
+        ${TPA__GUAC__PASSWORD}
     initDatabase:
       name: postgres
       host: tpa-infrastructure-postgresql

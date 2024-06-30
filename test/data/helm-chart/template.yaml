@@ -255,19 +255,29 @@ spec:
                   namespace: rhtap
               type: Opaque
               stringData:
-                  DEVELOPER_HUB__CATALOG__URL: "${DEVELOPER_HUB__CATALOG__URL}"
-                  GITHUB__APP__ID: "${GITHUB__APP__ID}"
-                  GITHUB__APP__CLIENT__ID: "${GITHUB__APP__CLIENT__ID}"
-                  GITHUB__APP__CLIENT__SECRET: "${GITHUB__APP__CLIENT__SECRET}"
-                  GITHUB__APP__WEBHOOK__URL: "$PIPELINES_PAC_URL"
-                  GITHUB__APP__WEBHOOK__SECRET: "${GITHUB__APP__WEBHOOK__SECRET}"
+                  DEVELOPER_HUB__CATALOG__URL: |-
+                      \${DEVELOPER_HUB__CATALOG__URL}
+                  GITHUB__APP__ID: |-
+                      \${GITHUB__APP__ID}
+                  GITHUB__APP__CLIENT__ID: |-
+                      \${GITHUB__APP__CLIENT__ID}
+                  GITHUB__APP__CLIENT__SECRET: |-
+                      \${GITHUB__APP__CLIENT__SECRET}
+                  GITHUB__APP__WEBHOOK__URL: |-
+                      $PIPELINES_PAC_URL
+                  GITHUB__APP__WEBHOOK__SECRET: |-
+                      \${GITHUB__APP__WEBHOOK__SECRET}
                   GITHUB__APP__PRIVATE_KEY: |-
                       ${GITHUB__APP__PRIVATE_KEY}
-                  GITLAB__APP__CLIENT__ID: "${GITLAB__APP__CLIENT__ID}"
-                  GITLAB__APP__CLIENT__SECRET: "${GITLAB__APP__CLIENT__SECRET}"
-                  GITLAB__TOKEN: "${GITLAB__TOKEN}"
+                  GITLAB__APP__CLIENT__ID: |-
+                      \${GITLAB__APP__CLIENT__ID}
+                  GITLAB__APP__CLIENT__SECRET: |-
+                      \${GITLAB__APP__CLIENT__SECRET}
+                  GITLAB__TOKEN: |-
+                      \${GITLAB__TOKEN}
                   NODE_OPTIONS: --no-node-snapshot
-                  QUAY__API_TOKEN: "${QUAY__API_TOKEN}"
+                  QUAY__API_TOKEN: |-
+                      \${QUAY__API_TOKEN}
               EOF
               echo "OK"
         
@@ -888,37 +898,39 @@ spec:
                   description: >-
                     Create the required resources for redhat-trusted-application-pipeline tasks to run in a namespace.
                   params:
-                    - default: \${GITOPS__GIT_TOKEN}
+                    - default: |-
+                        \${GITOPS__GIT_TOKEN}
                       description: |
                         Git token
                       name: git_token
                       type: string
-                    
-                    
-                    
-                    
-                    - default: "\${GITLAB__TOKEN}"
+                    - default: |-
+                        \${GITLAB__TOKEN}
                       description: |
                         GitLab Personal Access Token
                       name: gitlab_token
                       type: string
-                    - default: "\${GITHUB__APP__WEBHOOK__SECRET}"
+                    - default: |-
+                        \${GITHUB__APP__WEBHOOK__SECRET}
                       description: |
                         Pipelines as Code webhook secret
                       name: pipelines_webhook_secret
                       type: string
-                    - default: \${QUAY__DOCKERCONFIGJSON}
+                    - default: |-
+                        \${QUAY__DOCKERCONFIGJSON}
                       description: |
                         Image registry token
                       name: quay_dockerconfigjson
                       type: string
-                    - default: \${ACS__CENTRAL_ENDPOINT}
+                    - default: |-
+                        \${ACS__CENTRAL_ENDPOINT}
                       description: |
                         StackRox Central address:port tuple
                         (example - rox.stackrox.io:443)
                       name: acs_central_endpoint
                       type: string
-                    - default: \${ACS__API_TOKEN}
+                    - default: |-
+                        \${ACS__API_TOKEN}
                       description: |
                         StackRox API token with CI permissions
                       name: acs_api_token
@@ -944,7 +956,6 @@ spec:
                         set -o errexit
                         set -o nounset
                         set -o pipefail
-                      
                 
                         SECRET_NAME="cosign-pub"
                         if [ -n "$COSIGN_SIGNING_PUBLIC_KEY" ]; then
@@ -1041,7 +1052,6 @@ spec:
                         echo
                         echo "Namespace is ready to execute redhat-trusted-application-pipeline pipelines"
                       workingDir: /tmp
-                
               EOF
               echo -n "."
               cat << EOF | kubectl apply -f - >/dev/null
@@ -1283,7 +1293,7 @@ spec:
               echo -n "* Configuring Pipelines-as-Code: "
               if [ "$(kubectl get secret "$CHART-pipelines-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
-                WEBHOOK_SECRET="\${GITHUB__APP__WEBHOOK__SECRET}"
+                WEBHOOK_SECRET='${GITHUB__APP__WEBHOOK__SECRET}'
                 kubectl create secret generic "$CHART-pipelines-secret" \
                   --from-literal="webhook-github-secret=$WEBHOOK_SECRET" \
                   --from-literal="webhook-url=$(kubectl get routes -n "$PIPELINES_NAMESPACE" pipelines-as-code-controller -o jsonpath="https://{.spec.host}")" >/dev/null
@@ -1293,8 +1303,8 @@ spec:
               if [ "$(kubectl get secret -n "$PIPELINES_NAMESPACE" "pipelines-as-code-secret" -o name --ignore-not-found | wc -l)" = "0" ]; then
                 echo -n "."
                 kubectl -n "$PIPELINES_NAMESPACE" create secret generic pipelines-as-code-secret \
-                  --from-literal github-application-id="${GITHUB__APP__ID}" \
-                  --from-literal github-private-key="$(echo "JHtHSVRIVUJfX0FQUF9fUFJJVkFURV9LRVl9" | base64 -d)" \
+                  --from-literal github-application-id='${GITHUB__APP__ID}' \
+                  --from-literal github-private-key="$(echo 'JHtHSVRIVUJfX0FQUF9fUFJJVkFURV9LRVl9' | base64 -d)" \
                   --from-literal webhook.secret="$WEBHOOK_SECRET" \
                   --dry-run=client -o yaml | kubectl apply -f - >/dev/null
               fi
@@ -1305,7 +1315,6 @@ spec:
               echo "Configuration successful"
         
                 
-        
         - name: configure-trusted-artifact-signer
           image: "registry.redhat.io/openshift4/ose-tools-rhel8:latest"
           workingDir: /tmp
@@ -1316,12 +1325,10 @@ spec:
               set -o errexit
               set -o nounset
               set -o pipefail
-          
         
               CHART="rhtap"
         
               echo -n "* Configure OIDC: "
-            
               git clone https://github.com/securesign/sigstore-ocp.git >/dev/null
               echo -n "."
               oc apply --kustomize sigstore-ocp/keycloak/operator/base
@@ -1344,9 +1351,8 @@ spec:
                 sleep 2
               done
               export FULCIO__OIDC__URL="https://$FULCIO__OIDC__URL/auth/realms/trusted-artifact-signer"
-            
-              export FULCIO__ORG_EMAIL="${TAS__SECURESIGN__FULCIO__ORG_EMAIL}"
-              export FULCIO__ORG_NAME="${TAS__SECURESIGN__FULCIO__ORG_NAME}"
+              export FULCIO__ORG_EMAIL='${TAS__SECURESIGN__FULCIO__ORG_EMAIL}'
+              export FULCIO__ORG_NAME='${TAS__SECURESIGN__FULCIO__ORG_NAME}'
               echo "OK"
         
               CRDS=( securesigns )
@@ -1381,14 +1387,20 @@ spec:
                 fulcio:
                   certificate:
                     commonName: fulcio.hostname
-                    organizationEmail: ${FULCIO__ORG_EMAIL}
-                    organizationName: ${FULCIO__ORG_NAME}
+                    organizationEmail: |-
+                      ${FULCIO__ORG_EMAIL}
+                    organizationName: |-
+                      ${FULCIO__ORG_NAME}
                   config:
                     OIDCIssuers:
-                      - Issuer: "${FULCIO__OIDC__URL}"
-                        ClientID: ${FULCIO__OIDC__CLIENT_ID}
-                        IssuerURL: "${FULCIO__OIDC__URL}"
-                        Type: ${FULCIO__OIDC__TYPE}
+                      - Issuer: |-
+                          ${FULCIO__OIDC__URL}
+                        ClientID: |-
+                          ${FULCIO__OIDC__CLIENT_ID}
+                        IssuerURL: |-
+                          ${FULCIO__OIDC__URL}
+                        Type: |-
+                          ${FULCIO__OIDC__TYPE}
                   externalAccess:
                     enabled: true
                   monitoring:
@@ -1417,8 +1429,6 @@ spec:
         
               echo
               echo "Configuration successful"
-        
-        
                 
         
         - name: configure-trusted-profile-analyzer
@@ -1444,7 +1454,8 @@ spec:
           
               cat <<EOF >${TRUSTIFICATION_VALUES}
               ---
-              authenticator: null
+              authenticator:
+                type: keycloak
               bombastic:
                 bucket: bombastic
                 topics:
@@ -1467,7 +1478,7 @@ spec:
                 database:
                   host: tpa-infrastructure-postgresql
                   name: guac
-                  password: ${TPA__GUAC__PASSWORD}
+                  password: \${TPA__GUAC__PASSWORD}
                   sslMode: disable
                   username: guac
                 initDatabase:
@@ -1498,7 +1509,7 @@ spec:
                     enabled: false
               keycloak:
                 auth:
-                  adminPassword: ${TPA__KEYCLOAK__ADMIN_PASSWORD}
+                  adminPassword: \${TPA__KEYCLOAK__ADMIN_PASSWORD}
                   adminUser: admin
                 containerSecurityContext:
                   enabled: false
@@ -1513,8 +1524,8 @@ spec:
                   enabled: false
                 postgresql:
                   auth:
-                    password: ${TPA__POSTGRES__TPA_PASSWORD}
-                    postgresPassword: ${TPA__POSTGRES__POSTGRES_PASSWORD}
+                    password: \${TPA__POSTGRES__TPA_PASSWORD}
+                    postgresPassword: \${TPA__POSTGRES__POSTGRES_PASSWORD}
                     username: trusted-profile-analyzer
                   primary:
                     containerSecurityContext:
@@ -1538,7 +1549,7 @@ spec:
                   size: 5Gi
                 podSecurityContext:
                   enabled: false
-                rootPassword: ${TPA__MINIO__ROOT_PASSWORD}
+                rootPassword: \${TPA__MINIO__ROOT_PASSWORD}
               modules:
                 bombasticWalker:
                   sources:
@@ -1563,13 +1574,13 @@ spec:
                   frontend: {}
                   testingManager:
                     clientSecret:
-                      value: ${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
+                      value: \${TPA__OIDC__TESTING_MANAGER_CLIENT_SECRET}
                   testingUser:
                     clientSecret:
-                      value: ${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
+                      value: \${TPA__OIDC__TESTING_USER_CLIENT_SECRET}
                   walker:
                     clientSecret:
-                      value: ${TPA__OIDC__WALKER_CLIENT_SECRET}
+                      value: \${TPA__OIDC__WALKER_CLIENT_SECRET}
               openshift:
                 useServiceCa: true
               storage:
@@ -2011,7 +2022,7 @@ spec:
               syft convert sbom.json -o cyclonedx-json@1.3=sbom-1-3.json
               keycloak_host=$(kubectl -n rhtap get route -l app.kubernetes.io/component=keycloak -o jsonpath='{.items[0].spec.host}')
         
-              tpa_oidc_walker_client_secret=${TPA__OIDC__WALKER_CLIENT_SECRET}
+              tpa_oidc_walker_client_secret='${TPA__OIDC__WALKER_CLIENT_SECRET}'
               tpa_token=$(curl -d 'client_id=walker' \
                 -d "client_secret=${tpa_oidc_walker_client_secret}" \
                 -d 'grant_type=client_credentials' \
