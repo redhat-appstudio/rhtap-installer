@@ -1,3 +1,8 @@
+## DEPRECATED
+See [rhtap-cli](https://github.com/redhat-appstudio/rhtap-cli) instead.
+
+
+
 # Red Hat Trusted Application Pipeline
 
 This helm chart installs and configures the following projects/products :
